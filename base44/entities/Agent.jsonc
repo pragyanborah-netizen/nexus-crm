@@ -1,0 +1,36 @@
+{
+  "name": "Agent",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Agent Name"
+    },
+    "email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "phone": {
+      "type": "string",
+      "title": "Phone"
+    },
+    "role": {
+      "type": "string",
+      "title": "Role",
+      "enum": [
+        "Sales",
+        "Admin",
+        "Manager"
+      ],
+      "default": "Sales"
+    },
+    "active": {
+      "type": "boolean",
+      "title": "Active",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

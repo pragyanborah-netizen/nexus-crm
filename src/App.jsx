@@ -6,7 +6,13 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
-// Add page imports here
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Bookings from './pages/Bookings';
+import AddEditBooking from './pages/AddEditBooking';
+import CustomerManagement from './pages/CustomerManagement';
+import TrucksManagement from './pages/TrucksManagement';
+import AgentsReport from './pages/AgentsReport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -34,7 +40,16 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/bookings" element={<Bookings />} />
+        <Route path="/bookings/new" element={<AddEditBooking />} />
+        <Route path="/bookings/:id" element={<AddEditBooking />} />
+        <Route path="/bookings/:id/edit" element={<AddEditBooking />} />
+        <Route path="/customers" element={<CustomerManagement />} />
+        <Route path="/trucks" element={<TrucksManagement />} />
+        <Route path="/agents-report" element={<AgentsReport />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

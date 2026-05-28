@@ -1,0 +1,195 @@
+{
+  "name": "Booking",
+  "type": "object",
+  "properties": {
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "New",
+        "Confirmed",
+        "In Progress",
+        "Completed",
+        "Cancelled",
+        "No Show"
+      ],
+      "default": "New"
+    },
+    "agent_quoted": {
+      "type": "string",
+      "title": "Agent who Quoted"
+    },
+    "agent_booked": {
+      "type": "string",
+      "title": "Agent who Booked"
+    },
+    "agent_inquired": {
+      "type": "string",
+      "title": "Agent who Inquired"
+    },
+    "customer_first_name": {
+      "type": "string",
+      "title": "First Name"
+    },
+    "customer_last_name": {
+      "type": "string",
+      "title": "Last Name"
+    },
+    "customer_email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "customer_mobile": {
+      "type": "string",
+      "title": "Mobile"
+    },
+    "customer_phone_info": {
+      "type": "string",
+      "title": "Phone Call Info"
+    },
+    "customer_type": {
+      "type": "string",
+      "title": "Customer Type",
+      "enum": [
+        "Residential",
+        "Commercial",
+        "Office"
+      ],
+      "default": "Residential"
+    },
+    "pickup_address": {
+      "type": "string",
+      "title": "Pickup Address"
+    },
+    "pickup_suburb": {
+      "type": "string",
+      "title": "Pickup Suburb"
+    },
+    "pickup_state": {
+      "type": "string",
+      "title": "Pickup State"
+    },
+    "pickup_postcode": {
+      "type": "string",
+      "title": "Pickup Postcode"
+    },
+    "pickup_floor": {
+      "type": "string",
+      "title": "Pickup Floor/Level"
+    },
+    "pickup_elevator": {
+      "type": "boolean",
+      "title": "Elevator at Pickup"
+    },
+    "delivery_address": {
+      "type": "string",
+      "title": "Delivery Address"
+    },
+    "delivery_suburb": {
+      "type": "string",
+      "title": "Delivery Suburb"
+    },
+    "delivery_state": {
+      "type": "string",
+      "title": "Delivery State"
+    },
+    "delivery_postcode": {
+      "type": "string",
+      "title": "Delivery Postcode"
+    },
+    "delivery_floor": {
+      "type": "string",
+      "title": "Delivery Floor/Level"
+    },
+    "delivery_elevator": {
+      "type": "boolean",
+      "title": "Elevator at Delivery"
+    },
+    "move_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Move Date"
+    },
+    "move_time": {
+      "type": "string",
+      "title": "Move Time"
+    },
+    "service_type": {
+      "type": "string",
+      "title": "Service Type",
+      "enum": [
+        "House Removal",
+        "Office Removal",
+        "Furniture Removal",
+        "Packing & Unpacking",
+        "Storage",
+        "Interstate"
+      ]
+    },
+    "num_movers": {
+      "type": "number",
+      "title": "Number of Movers"
+    },
+    "truck_size": {
+      "type": "string",
+      "title": "Truck Size",
+      "enum": [
+        "Small (4t)",
+        "Medium (8t)",
+        "Large (12t)",
+        "Extra Large (14t)"
+      ]
+    },
+    "truck_assigned": {
+      "type": "string",
+      "title": "Truck Assigned"
+    },
+    "estimated_hours": {
+      "type": "number",
+      "title": "Estimated Hours"
+    },
+    "actual_hours": {
+      "type": "number",
+      "title": "Actual Hours"
+    },
+    "price": {
+      "type": "number",
+      "title": "Price ($)"
+    },
+    "deposit": {
+      "type": "number",
+      "title": "Deposit Paid ($)"
+    },
+    "balance_due": {
+      "type": "number",
+      "title": "Balance Due ($)"
+    },
+    "payment_method": {
+      "type": "string",
+      "title": "Payment Method",
+      "enum": [
+        "Cash",
+        "Card",
+        "Bank Transfer",
+        "Invoice"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "internal_notes": {
+      "type": "string",
+      "title": "Internal Notes"
+    }
+  },
+  "required": [
+    "customer_first_name",
+    "customer_last_name",
+    "move_date"
+  ]
+}

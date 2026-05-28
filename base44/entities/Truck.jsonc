@@ -1,0 +1,37 @@
+{
+  "name": "Truck",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Truck Name / Registration"
+    },
+    "size": {
+      "type": "string",
+      "title": "Size",
+      "enum": [
+        "Small (4t)",
+        "Medium (8t)",
+        "Large (12t)",
+        "Extra Large (14t)"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Available",
+        "In Use",
+        "Maintenance"
+      ],
+      "default": "Available"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

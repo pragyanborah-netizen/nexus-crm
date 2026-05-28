@@ -1,0 +1,133 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Plus, Search, Trash2, Edit, Eye } from "lucide-react";
+
+const statusColors = {
+  New: "bg-blue-100 text-blue-700",
+  Confirmed: "bg-green-100 text-green-700",
+  "In Progress": "bg-yellow-100 text-yellow-700",
+  Completed: "bg-gray-100 text-gray-600",
+  Cancelled: "bg-red-100 text-red-700",
+  "No Show": "bg-orange-100 text-orange-700",
+};
+
+export default function Bookings() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const { data: bookings = [], isLoading } = useQuery({
+    queryKey: ["bookings"],
+    queryFn: () => base44.entities.Booking.list("-created_date", 200),
+  });
+
+  const deleteBooking = useMutation({
+    mutationFn: (id) => base44.entities.Booking.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+
+  const filtered = bookings.filter((b) => {
+    const name = `${b.customer_first_name} ${b.customer_last_name}`.toLowerCase();
+    const matchSearch = !search || name.includes(search.toLowerCase()) || (b.customer_email || "").includes(search.toLowerCase()) || (b.booking_number || "").includes(search);
+    const matchStatus = !statusFilter || b.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <nav className="text-xs text-gray-400 mb-1">Home &rsaquo; Bookings</nav>
+          <h1 className="text-2xl font-bold text-gray-800">Bookings</h1>
+        </div>
+        <Link to="/bookings/new" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-medium">
+          <Plus size={16} /> Add new Booking
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-48">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, email or booking #..."
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+        >
+          <option value="">All Statuses</option>
+          {["New", "Confirmed", "In Progress", "Completed", "Cancelled", "No Show"].map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {isLoading ? (
+          <div className="p-8 text-center text-gray-400">Loading...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-600 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium">Booking #</th>
+                  <th className="text-left px-4 py-3 font-medium">Customer</th>
+                  <th className="text-left px-4 py-3 font-medium">Mobile</th>
+                  <th className="text-left px-4 py-3 font-medium">Move Date</th>
+                  <th className="text-left px-4 py-3 font-medium">Service</th>
+                  <th className="text-left px-4 py-3 font-medium">Status</th>
+                  <th className="text-left px-4 py-3 font-medium">Price</th>
+                  <th className="text-left px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.length === 0 && (
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                    {bookings.length === 0 ? <span>No bookings yet. <Link to="/bookings/new" className="text-blue-600 hover:underline">Add your first booking</Link></span> : "No results match your search."}
+                  </td></tr>
+                )}
+                {filtered.map((b) => (
+                  <tr key={b.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-blue-600">
+                      <Link to={`/bookings/${b.id}`}>{b.booking_number || b.id.slice(0, 8).toUpperCase()}</Link>
+                    </td>
+                    <td className="px-4 py-3">{b.customer_first_name} {b.customer_last_name}</td>
+                    <td className="px-4 py-3 text-gray-500">{b.customer_mobile || "—"}</td>
+                    <td className="px-4 py-3">{b.move_date || "—"}</td>
+                    <td className="px-4 py-3">{b.service_type || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[b.status] || "bg-gray-100"}`}>
+                        {b.status || "New"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{b.price ? `$${Number(b.price).toLocaleString()}` : "—"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Link to={`/bookings/${b.id}`} className="text-gray-400 hover:text-blue-600"><Eye size={16} /></Link>
+                        <Link to={`/bookings/${b.id}/edit`} className="text-gray-400 hover:text-green-600"><Edit size={16} /></Link>
+                        <button onClick={() => { if (confirm("Delete this booking?")) deleteBooking.mutate(b.id); }} className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400">
+          Showing {filtered.length} of {bookings.length} bookings
+        </div>
+      </div>
+    </div>
+  );
+}
