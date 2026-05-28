@@ -184,6 +184,9 @@ function BookingCard({ booking: b }) {
         {b.num_movers && (
           <InfoRow icon={Users} label="Movers" value={`${b.num_movers} Movers`} />
         )}
+        {b.truck_assigned && (
+          <InfoRow icon={Truck} label="Truck" value={b.truck_assigned} />
+        )}
         {b.service_type && (
           <InfoRow icon={Truck} label="Service" value={b.service_type} />
         )}
