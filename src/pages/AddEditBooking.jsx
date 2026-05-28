@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail } from "lucide-react";
 import ItemsSelector from "../components/ItemsSelector";
 
 const TABS = [
@@ -123,6 +123,24 @@ export default function AddEditBooking() {
     if (!form.price) set("price", rec.baseHours * rec.rate);
   };
 
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const handleSendEmail = async () => {
+    if (!form.customer_email) { alert("No customer email address on file."); return; }
+    setSendingEmail(true);
+    const itemsList = (form.items_to_move || []).length > 0
+      ? "\n\nItems to Move:\n" + form.items_to_move.map(i => "  \u2022 " + i).join("\n")
+      : "";
+    const body = `Dear ${form.customer_first_name},\n\nThis is your booking confirmation with Move On Australia.\n\nBooking Details:\n  Date: ${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}\n  Pickup: ${[form.pickup_address, form.pickup_suburb, form.pickup_state].filter(Boolean).join(", ") || "TBC"}\n  Delivery: ${[form.delivery_address, form.delivery_suburb, form.delivery_state].filter(Boolean).join(", ") || "TBC"}${itemsList}\n\nIf you have any questions, please don't hesitate to contact us.\n\nThank you for choosing Move On Australia!`;
+    await base44.integrations.Core.SendEmail({
+      to: form.customer_email,
+      subject: `Booking Confirmation \u2013 ${form.move_date || "Your Move"}`,
+      body,
+    });
+    setSendingEmail(false);
+    alert("Email sent to " + form.customer_email);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -136,14 +154,26 @@ export default function AddEditBooking() {
             <h1 className="text-2xl font-bold text-gray-800">{isEdit ? "Edit Booking" : "New Booking"}</h1>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saveMutation.isPending}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
-        >
-          <Save size={16} /> {saveMutation.isPending ? "Saving..." : (isEdit ? "Save Changes" : "Create Booking")}
-        </button>
+        <div className="flex gap-2">
+          {form.customer_email && (
+            <button
+              type="button"
+              onClick={handleSendEmail}
+              disabled={sendingEmail}
+              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+            >
+              <Mail size={16} /> {sendingEmail ? "Sending..." : "Send Email"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saveMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+          >
+            <Save size={16} /> {saveMutation.isPending ? "Saving..." : (isEdit ? "Save Changes" : "Create Booking")}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -340,6 +370,14 @@ export default function AddEditBooking() {
                 </label>
               </Field>
             </div>
+          </Section>
+
+          <Section title="Inventory / Items to Move">
+            <p className="text-sm text-gray-500 mb-3">Add all items being moved — this will be included in customer emails.</p>
+            <ItemsSelector value={form.items_to_move || []} onChange={(v) => set("items_to_move", v)} />
+            {(form.items_to_move || []).length > 0 && (
+              <p className="text-xs text-gray-400 mt-3">{form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added</p>
+            )}
           </Section>
         </>
       )}
