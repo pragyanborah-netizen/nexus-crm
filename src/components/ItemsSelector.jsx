@@ -108,6 +108,7 @@ export default function ItemsSelector({ value = [], onChange }) {
             <button
               key={item}
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => addItem(item)}
               className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors"
             >
@@ -117,10 +118,11 @@ export default function ItemsSelector({ value = [], onChange }) {
           {query.trim() && !PRESET_ITEMS.some((i) => i.toLowerCase() === query.toLowerCase()) && (
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={addCustom}
               className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 border-t border-gray-100 flex items-center gap-2"
             >
-              <Plus size={13} /> Add "<span className="font-medium text-gray-700">{query.trim()}</span>"
+              <Plus size={13} /> Add "{query.trim()}"
             </button>
           )}
         </div>
