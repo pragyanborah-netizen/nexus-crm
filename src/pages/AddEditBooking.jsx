@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Save, ArrowLeft, Mail, Sparkles } from "lucide-react";
+import ItemsSelector from "../components/ItemsSelector";
 
 const Section = ({ title, children }) => (
   <div className="bg-white rounded-lg shadow mb-5">
@@ -93,7 +94,7 @@ export default function AddEditBooking() {
     customer_mobile: "", customer_phone_info: "", 
     pickup_address: "", pickup_suburb: "", pickup_state: "VIC", pickup_postcode: "", pickup_floor: "", pickup_elevator: false,
     delivery_address: "", delivery_suburb: "", delivery_state: "VIC", delivery_postcode: "", delivery_floor: "", delivery_elevator: false,
-    move_date: "", move_time: "", service_type: "", num_movers: "", truck_size: "", truck_assigned: "",
+    move_date: "", move_time: "", service_type: "", items_to_move: [], num_movers: "", truck_size: "", truck_assigned: "",
     estimated_hours: "", actual_hours: "", price: "", deposit: "", balance_due: "", payment_method: "",
     notes: "", internal_notes: "",
   });
@@ -290,6 +291,9 @@ export default function AddEditBooking() {
               <option value="">-- Select Service --</option>
               {["House Removal","Office Removal","Furniture Removal","Packing & Unpacking","Storage","Interstate"].map(s => <option key={s}>{s}</option>)}
             </select>
+          </Field>
+          <Field label="Items to Move" full>
+            <ItemsSelector value={form.items_to_move || []} onChange={(v) => set("items_to_move", v)} />
           </Field>
           <Field label="Number of Movers">
             <input className={inputClass} type="number" value={form.num_movers} onChange={(e) => set("num_movers", e.target.value)} placeholder="e.g. 2" min="1" />

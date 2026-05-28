@@ -130,6 +130,13 @@
         "Interstate"
       ]
     },
+    "items_to_move": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Items to Move"
+    },
     "num_movers": {
       "type": "number",
       "title": "Number of Movers"
