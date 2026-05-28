@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays } from "lucide-react";
+import DiaryModal from "../components/DiaryModal";
 import ItemsSelector from "../components/ItemsSelector";
 
 const TABS = [
@@ -124,6 +125,7 @@ export default function AddEditBooking() {
   };
 
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showDiary, setShowDiary] = useState(false);
 
   const handleSendEmail = async () => {
     if (!form.customer_email) { alert("No customer email address on file."); return; }
@@ -155,6 +157,13 @@ export default function AddEditBooking() {
           </div>
         </div>
         <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowDiary(true)}
+            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
+          >
+            <CalendarDays size={16} /> Diary
+          </button>
           {form.customer_email && (
             <button
               type="button"
@@ -474,6 +483,10 @@ export default function AddEditBooking() {
             </div>
           </Section>
         </>
+      )}
+
+      {showDiary && (
+        <DiaryModal onClose={() => setShowDiary(false)} initialDate={form.move_date || undefined} />
       )}
     </div>
   );
