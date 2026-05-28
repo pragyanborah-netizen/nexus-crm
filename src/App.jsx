@@ -13,6 +13,7 @@ import AddEditBooking from './pages/AddEditBooking';
 import CustomerManagement from './pages/CustomerManagement';
 import TrucksManagement from './pages/TrucksManagement';
 import AgentsReport from './pages/AgentsReport';
+import Diary from './pages/Diary';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/bookings" element={<Bookings />} />
+        <Route path="/diary" element={<Diary />} />
         <Route path="/bookings/new" element={<AddEditBooking />} />
         <Route path="/bookings/:id" element={<AddEditBooking />} />
         <Route path="/bookings/:id/edit" element={<AddEditBooking />} />
