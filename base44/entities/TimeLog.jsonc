@@ -1,0 +1,44 @@
+{
+  "name": "TimeLog",
+  "type": "object",
+  "properties": {
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+    },
+    "start_time": {
+      "type": "string",
+      "title": "Start Time"
+    },
+    "end_time": {
+      "type": "string",
+      "title": "End Time"
+    },
+    "break_minutes": {
+      "type": "number",
+      "title": "Break (minutes)",
+      "default": 0
+    },
+    "hours_worked": {
+      "type": "number",
+      "title": "Hours Worked"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Reference"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "employee_name",
+    "date"
+  ]
+}

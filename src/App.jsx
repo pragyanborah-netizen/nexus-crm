@@ -14,6 +14,7 @@ import CustomerManagement from './pages/CustomerManagement';
 import TrucksManagement from './pages/TrucksManagement';
 import AgentsReport from './pages/AgentsReport';
 import Diary from './pages/Diary';
+import TimeLog from './pages/TimeLog';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
         <Route path="/customers" element={<CustomerManagement />} />
         <Route path="/trucks" element={<TrucksManagement />} />
         <Route path="/agents-report" element={<AgentsReport />} />
+        <Route path="/time-log" element={<TimeLog />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
