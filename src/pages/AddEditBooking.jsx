@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save, ArrowLeft, Mail, Sparkles } from "lucide-react";
 
 const Section = ({ title, children }) => (
   <div className="bg-white rounded-lg shadow mb-5">
@@ -42,6 +42,49 @@ export default function AddEditBooking() {
     queryFn: () => base44.entities.Booking.get(id),
     enabled: isEdit,
   });
+
+  const [emailText, setEmailText] = useState("");
+  const [showEmailParser, setShowEmailParser] = useState(false);
+  const [parsing, setParsing] = useState(false);
+
+  const parseEmail = async () => {
+    if (!emailText.trim()) return;
+    setParsing(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Extract customer details from this email. Return only what you can find.\n\nEmail:\n${emailText}`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          first_name: { type: "string" },
+          last_name: { type: "string" },
+          email: { type: "string" },
+          mobile: { type: "string" },
+          pickup_address: { type: "string" },
+          pickup_suburb: { type: "string" },
+          delivery_address: { type: "string" },
+          delivery_suburb: { type: "string" },
+          move_date: { type: "string" },
+          notes: { type: "string" },
+        }
+      }
+    });
+    setParsing(false);
+    setForm((f) => ({
+      ...f,
+      customer_first_name: result.first_name || f.customer_first_name,
+      customer_last_name: result.last_name || f.customer_last_name,
+      customer_email: result.email || f.customer_email,
+      customer_mobile: result.mobile || f.customer_mobile,
+      pickup_address: result.pickup_address || f.pickup_address,
+      pickup_suburb: result.pickup_suburb || f.pickup_suburb,
+      delivery_address: result.delivery_address || f.delivery_address,
+      delivery_suburb: result.delivery_suburb || f.delivery_suburb,
+      move_date: result.move_date || f.move_date,
+      notes: result.notes || f.notes,
+    }));
+    setShowEmailParser(false);
+    setEmailText("");
+  };
 
   const [form, setForm] = useState({
     status: "New", customer_type: "Residential", booking_number: "",
@@ -84,6 +127,43 @@ export default function AddEditBooking() {
           <nav className="text-xs text-gray-400 mb-1">Home &rsaquo; <Link to="/bookings" className="hover:underline">Bookings</Link> &rsaquo; {isEdit ? "Edit Booking" : "Add new Booking"}</nav>
           <h1 className="text-2xl font-bold text-gray-800">{isEdit ? "Edit Booking" : "Add new Booking"}</h1>
         </div>
+      </div>
+
+      {/* Email Parser */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mail size={18} className="text-blue-600" />
+            <span className="font-medium text-blue-800 text-sm">Import from Email</span>
+            <span className="text-blue-500 text-xs">Paste a customer email and AI will fill the form automatically</span>
+          </div>
+          <button type="button" onClick={() => setShowEmailParser(!showEmailParser)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            {showEmailParser ? "Hide" : "Paste Email"}
+          </button>
+        </div>
+        {showEmailParser && (
+          <div className="mt-3">
+            <textarea
+              value={emailText}
+              onChange={(e) => setEmailText(e.target.value)}
+              placeholder="Paste the customer's email here..."
+              rows={5}
+              className="w-full border border-blue-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white"
+            />
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                onClick={parseEmail}
+                disabled={parsing || !emailText.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-50"
+              >
+                <Sparkles size={14} />
+                {parsing ? "Extracting details..." : "Auto-fill from Email"}
+              </button>
+              <button type="button" onClick={() => { setShowEmailParser(false); setEmailText(""); }} className="text-gray-500 text-sm">Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
