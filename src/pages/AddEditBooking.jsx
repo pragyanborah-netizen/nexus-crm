@@ -2,15 +2,15 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, ChevronRight, ChevronLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check } from "lucide-react";
 import ItemsSelector from "../components/ItemsSelector";
 
-const STEPS = [
-  { id: 1, label: "Customer", icon: User },
-  { id: 2, label: "Services", icon: Wrench },
-  { id: 3, label: "Addresses", icon: MapPin },
-  { id: 4, label: "Contents", icon: Package },
-  { id: 5, label: "Summary", icon: Truck },
+const TABS = [
+  { id: "customer", label: "Customer", icon: User },
+  { id: "services", label: "Services", icon: Wrench },
+  { id: "addresses", label: "Addresses", icon: MapPin },
+  { id: "content", label: "Content", icon: Package },
+  { id: "summary", label: "Summary & Pricing", icon: Truck },
 ];
 
 const SERVICE_OPTIONS = ["Packing", "Moving", "Unpacking", "Storage", "Interstate"];
@@ -30,7 +30,9 @@ const Section = ({ title, children }) => (
 
 const Field = ({ label, children, required, full }) => (
   <div className={full ? "md:col-span-2" : ""}>
-    <label className="block text-sm text-gray-600 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>
+    <label className="block text-sm text-gray-600 mb-1">
+      {label}{required && <span className="text-red-500 ml-1">*</span>}
+    </label>
     {children}
   </div>
 );
@@ -57,7 +59,7 @@ export default function AddEditBooking() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = !!id && id !== "new";
-  const [step, setStep] = useState(1);
+  const [tab, setTab] = useState("customer");
 
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => base44.entities.Agent.list() });
   const { data: trucks = [] } = useQuery({ queryKey: ["trucks"], queryFn: () => base44.entities.Truck.list() });
@@ -84,7 +86,7 @@ export default function AddEditBooking() {
 
   useEffect(() => {
     if (existing) {
-      setForm((f) => ({ ...f, ...existing }));
+      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [] }));
       if (existing.additional_stops?.length) {
         setExtraStops(existing.additional_stops.map((s) => ({ address: s, suburb: "", state: "VIC", postcode: "", floor: "", elevator: false })));
       }
@@ -124,36 +126,55 @@ export default function AddEditBooking() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link to="/bookings" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={20} /></Link>
-        <div>
-          <nav className="text-xs text-gray-400 mb-1">Home &rsaquo; <Link to="/bookings" className="hover:underline">Bookings</Link> &rsaquo; {isEdit ? "Edit Booking" : "New Booking"}</nav>
-          <h1 className="text-2xl font-bold text-gray-800">{isEdit ? "Edit Booking" : "New Booking"}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Link to="/bookings" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={20} /></Link>
+          <div>
+            <nav className="text-xs text-gray-400 mb-1">
+              Home › <Link to="/bookings" className="hover:underline">Bookings</Link> › {isEdit ? "Edit Booking" : "New Booking"}
+            </nav>
+            <h1 className="text-2xl font-bold text-gray-800">{isEdit ? "Edit Booking" : "New Booking"}</h1>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saveMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+        >
+          <Save size={16} /> {saveMutation.isPending ? "Saving..." : (isEdit ? "Save Changes" : "Create Booking")}
+        </button>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center justify-between mb-6 bg-white rounded-lg shadow px-6 py-4">
-        {STEPS.map((s, i) => {
-          const Icon = s.icon;
-          const done = step > s.id;
-          const active = step === s.id;
+      {/* Tabs */}
+      <div className="flex gap-1 bg-white rounded-lg shadow px-4 pt-3 mb-5 overflow-x-auto">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.id;
+          const hasContent = t.id === "content" && (form.items_to_move || []).length > 0;
           return (
-            <div key={s.id} className="flex items-center flex-1">
-              <button onClick={() => setStep(s.id)} className="flex flex-col items-center gap-1">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${done ? "bg-green-500 text-white" : active ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}>
-                  {done ? <Check size={15} /> : <Icon size={15} />}
-                </div>
-                <span className={`text-xs font-medium ${active ? "text-blue-600" : done ? "text-green-600" : "text-gray-400"}`}>{s.label}</span>
-              </button>
-              {i < STEPS.length - 1 && <div className={`flex-1 h-0.5 mx-2 mt-[-12px] ${step > s.id ? "bg-green-400" : "bg-gray-200"}`} />}
-            </div>
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap -mb-px ${
+                active ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <Icon size={15} />
+              {t.label}
+              {hasContent && (
+                <span className="bg-blue-100 text-blue-700 text-xs rounded-full px-1.5 py-0.5 font-semibold">
+                  {form.items_to_move.length}
+                </span>
+              )}
+            </button>
           );
         })}
+        <div className="flex-1 border-b-2 border-transparent -mb-px" />
       </div>
 
-      {/* STEP 1: Customer */}
-      {step === 1 && (
+      {/* TAB: Customer */}
+      {tab === "customer" && (
         <Section title="Customer Details">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="First Name" required>
@@ -200,26 +221,24 @@ export default function AddEditBooking() {
         </Section>
       )}
 
-      {/* STEP 2: Services */}
-      {step === 2 && (
+      {/* TAB: Services */}
+      {tab === "services" && (
         <>
           <Section title="Services">
-            <div className="md:col-span-2">
-              <p className="text-sm text-gray-500 mb-4">Select all that apply</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
-                {SERVICE_OPTIONS.map((svc) => {
-                  const active = (form.selected_services || []).includes(svc);
-                  return (
-                    <button key={svc} type="button" onClick={() => toggleService(svc)}
-                      className={`rounded-lg border-2 p-3 text-left transition-all ${active ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 hover:border-gray-300 text-gray-600"}`}>
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 ${active ? "bg-blue-500" : "bg-gray-100"}`}>
-                        {active ? <Check size={13} className="text-white" /> : <Wrench size={13} className="text-gray-400" />}
-                      </div>
-                      <p className="font-medium text-sm">{svc}</p>
-                    </button>
-                  );
-                })}
-              </div>
+            <p className="text-sm text-gray-500 mb-4">Select all that apply</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2">
+              {SERVICE_OPTIONS.map((svc) => {
+                const active = (form.selected_services || []).includes(svc);
+                return (
+                  <button key={svc} type="button" onClick={() => toggleService(svc)}
+                    className={`rounded-lg border-2 p-3 text-left transition-all ${active ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 hover:border-gray-300 text-gray-600"}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 ${active ? "bg-blue-500" : "bg-gray-100"}`}>
+                      {active ? <Check size={13} className="text-white" /> : <Wrench size={13} className="text-gray-400" />}
+                    </div>
+                    <p className="font-medium text-sm">{svc}</p>
+                  </button>
+                );
+              })}
             </div>
           </Section>
           <Section title="Move Details">
@@ -241,8 +260,8 @@ export default function AddEditBooking() {
         </>
       )}
 
-      {/* STEP 3: Addresses */}
-      {step === 3 && (
+      {/* TAB: Addresses */}
+      {tab === "addresses" && (
         <>
           <Section title="Pickup Location">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -263,7 +282,7 @@ export default function AddEditBooking() {
               </Field>
               <Field label="Elevator Available">
                 <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input type="checkbox" checked={form.pickup_elevator} onChange={(e) => set("pickup_elevator", e.target.checked)} className="w-4 h-4" />
+                  <input type="checkbox" checked={!!form.pickup_elevator} onChange={(e) => set("pickup_elevator", e.target.checked)} className="w-4 h-4" />
                   <span className="text-sm text-gray-600">Yes, there is an elevator</span>
                 </label>
               </Field>
@@ -274,7 +293,9 @@ export default function AddEditBooking() {
             <div key={idx} className="bg-white rounded-lg shadow mb-5">
               <div className="px-6 py-3 border-b-2 border-yellow-400 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-800">Extra Stop {idx + 1}</h2>
-                <button type="button" onClick={() => setExtraStops(extraStops.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 text-sm flex items-center gap-1"><Trash2 size={14} /> Remove</button>
+                <button type="button" onClick={() => setExtraStops(extraStops.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 text-sm flex items-center gap-1">
+                  <Trash2 size={14} /> Remove
+                </button>
               </div>
               <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Street Address" full>
@@ -314,7 +335,7 @@ export default function AddEditBooking() {
               </Field>
               <Field label="Elevator Available">
                 <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input type="checkbox" checked={form.delivery_elevator} onChange={(e) => set("delivery_elevator", e.target.checked)} className="w-4 h-4" />
+                  <input type="checkbox" checked={!!form.delivery_elevator} onChange={(e) => set("delivery_elevator", e.target.checked)} className="w-4 h-4" />
                   <span className="text-sm text-gray-600">Yes, there is an elevator</span>
                 </label>
               </Field>
@@ -323,21 +344,21 @@ export default function AddEditBooking() {
         </>
       )}
 
-      {/* STEP 4: Contents */}
-      {step === 4 && (
+      {/* TAB: Content */}
+      {tab === "content" && (
         <>
           <Section title="List of Contents">
-            <div className="md:col-span-2">
-              <p className="text-sm text-gray-500 mb-3">Type to search and add items being moved</p>
-              <ItemsSelector value={form.items_to_move || []} onChange={(v) => set("items_to_move", v)} />
-              {(form.items_to_move || []).length > 0 && (
-                <p className="text-xs text-gray-400 mt-2">{form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added</p>
-              )}
-            </div>
+            <p className="text-sm text-gray-500 mb-3">Search and add all items being moved. You can also type a custom item and press Enter.</p>
+            <ItemsSelector value={form.items_to_move || []} onChange={(v) => set("items_to_move", v)} />
+            {(form.items_to_move || []).length > 0 && (
+              <p className="text-xs text-gray-400 mt-3">
+                {form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added
+              </p>
+            )}
           </Section>
           <Section title="Notes">
             <div className="grid grid-cols-1 gap-4">
-              <Field label="Additional Notes" full>
+              <Field label="Additional Notes for Contents">
                 <textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Any special items, fragile goods, or other notes..." />
               </Field>
             </div>
@@ -345,8 +366,8 @@ export default function AddEditBooking() {
         </>
       )}
 
-      {/* STEP 5: Summary */}
-      {step === 5 && (
+      {/* TAB: Summary & Pricing */}
+      {tab === "summary" && (
         <>
           <Section title="Booking Summary">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -360,13 +381,21 @@ export default function AddEditBooking() {
             </div>
           </Section>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
-            <p className="text-sm font-semibold text-blue-800 mb-1">Recommended based on {(form.items_to_move || []).length} items:</p>
-            <p className="text-sm text-blue-700">Truck: <strong>{rec.size}</strong> &middot; {rec.movers} Movers &middot; ~{rec.baseHours} hrs &middot; Est. <strong>${rec.baseHours * rec.rate}</strong></p>
-            <button type="button" onClick={applyRecommendation} className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded">Apply Recommendation</button>
-          </div>
+          {(form.items_to_move || []).length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
+              <p className="text-sm font-semibold text-blue-800 mb-1">
+                Recommended based on {form.items_to_move.length} items:
+              </p>
+              <p className="text-sm text-blue-700">
+                Truck: <strong>{rec.size}</strong> &middot; {rec.movers} Movers &middot; ~{rec.baseHours} hrs &middot; Est. <strong>${rec.baseHours * rec.rate}</strong>
+              </p>
+              <button type="button" onClick={applyRecommendation} className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded">
+                Apply Recommendation
+              </button>
+            </div>
+          )}
 
-          <Section title="Truck &amp; Pricing">
+          <Section title="Truck & Pricing">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Truck Size">
                 <select className={selectClass} value={form.truck_size} onChange={(e) => set("truck_size", e.target.value)}>
@@ -408,30 +437,6 @@ export default function AddEditBooking() {
           </Section>
         </>
       )}
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <div>
-          {step > 1 ? (
-            <button type="button" onClick={() => setStep(step - 1)} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm px-4 py-2 border border-gray-300 rounded">
-              <ChevronLeft size={16} /> Back
-            </button>
-          ) : (
-            <Link to="/bookings" className="text-gray-500 hover:text-gray-700 text-sm px-4 py-2 border border-gray-300 rounded">Cancel</Link>
-          )}
-        </div>
-        <div>
-          {step < 5 ? (
-            <button type="button" onClick={() => setStep(step + 1)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium">
-              Next <ChevronRight size={16} />
-            </button>
-          ) : (
-            <button type="button" onClick={handleSave} disabled={saveMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50">
-              <Save size={16} /> {saveMutation.isPending ? "Saving..." : (isEdit ? "Save Changes" : "Create Booking")}
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
