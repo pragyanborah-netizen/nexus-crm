@@ -101,7 +101,11 @@ export default function AddEditBooking() {
     if (existing) {
       let parsedRates = {};
       if (existing.moving_rates_config) { try { parsedRates = JSON.parse(existing.moving_rates_config); } catch(e) {} }
-      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [], moving_rates_config: parsedRates }));
+      let parsedPackingRates = {};
+      if (existing.packing_rates_config) { try { parsedPackingRates = JSON.parse(existing.packing_rates_config); } catch(e) {} }
+      let parsedUnpackingRates = {};
+      if (existing.unpacking_rates_config) { try { parsedUnpackingRates = JSON.parse(existing.unpacking_rates_config); } catch(e) {} }
+      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [], moving_rates_config: parsedRates, packing_rates_config: parsedPackingRates, unpacking_rates_config: parsedUnpackingRates }));
       if (existing.additional_stops?.length) {
         setExtraStops(existing.additional_stops.map((s) => ({ address: s, suburb: "", state: "VIC", postcode: "", floor: "", elevator: false })));
       }
@@ -125,6 +129,8 @@ export default function AddEditBooking() {
     const data = {
       ...form,
       moving_rates_config: JSON.stringify(form.moving_rates_config || {}),
+      packing_rates_config: JSON.stringify(form.packing_rates_config || {}),
+      unpacking_rates_config: JSON.stringify(form.unpacking_rates_config || {}),
       additional_stops: extraStops.filter((s) => s.address || s.suburb).map((s) => [s.address, s.suburb, s.state].filter(Boolean).join(", ")),
       flat_rate_charges: JSON.stringify(flatRates),
     };
@@ -638,6 +644,43 @@ Write the email body only (no subject line in the body). Address the customer by
 
           <Section title="Truck & Pricing">
 
+            {/* Packing Pricing */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Packing Pricing ($/hr)</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-4 py-2 text-left text-gray-600 font-semibold border-b border-gray-200">Service</th>
+                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">2 People</th>
+                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">3 People</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-white">
+                      <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-100">Packing</td>
+                      <td className="px-4 py-2 border-b border-gray-100">
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0.00"
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
+                          value={(form.packing_rates_config || {})["2P"] || ""}
+                          onChange={(e) => set("packing_rates_config", { ...(form.packing_rates_config || {}), "2P": e.target.value })}
+                        />
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-100">
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0.00"
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
+                          value={(form.packing_rates_config || {})["3P"] || ""}
+                          onChange={(e) => set("packing_rates_config", { ...(form.packing_rates_config || {}), "3P": e.target.value })}
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             {/* Hourly Rates Grid */}
             <div className="mb-6">
               <p className="text-sm font-semibold text-gray-700 mb-3">Hourly Rates by Truck &amp; Movers ($/hr)</p>
@@ -688,6 +731,43 @@ Write the email body only (no subject line in the body). Address the customer by
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Unpacking Pricing */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Unpacking Pricing ($/hr)</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-4 py-2 text-left text-gray-600 font-semibold border-b border-gray-200">Service</th>
+                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">2 People</th>
+                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">3 People</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-white">
+                      <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-100">Unpacking</td>
+                      <td className="px-4 py-2 border-b border-gray-100">
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0.00"
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
+                          value={(form.unpacking_rates_config || {})["2P"] || ""}
+                          onChange={(e) => set("unpacking_rates_config", { ...(form.unpacking_rates_config || {}), "2P": e.target.value })}
+                        />
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-100">
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0.00"
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
+                          value={(form.unpacking_rates_config || {})["3P"] || ""}
+                          onChange={(e) => set("unpacking_rates_config", { ...(form.unpacking_rates_config || {}), "3P": e.target.value })}
+                        />
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
