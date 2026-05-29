@@ -477,45 +477,62 @@ Write the email body only (no subject line in the body). Address the customer by
 
                         {/* Packing pricing */}
                         {svc === "Packing" && (
-                          <>
-                            <div className="border-t border-blue-200 pt-2">
-                              <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rates</p>
-                              <div className="grid grid-cols-3 gap-1.5 mb-2">
-                                <div>
-                                  <label className="block text-xs text-blue-600 mb-1">2 People ($/hr)</label>
-                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_2_people || ""} onChange={(e) => set("packing_rate_2_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-blue-600 mb-1">3 People ($/hr)</label>
-                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_3_people || ""} onChange={(e) => set("packing_rate_3_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-blue-600 mb-1">4 People ($/hr)</label>
-                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_4_people || ""} onChange={(e) => set("packing_rate_4_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
-                                </div>
+                          <div className="border-t border-blue-200 pt-2">
+                            <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rate</p>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Rate ($/hr)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_per_hour || ""} onChange={(e) => { const r = e.target.value; set("packing_rate_per_hour", r); if (r && form.packing_hours) set("packing_total", (parseFloat(r) * parseFloat(form.packing_hours)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
                               </div>
-                              <div className="grid grid-cols-2 gap-1.5">
-                                <div>
-                                  <label className="block text-xs text-blue-600 mb-1"># People</label>
-                                  <select className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" value={form.packing_num_people || ""} onChange={(e) => { const n = e.target.value; set("packing_num_people", n); const rateKey = n === "2" ? "packing_rate_2_people" : n === "3" ? "packing_rate_3_people" : n === "4" ? "packing_rate_4_people" : null; if (rateKey && form[rateKey] && form.packing_hours) set("packing_total", (parseFloat(form[rateKey]) * parseFloat(form.packing_hours)).toFixed(2)); }} onClick={(e) => e.stopPropagation()}>
-                                    <option value="">--</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-blue-600 mb-1">Hours</label>
-                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.packing_hours || ""} onChange={(e) => { const h = e.target.value; set("packing_hours", h); const n = form.packing_num_people; const rateKey = n === "2" ? "packing_rate_2_people" : n === "3" ? "packing_rate_3_people" : n === "4" ? "packing_rate_4_people" : null; if (rateKey && form[rateKey] && h) set("packing_total", (parseFloat(form[rateKey]) * parseFloat(h)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
-                                </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1"># People</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="1" step="1" placeholder="e.g. 2" value={form.packing_num_people || ""} onChange={(e) => set("packing_num_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
                               </div>
-                              {form.packing_total && (
-                                <div className="mt-2 bg-blue-100 rounded px-2 py-1.5">
-                                  <p className="text-xs font-semibold text-blue-800">Total: ${parseFloat(form.packing_total).toLocaleString()}</p>
-                                </div>
-                              )}
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Hours</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.packing_hours || ""} onChange={(e) => { const h = e.target.value; set("packing_hours", h); if (form.packing_rate_per_hour && h) set("packing_total", (parseFloat(form.packing_rate_per_hour) * parseFloat(h)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Total ($)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_total || ""} onChange={(e) => set("packing_total", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                              </div>
                             </div>
-                          </>
+                            {form.packing_total && (
+                              <div className="mt-2 bg-blue-100 rounded px-2 py-1.5">
+                                <p className="text-xs font-semibold text-blue-800">Total: ${parseFloat(form.packing_total).toLocaleString()}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Moving pricing */}
+                        {svc === "Moving" && (
+                          <div className="border-t border-blue-200 pt-2">
+                            <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rate</p>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Rate ($/hr)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_rate_per_hour || ""} onChange={(e) => { const r = e.target.value; set("moving_rate_per_hour", r); if (r && form.moving_hours) set("moving_total", (parseFloat(r) * parseFloat(form.moving_hours)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1"># People</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="1" step="1" placeholder="e.g. 2" value={form.moving_num_people || ""} onChange={(e) => set("moving_num_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Hours</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.moving_hours || ""} onChange={(e) => { const h = e.target.value; set("moving_hours", h); if (form.moving_rate_per_hour && h) set("moving_total", (parseFloat(form.moving_rate_per_hour) * parseFloat(h)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Total ($)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_total || ""} onChange={(e) => set("moving_total", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                            </div>
+                            {form.moving_total && (
+                              <div className="mt-2 bg-blue-100 rounded px-2 py-1.5">
+                                <p className="text-xs font-semibold text-blue-800">Total: ${parseFloat(form.moving_total).toLocaleString()}</p>
+                              </div>
+                            )}
+                          </div>
                         )}
 
                         {/* Unpacking pricing */}
