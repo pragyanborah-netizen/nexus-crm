@@ -80,6 +80,7 @@ export default function AddEditBooking() {
     additional_stops: [],
     move_date: "", move_time: "", service_type: "",
     items_to_move: [],
+    packaging_supplies_date: "", packing_date: "", moving_date: "", unpacking_date: "",
     distance_km: "",
     num_movers: "", truck_size: "", truck_assigned: "",
     estimated_hours: "", actual_hours: "",
@@ -431,6 +432,22 @@ Write the email body only (no subject line in the body). Address the customer by
                   </button>
                 );
               })}
+            </div>
+
+            {/* Per-service dates */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Packaging Supplies Date">
+                <input className={inputClass} type="date" value={form.packaging_supplies_date} onChange={(e) => set("packaging_supplies_date", e.target.value)} />
+              </Field>
+              <Field label="Packing Date">
+                <input className={inputClass} type="date" value={form.packing_date} onChange={(e) => set("packing_date", e.target.value)} />
+              </Field>
+              <Field label="Moving Date">
+                <input className={inputClass} type="date" value={form.moving_date} onChange={(e) => set("moving_date", e.target.value)} />
+              </Field>
+              <Field label="Unpacking Date">
+                <input className={inputClass} type="date" value={form.unpacking_date} onChange={(e) => set("unpacking_date", e.target.value)} />
+              </Field>
             </div>
           </Section>
           <Section title="Move Details">

@@ -72,6 +72,26 @@
       },
       "title": "Selected Services"
     },
+    "packaging_supplies_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Packaging Supplies Date"
+    },
+    "packing_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Packing Date"
+    },
+    "moving_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Moving Date"
+    },
+    "unpacking_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Unpacking Date"
+    },
     "pickup_address": {
       "type": "string",
       "title": "Pickup Address"
