@@ -3,7 +3,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, FileText } from "lucide-react";
+import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import ItemsSelector from "../components/ItemsSelector";
 
@@ -288,6 +289,171 @@ Write the email body only (no subject line in the body). Address the customer by
     alert("Email sent to " + form.customer_email);
   };
 
+  const handleGeneratePdf = () => {
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const col2 = 110;
+    let y = 0;
+
+    // Header bar
+    doc.setFillColor(29, 78, 216);
+    doc.rect(0, 0, pageW, 38, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Move On Australia", margin, 18);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Removal Quote", margin, 28);
+    // Booking number top right
+    if (form.booking_number) {
+      doc.text(`#${form.booking_number}`, pageW - margin, 18, { align: "right" });
+    }
+    y = 50;
+
+    // Status badge
+    doc.setFillColor(239, 246, 255);
+    doc.roundedRect(margin, y - 6, 50, 10, 2, 2, "F");
+    doc.setTextColor(29, 78, 216);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(form.status || "New", margin + 25, y + 1, { align: "center" });
+    y += 12;
+
+    // Customer info
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${form.customer_first_name} ${form.customer_last_name}`, margin, y);
+    y += 7;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    if (form.customer_email) doc.text(form.customer_email, margin, y), y += 5;
+    if (form.customer_mobile) doc.text(form.customer_mobile, margin, y), y += 5;
+    y += 4;
+
+    // Divider
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, y, pageW - margin, y);
+    y += 8;
+
+    // Move details section
+    const sectionTitle = (title) => {
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y - 5, pageW - margin * 2, 9, "F");
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, margin + 2, y + 1);
+      y += 10;
+    };
+
+    const row = (label, value, right = false) => {
+      if (!value) return;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 116, 139);
+      doc.text(label, right ? col2 : margin, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 41, 59);
+      doc.text(String(value), right ? col2 + 30 : margin + 30, y);
+      if (!right) y += 6;
+    };
+
+    const dualRow = (l1, v1, l2, v2) => {
+      const prevY = y;
+      row(l1, v1, false);
+      y = prevY;
+      row(l2, v2, true);
+    };
+
+    sectionTitle("Move Details");
+    dualRow("Move Date:", form.move_date || "TBC", "Time:", form.move_time || "");
+    dualRow("Service:", form.service_type || (form.selected_services || []).join(", ") || "—", "Type:", form.customer_type || "");
+    y += 4;
+
+    sectionTitle("Locations");
+    row("Pickup:", [form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC");
+    if (form.pickup_floor) row("Pickup Floor:", form.pickup_floor);
+    row("Delivery:", [form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC");
+    if (form.delivery_floor) row("Delivery Floor:", form.delivery_floor);
+    if (form.distance_km) row("Distance:", `${form.distance_km} km`);
+    y += 4;
+
+    // Job details
+    sectionTitle("Job Details");
+    if (form.truck_size) dualRow("Truck:", form.truck_size, "Movers:", form.num_movers ? `${form.num_movers} movers` : "");
+    if (form.estimated_hours) dualRow("Est. Hours:", `${form.estimated_hours} hrs`, "Truck Assigned:", form.truck_assigned || "");
+    y += 4;
+
+    // Items
+    if ((form.items_to_move || []).length > 0) {
+      sectionTitle(`Items to Move (${form.items_to_move.length})`);
+      const cols = 3;
+      const colW = (pageW - margin * 2) / cols;
+      form.items_to_move.forEach((item, i) => {
+        if (y > 265) { doc.addPage(); y = 20; }
+        const col = i % cols;
+        const row2 = Math.floor(i / cols);
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 41, 59);
+        doc.text(`• ${item}`, margin + col * colW, y + row2 * 5.5);
+        if (col === cols - 1 || i === form.items_to_move.length - 1) y += 5.5;
+      });
+      y += 4;
+    }
+
+    // Pricing
+    if (form.price || form.packing_total || form.moving_total || form.unpacking_total) {
+      if (y > 230) { doc.addPage(); y = 20; }
+      sectionTitle("Pricing");
+      if (form.packing_total) row("Packing:", `$${Number(form.packing_total).toLocaleString()}`);
+      if (form.moving_total) row("Moving:", `$${Number(form.moving_total).toLocaleString()}`);
+      if (form.unpacking_total) row("Unpacking:", `$${Number(form.unpacking_total).toLocaleString()}`);
+      const parsedFlat = (() => { try { return JSON.parse(form.flat_rate_charges || "[]"); } catch(e) { return []; } })();
+      parsedFlat.forEach(fr => { if (fr.description && fr.amount) row(`${fr.description}:`, `$${Number(fr.amount).toLocaleString()}`); });
+      if (form.price) {
+        y += 2;
+        doc.setFillColor(239, 246, 255);
+        doc.rect(margin, y - 5, pageW - margin * 2, 10, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(29, 78, 216);
+        doc.text("TOTAL QUOTE", margin + 2, y + 2);
+        doc.text(`$${Number(form.price).toLocaleString()}`, pageW - margin - 2, y + 2, { align: "right" });
+        y += 14;
+      }
+      if (form.deposit) row("Deposit Required:", `$${Number(form.deposit).toLocaleString()}`);
+    }
+
+    // Notes
+    if (form.notes) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      sectionTitle("Notes");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(51, 65, 85);
+      const lines = doc.splitTextToSize(form.notes, pageW - margin * 2);
+      doc.text(lines, margin, y);
+      y += lines.length * 5 + 4;
+    }
+
+    // Footer
+    const footerY = doc.internal.pageSize.getHeight() - 14;
+    doc.setFillColor(241, 245, 249);
+    doc.rect(0, footerY - 4, pageW, 20, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(148, 163, 184);
+    doc.text("Move On Australia — Thank you for choosing us!", pageW / 2, footerY + 4, { align: "center" });
+
+    const filename = `Quote_${form.customer_last_name || "Customer"}_${form.move_date || "TBC"}.pdf`;
+    doc.save(filename);
+  };
+
   const handleSendEmail = async () => {
     if (!form.customer_email) { alert("No customer email address on file."); return; }
     setSendingEmail(true);
@@ -393,6 +559,13 @@ Write the email body only (no subject line in the body). Address the customer by
               </button>
             </>
           )}
+          <button
+            type="button"
+            onClick={handleGeneratePdf}
+            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
+          >
+            <FileText size={16} /> PDF Quote
+          </button>
           <button
             type="button"
             onClick={handleSave}
