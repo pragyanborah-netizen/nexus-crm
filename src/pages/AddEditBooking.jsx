@@ -642,6 +642,37 @@ Write the email body only (no subject line in the body). Address the customer by
             </div>
           )}
 
+          <Section title="Packing Pricing">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Field label="Number of People">
+                <select className={selectClass} value={form.packing_num_people || ""} onChange={(e) => set("packing_num_people", e.target.value)}>
+                  <option value="">Select</option>
+                  <option value="2">2 People</option>
+                  <option value="3">3 People</option>
+                </select>
+              </Field>
+              <Field label="Hours">
+                <input className={inputClass} type="number" min="0" step="0.5" value={form.packing_hours || ""} onChange={(e) => {
+                  const hrs = parseFloat(e.target.value) || 0;
+                  const rate = parseFloat(form.packing_rate_per_hour) || 0;
+                  set("packing_hours", e.target.value);
+                  if (rate) set("packing_total", (hrs * rate).toFixed(2));
+                }} placeholder="e.g. 3" />
+              </Field>
+              <Field label="Rate ($/hr)">
+                <input className={inputClass} type="number" min="0" step="0.01" value={form.packing_rate_per_hour || ""} onChange={(e) => {
+                  const rate = parseFloat(e.target.value) || 0;
+                  const hrs = parseFloat(form.packing_hours) || 0;
+                  set("packing_rate_per_hour", e.target.value);
+                  if (hrs) set("packing_total", (hrs * rate).toFixed(2));
+                }} placeholder="e.g. 180" />
+              </Field>
+              <Field label="Total ($)">
+                <input className={inputClass + " font-semibold bg-green-50 border-green-300"} type="number" min="0" step="0.01" value={form.packing_total || ""} onChange={(e) => set("packing_total", e.target.value)} placeholder="Auto-calculated" />
+              </Field>
+            </div>
+          </Section>
+
           <Section title="Truck & Pricing">
 
             {/* Packing Pricing */}
@@ -736,7 +767,7 @@ Write the email body only (no subject line in the body). Address the customer by
               </div>
             </div>
 
-            {/* Unpacking Pricing */}
+            {/* Unpacking Pricing - rates grid */}
             <div className="mb-6">
               <p className="text-sm font-semibold text-gray-700 mb-3">Unpacking Pricing ($/hr)</p>
               <div className="overflow-x-auto">
@@ -837,6 +868,38 @@ Write the email body only (no subject line in the body). Address the customer by
               </Field>
             </div>
           </Section>
+
+          <Section title="Unpacking Pricing">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Field label="Number of People">
+                <select className={selectClass} value={form.unpacking_num_people || ""} onChange={(e) => set("unpacking_num_people", e.target.value)}>
+                  <option value="">Select</option>
+                  <option value="2">2 People</option>
+                  <option value="3">3 People</option>
+                </select>
+              </Field>
+              <Field label="Hours">
+                <input className={inputClass} type="number" min="0" step="0.5" value={form.unpacking_hours || ""} onChange={(e) => {
+                  const hrs = parseFloat(e.target.value) || 0;
+                  const rate = parseFloat(form.unpacking_rate_per_hour) || 0;
+                  set("unpacking_hours", e.target.value);
+                  if (rate) set("unpacking_total", (hrs * rate).toFixed(2));
+                }} placeholder="e.g. 2" />
+              </Field>
+              <Field label="Rate ($/hr)">
+                <input className={inputClass} type="number" min="0" step="0.01" value={form.unpacking_rate_per_hour || ""} onChange={(e) => {
+                  const rate = parseFloat(e.target.value) || 0;
+                  const hrs = parseFloat(form.unpacking_hours) || 0;
+                  set("unpacking_rate_per_hour", e.target.value);
+                  if (hrs) set("unpacking_total", (hrs * rate).toFixed(2));
+                }} placeholder="e.g. 160" />
+              </Field>
+              <Field label="Total ($)">
+                <input className={inputClass + " font-semibold bg-green-50 border-green-300"} type="number" min="0" step="0.01" value={form.unpacking_total || ""} onChange={(e) => set("unpacking_total", e.target.value)} placeholder="Auto-calculated" />
+              </Field>
+            </div>
+          </Section>
+
         </>
       )}
 
