@@ -70,7 +70,7 @@ export default function AddEditBooking() {
     status: "New", booking_number: "",
     customer_first_name: "", customer_last_name: "", customer_email: "",
     customer_mobile: "", customer_phone_info: "", customer_type: "Residential",
-    agent_quoted: "", agent_booked: "", agent_inquired: "",
+    agent_quoted: "", agent_booked: "", agent_inquired: "", agent_pending: "",
     selected_services: [],
     pickup_address: "", pickup_suburb: "", pickup_state: "VIC", pickup_postcode: "", pickup_floor: "", pickup_elevator: false,
     delivery_address: "", delivery_suburb: "", delivery_state: "VIC", delivery_postcode: "", delivery_floor: "", delivery_elevator: false,
@@ -406,13 +406,25 @@ Write the email body only (no subject line in the body). Address the customer by
             <Field label="Booking Number">
               <input className={inputClass} value={form.booking_number} onChange={(e) => set("booking_number", e.target.value)} placeholder="Auto-generated if blank" />
             </Field>
-            <Field label="Agent who Quoted">
+            <Field label="Agent - Enquiry">
+              <select className={selectClass} value={form.agent_inquired} onChange={(e) => set("agent_inquired", e.target.value)}>
+                <option value="">-- Select Agent --</option>
+                {agentOptions.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Agent - Quoted">
               <select className={selectClass} value={form.agent_quoted} onChange={(e) => set("agent_quoted", e.target.value)}>
                 <option value="">-- Select Agent --</option>
                 {agentOptions.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)}
               </select>
             </Field>
-            <Field label="Agent who Booked">
+            <Field label="Agent - Pending">
+              <select className={selectClass} value={form.agent_pending} onChange={(e) => set("agent_pending", e.target.value)}>
+                <option value="">-- Select Agent --</option>
+                {agentOptions.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Agent - Booked">
               <select className={selectClass} value={form.agent_booked} onChange={(e) => set("agent_booked", e.target.value)}>
                 <option value="">-- Select Agent --</option>
                 {agentOptions.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)}

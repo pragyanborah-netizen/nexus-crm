@@ -19,17 +19,21 @@
       ],
       "default": "New"
     },
+    "agent_inquired": {
+      "type": "string",
+      "title": "Agent - Enquiry"
+    },
     "agent_quoted": {
       "type": "string",
-      "title": "Agent who Quoted"
+      "title": "Agent - Quoted"
+    },
+    "agent_pending": {
+      "type": "string",
+      "title": "Agent - Pending"
     },
     "agent_booked": {
       "type": "string",
-      "title": "Agent who Booked"
-    },
-    "agent_inquired": {
-      "type": "string",
-      "title": "Agent who Inquired"
+      "title": "Agent - Booked"
     },
     "customer_first_name": {
       "type": "string",
