@@ -4,9 +4,10 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Truck, MapPin, User, Phone, Clock, DollarSign, Users } from "lucide-react";
 
 const statusColors = {
-  New: "bg-blue-100 text-blue-700 border-blue-200",
-  Confirmed: "bg-green-100 text-green-700 border-green-200",
-  "In Progress": "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Enquiry: "bg-sky-100 text-sky-700 border-sky-200",
+  Quoted: "bg-purple-100 text-purple-700 border-purple-200",
+  "Tentative Booking": "bg-yellow-100 text-yellow-700 border-yellow-200",
+  "Booked Job": "bg-green-100 text-green-700 border-green-200",
   Completed: "bg-gray-100 text-gray-600 border-gray-200",
   Cancelled: "bg-red-100 text-red-700 border-red-200",
   "No Show": "bg-orange-100 text-orange-700 border-orange-200",

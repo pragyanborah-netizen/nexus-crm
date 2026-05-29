@@ -5,9 +5,10 @@ import { useState } from "react";
 import { Plus, Search, Trash2, Edit, Eye } from "lucide-react";
 
 const statusColors = {
-  New: "bg-blue-100 text-blue-700",
-  Confirmed: "bg-green-100 text-green-700",
-  "In Progress": "bg-yellow-100 text-yellow-700",
+  Enquiry: "bg-sky-100 text-sky-700",
+  Quoted: "bg-purple-100 text-purple-700",
+  "Tentative Booking": "bg-yellow-100 text-yellow-700",
+  "Booked Job": "bg-green-100 text-green-700",
   Completed: "bg-gray-100 text-gray-600",
   Cancelled: "bg-red-100 text-red-700",
   "No Show": "bg-orange-100 text-orange-700",
@@ -65,7 +66,7 @@ export default function Bookings() {
           className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
         >
           <option value="">All Statuses</option>
-          {["New", "Confirmed", "In Progress", "Completed", "Cancelled", "No Show"].map((s) => (
+          {["Enquiry", "Quoted", "Tentative Booking", "Booked Job", "Completed", "Cancelled", "No Show"].map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>

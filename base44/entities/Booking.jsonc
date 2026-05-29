@@ -10,14 +10,15 @@
       "type": "string",
       "title": "Status",
       "enum": [
-        "New",
-        "Confirmed",
-        "In Progress",
+        "Enquiry",
+        "Quoted",
+        "Tentative Booking",
+        "Booked Job",
         "Completed",
         "Cancelled",
         "No Show"
       ],
-      "default": "New"
+      "default": "Enquiry"
     },
     "agent_inquired": {
       "type": "string",
