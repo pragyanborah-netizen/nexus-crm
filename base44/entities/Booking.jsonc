@@ -168,6 +168,10 @@
       "type": "number",
       "title": "Unpacking Total ($)"
     },
+    "flat_rate_charges": {
+      "type": "string",
+      "title": "Flat Rate Charges (JSON)"
+    },
     "pickup_address": {
       "type": "string",
       "title": "Pickup Address"
