@@ -16,6 +16,7 @@ import AgentsReport from './pages/AgentsReport';
 import Diary from './pages/Diary';
 import TimeLog from './pages/TimeLog';
 import EmailTemplates from './pages/EmailTemplates';
+import Calendars from './pages/Calendars';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -63,6 +64,7 @@ const AuthenticatedApp = () => {
         <Route path="/agents-report" element={<AgentsReport />} />
         <Route path="/time-log" element={<TimeLog />} />
         <Route path="/email-templates" element={<EmailTemplates />} />
+        <Route path="/calendars" element={<Calendars />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

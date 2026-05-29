@@ -14,7 +14,7 @@ const TABS = [
   { id: "summary", label: "Summary & Pricing", icon: Truck },
 ];
 
-const SERVICE_OPTIONS = ["Packing", "Moving", "Unpacking", "Storage", "Interstate"];
+const SERVICE_OPTIONS = ["Packaging Supplies", "Packing", "Moving", "Unpacking"];
 
 const inputClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500";
 const selectClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white";
@@ -453,7 +453,7 @@ Write the email body only (no subject line in the body). Address the customer by
               <Field label="Service Category">
                 <select className={selectClass} value={form.service_type} onChange={(e) => set("service_type", e.target.value)}>
                   <option value="">-- Select --</option>
-                  {["House Removal","Office Removal","Furniture Removal","Packing & Unpacking","Storage","Interstate"].map(s => <option key={s}>{s}</option>)}
+                  {["House Removal","Office Removal","Furniture Removal","Packaging Supplies","Packing","Moving","Unpacking"].map(s => <option key={s}>{s}</option>)}
                 </select>
               </Field>
             </div>

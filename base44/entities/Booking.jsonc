@@ -155,9 +155,10 @@
         "House Removal",
         "Office Removal",
         "Furniture Removal",
-        "Packing & Unpacking",
-        "Storage",
-        "Interstate"
+        "Packaging Supplies",
+        "Packing",
+        "Moving",
+        "Unpacking"
       ]
     },
     "items_to_move": {
