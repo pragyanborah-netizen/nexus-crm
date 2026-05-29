@@ -448,22 +448,6 @@ Write the email body only (no subject line in the body). Address the customer by
               })}
             </div>
           </Section>
-          <Section title="Move Details">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Move Date" required>
-                <input className={inputClass} type="date" value={form.move_date} onChange={(e) => set("move_date", e.target.value)} />
-              </Field>
-              <Field label="Move Time">
-                <input className={inputClass} type="time" value={form.move_time} onChange={(e) => set("move_time", e.target.value)} />
-              </Field>
-              <Field label="Service Category">
-                <select className={selectClass} value={form.service_type} onChange={(e) => set("service_type", e.target.value)}>
-                  <option value="">-- Select --</option>
-                  {["House Removal","Office Removal","Furniture Removal","Packaging Supplies","Packing","Moving","Unpacking"].map(s => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-            </div>
-          </Section>
         </>
       )}
 
