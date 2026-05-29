@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X } from "lucide-react";
 import DiaryModal from "../components/DiaryModal";
 import ItemsSelector from "../components/ItemsSelector";
 
@@ -171,6 +171,65 @@ Provide a realistic Australian removalist quote. Factor in: item volume and weig
 
   const [aiReasoning, setAiReasoning] = useState("");
   const [showDiary, setShowDiary] = useState(false);
+  const [showAiEmailModal, setShowAiEmailModal] = useState(false);
+  const [aiEmailDraft, setAiEmailDraft] = useState("");
+  const [aiEmailSubject, setAiEmailSubject] = useState("");
+  const [aiEmailPrompt, setAiEmailPrompt] = useState("");
+  const [generatingEmail, setGeneratingEmail] = useState(false);
+  const [sendingAiEmail, setSendingAiEmail] = useState(false);
+
+  const handleGenerateAiEmail = async () => {
+    setGeneratingEmail(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are a professional customer service agent for Move On Australia, a removalist company. 
+Draft a professional, friendly email reply to a customer based on the following booking context and staff instruction.
+
+Customer: ${form.customer_first_name} ${form.customer_last_name}
+Email: ${form.customer_email || 'unknown'}
+Move Date: ${form.move_date || 'TBC'}
+Pickup: ${[form.pickup_suburb, form.pickup_state].filter(Boolean).join(', ') || 'TBC'}
+Delivery: ${[form.delivery_suburb, form.delivery_state].filter(Boolean).join(', ') || 'TBC'}
+Service: ${form.service_type || 'House Removal'}
+Status: ${form.status}
+${form.price ? `Quoted Price: $${form.price}` : ''}
+${form.items_to_move?.length ? `Items to move: ${form.items_to_move.join(', ')}` : ''}
+
+Staff instruction / context for this reply:
+${aiEmailPrompt || 'Write a general follow-up email confirming the booking details and offering to answer any questions.'}
+
+Write the email body only (no subject line in the body). Address the customer by first name. Sign off as "The Move On Australia Team". Keep it concise and professional.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          subject: { type: "string" },
+          body: { type: "string" }
+        }
+      }
+    });
+    if (result) {
+      setAiEmailSubject(result.subject || `Re: Your Move on ${form.move_date || 'upcoming date'}`);
+      setAiEmailDraft(result.body || "");
+    }
+    setGeneratingEmail(false);
+  };
+
+  const handleSendAiEmail = async () => {
+    if (!form.customer_email) { alert("No customer email on file."); return; }
+    setSendingAiEmail(true);
+    const htmlBody = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
+  <div style="background:#1d4ed8;padding:20px;border-radius:8px 8px 0 0;">
+    <h1 style="color:white;margin:0;font-size:20px;">Move On Australia</h1>
+  </div>
+  <div style="padding:20px;border:1px solid #e2e8f0;border-top:none;white-space:pre-line;">${aiEmailDraft}</div>
+  <div style="background:#f1f5f9;padding:12px 20px;border-radius:0 0 8px 8px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#94a3b8;">Move On Australia</p>
+  </div>
+</div>`;
+    await base44.integrations.Core.SendEmail({ to: form.customer_email, subject: aiEmailSubject, body: htmlBody });
+    setSendingAiEmail(false);
+    setShowAiEmailModal(false);
+    alert("Email sent to " + form.customer_email);
+  };
 
   const handleSendEmail = async () => {
     if (!form.customer_email) { alert("No customer email address on file."); return; }
@@ -259,14 +318,23 @@ Provide a realistic Australian removalist quote. Factor in: item volume and weig
             <CalendarDays size={16} /> Diary
           </button>
           {form.customer_email && (
-            <button
-              type="button"
-              onClick={handleSendEmail}
-              disabled={sendingEmail}
-              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
-            >
-              <Mail size={16} /> {sendingEmail ? "Sending..." : "Send Email"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => { setAiEmailPrompt(""); setAiEmailDraft(""); setAiEmailSubject(""); setShowAiEmailModal(true); }}
+                className="bg-white border border-purple-300 hover:bg-purple-50 text-purple-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
+              >
+                <Mail size={16} /> ✨ AI Reply
+              </button>
+              <button
+                type="button"
+                onClick={handleSendEmail}
+                disabled={sendingEmail}
+                className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+              >
+                <Mail size={16} /> {sendingEmail ? "Sending..." : "Send Quote"}
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -612,6 +680,73 @@ Provide a realistic Australian removalist quote. Factor in: item volume and weig
 
       {showDiary && (
         <DiaryModal onClose={() => setShowDiary(false)} initialDate={form.move_date || undefined} />
+      )}
+
+      {showAiEmailModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <div>
+                <h2 className="font-bold text-gray-800 text-lg">✨ AI Email Reply</h2>
+                <p className="text-sm text-gray-500">To: {form.customer_email}</p>
+              </div>
+              <button onClick={() => setShowAiEmailModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">What should the AI reply about?</label>
+                <textarea
+                  className={inputClass}
+                  rows={3}
+                  value={aiEmailPrompt}
+                  onChange={(e) => setAiEmailPrompt(e.target.value)}
+                  placeholder="e.g. Confirm the booking for Friday, mention we'll call the day before, ask if they need packing materials..."
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerateAiEmail}
+                disabled={generatingEmail}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50"
+              >
+                {generatingEmail ? (
+                  <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating...</>
+                ) : (
+                  <>✨ Generate Draft</>
+                )}
+              </button>
+              {aiEmailDraft && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input className={inputClass} value={aiEmailSubject} onChange={(e) => setAiEmailSubject(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Body (editable)</label>
+                    <textarea
+                      className={inputClass}
+                      rows={12}
+                      value={aiEmailDraft}
+                      onChange={(e) => setAiEmailDraft(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            {aiEmailDraft && (
+              <div className="px-5 py-4 border-t flex justify-end gap-2">
+                <button onClick={() => setShowAiEmailModal(false)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+                <button
+                  onClick={handleSendAiEmail}
+                  disabled={sendingAiEmail}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Mail size={14} /> {sendingAiEmail ? "Sending..." : "Send Email"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
