@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -59,7 +60,9 @@ export default function AddEditBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const isEdit = !!id && id !== "new";
+
   const [tab, setTab] = useState("customer");
 
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => base44.entities.Agent.list() });
@@ -70,7 +73,7 @@ export default function AddEditBooking() {
     status: "New", booking_number: "",
     customer_first_name: "", customer_last_name: "", customer_email: "",
     customer_mobile: "", customer_phone_info: "", customer_type: "Residential",
-    agent_quoted: "", agent_booked: "", agent_inquired: "", agent_pending: "",
+    agent_quoted: user?.full_name || "", agent_booked: user?.full_name || "", agent_inquired: user?.full_name || "", agent_pending: user?.full_name || "",
     selected_services: [],
     pickup_address: "", pickup_suburb: "", pickup_state: "VIC", pickup_postcode: "", pickup_floor: "", pickup_elevator: false,
     delivery_address: "", delivery_suburb: "", delivery_state: "VIC", delivery_postcode: "", delivery_floor: "", delivery_elevator: false,
