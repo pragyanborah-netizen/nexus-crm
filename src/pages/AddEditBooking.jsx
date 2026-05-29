@@ -130,17 +130,66 @@ export default function AddEditBooking() {
   const handleSendEmail = async () => {
     if (!form.customer_email) { alert("No customer email address on file."); return; }
     setSendingEmail(true);
-    const itemsList = (form.items_to_move || []).length > 0
-      ? "\n\nItems to Move:\n" + form.items_to_move.map(i => "  \u2022 " + i).join("\n")
-      : "";
-    const body = `Dear ${form.customer_first_name},\n\nThis is your booking confirmation with Move On Australia.\n\nBooking Details:\n  Date: ${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}\n  Pickup: ${[form.pickup_address, form.pickup_suburb, form.pickup_state].filter(Boolean).join(", ") || "TBC"}\n  Delivery: ${[form.delivery_address, form.delivery_suburb, form.delivery_state].filter(Boolean).join(", ") || "TBC"}${itemsList}\n\nIf you have any questions, please don't hesitate to contact us.\n\nThank you for choosing Move On Australia!`;
+
+    const itemsHtml = (form.items_to_move || []).length > 0
+      ? `<h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">📦 Items to Move</h3>
+         <table style="width:100%;border-collapse:collapse;">
+           ${form.items_to_move.map((item, i) => `
+             <tr style="background:${i % 2 === 0 ? '#f8fafc' : '#ffffff'}">
+               <td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:14px;">✓ ${item}</td>
+             </tr>`).join("")}
+         </table>`
+      : `<p style="color:#64748b;font-style:italic;">No items listed yet.</p>`;
+
+    const body = `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
+  <div style="background:#1d4ed8;padding:20px;border-radius:8px 8px 0 0;">
+    <h1 style="color:white;margin:0;font-size:22px;">Move On Australia</h1>
+    <p style="color:#bfdbfe;margin:4px 0 0;">Removal Quote</p>
+  </div>
+  <div style="background:#f1f5f9;padding:16px 20px;">
+    <p style="margin:0;font-size:14px;color:#475569;">Quote prepared for <strong>${form.customer_first_name} ${form.customer_last_name}</strong></p>
+  </div>
+  <div style="padding:20px;border:1px solid #e2e8f0;border-top:none;">
+    <p>Dear ${form.customer_first_name},</p>
+    <p>Thank you for choosing Move On Australia. Please find your removal quote details below.</p>
+
+    <h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">📅 Move Details</h3>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;width:140px;">Move Date</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.move_date || 'TBC'}${form.move_time ? ' at ' + form.move_time : ''}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Pickup</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(', ') || 'TBC'}</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(', ') || 'TBC'}</td></tr>
+      ${form.service_type ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Service</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.service_type}</td></tr>` : ''}
+      ${form.num_movers ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Movers</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.num_movers} movers</td></tr>` : ''}
+      ${form.truck_size ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Truck</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.truck_size}</td></tr>` : ''}
+    </table>
+
+    ${itemsHtml}
+
+    ${form.price ? `
+    <h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">💰 Pricing</h3>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="background:#eff6ff;"><td style="padding:8px 10px;border:1px solid #bfdbfe;font-weight:bold;font-size:16px;">Total Quote</td><td style="padding:8px 10px;border:1px solid #bfdbfe;font-weight:bold;font-size:16px;color:#1d4ed8;">$${Number(form.price).toLocaleString()}</td></tr>
+      ${form.deposit ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Deposit Required</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">$${Number(form.deposit).toLocaleString()}</td></tr>` : ''}
+    </table>` : ''}
+
+    ${form.notes ? `<h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">📝 Notes</h3><p style="background:#f8fafc;padding:12px;border-left:4px solid #3b82f6;margin:0;">${form.notes}</p>` : ''}
+
+    <p style="margin-top:24px;">If you have any questions or would like to confirm your booking, please don't hesitate to contact us.</p>
+    <p>Thank you,<br/><strong>Move On Australia Team</strong></p>
+  </div>
+  <div style="background:#f1f5f9;padding:12px 20px;border-radius:0 0 8px 8px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#94a3b8;">This is an automated quote from Move On Australia</p>
+  </div>
+</div>`;
+
     await base44.integrations.Core.SendEmail({
       to: form.customer_email,
-      subject: `Booking Confirmation \u2013 ${form.move_date || "Your Move"}`,
+      subject: `Removal Quote \u2013 ${form.move_date || 'Your Move'} | Move On Australia`,
       body,
     });
     setSendingEmail(false);
-    alert("Email sent to " + form.customer_email);
+    alert("Quote email sent to " + form.customer_email);
   };
 
   return (
