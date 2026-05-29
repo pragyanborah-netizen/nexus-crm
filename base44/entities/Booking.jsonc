@@ -92,6 +92,14 @@
       "type": "boolean",
       "title": "Elevator at Pickup"
     },
+    "pickup_stairs": {
+      "type": "number",
+      "title": "Pickup Stairs (flights)"
+    },
+    "pickup_walking_distance": {
+      "type": "number",
+      "title": "Pickup Walking Distance (metres)"
+    },
     "delivery_address": {
       "type": "string",
       "title": "Delivery Address"
@@ -115,6 +123,14 @@
     "delivery_elevator": {
       "type": "boolean",
       "title": "Elevator at Delivery"
+    },
+    "delivery_stairs": {
+      "type": "number",
+      "title": "Delivery Stairs (flights)"
+    },
+    "delivery_walking_distance": {
+      "type": "number",
+      "title": "Delivery Walking Distance (metres)"
     },
     "additional_stops": {
       "type": "array",
