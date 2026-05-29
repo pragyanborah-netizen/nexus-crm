@@ -458,65 +458,51 @@ Write the email body only (no subject line in the body). Address the customer by
     if (!form.customer_email) { alert("No customer email address on file."); return; }
     setSendingEmail(true);
 
-    const itemsHtml = (form.items_to_move || []).length > 0
-      ? `<h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">📦 Items to Move</h3>
-         <table style="width:100%;border-collapse:collapse;">
-           ${form.items_to_move.map((item, i) => `
-             <tr style="background:${i % 2 === 0 ? '#f8fafc' : '#ffffff'}">
-               <td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:14px;">✓ ${item}</td>
-             </tr>`).join("")}
-         </table>`
-      : `<p style="color:#64748b;font-style:italic;">No items listed yet.</p>`;
+    const inventoryHtml = (form.items_to_move || []).length > 0
+      ? form.items_to_move.map(item => `<p style="margin:2px 0;font-size:14px;">1 x ${item}</p>`).join("")
+      : `<p style="color:#64748b;font-style:italic;">No items listed.</p>`;
+
+    const addressBlock = [form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC";
+    const deliveryBlock = [form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC";
+
+    const flatTotal = flatRates.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
 
     const body = `
-<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
-  <div style="background:#1d4ed8;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:22px;">Move On Australia</h1>
-    <p style="color:#bfdbfe;margin:4px 0 0;">Removal Quote</p>
+<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1e293b;">
+  <div style="background:#1d4ed8;padding:20px 24px;">
+    <h1 style="color:white;margin:0;font-size:20px;">MOVE ON REMOVALS</h1>
   </div>
-  <div style="background:#f1f5f9;padding:16px 20px;">
-    <p style="margin:0;font-size:14px;color:#475569;">Quote prepared for <strong>${form.customer_first_name} ${form.customer_last_name}</strong></p>
-  </div>
-  <div style="padding:20px;border:1px solid #e2e8f0;border-top:none;">
-    <p>Dear ${form.customer_first_name},</p>
-    <p>Thank you for choosing Move On Australia. Please find your removal quote details below.</p>
-
-    <h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">📅 Move Details</h3>
-    <table style="width:100%;border-collapse:collapse;">
-      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;width:140px;">Move Date</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.move_date || 'TBC'}${form.move_time ? ' at ' + form.move_time : ''}</td></tr>
-      <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Pickup</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(', ') || 'TBC'}</td></tr>
-      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(', ') || 'TBC'}</td></tr>
-      ${form.service_type ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Service</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.service_type}</td></tr>` : ''}
-      ${form.num_movers ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Movers</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.num_movers} movers</td></tr>` : ''}
-      ${form.truck_size ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Truck</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.truck_size}</td></tr>` : ''}
+  <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
+    <p>Hi ${form.customer_first_name},</p>
+    <p>Thank you for booking with Move On Removals.</p>
+    <p><strong>This job is now secured, acceptance of which constitutes the acknowledgement and acceptance of our Terms and Conditions and the booking details below. If you do not agree to our Terms and Conditions, please contact Move On Removals via email immediately.</strong></p>
+    <p><em>Please also confirm the list of contents below reflects what you are moving, to ensure we are sending the most suitable truck for your needs. In the event of your list being not accurate, we reserve the right to leave the premises and rebook your move, at your cost. Items not listed that would be covered by insurance are not.</em></p>
+    <p>Your booking details are as follows;</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;width:140px;">Move Date</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Pickup</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${addressBlock}</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${deliveryBlock}</td></tr>
+      ${form.truck_size ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Truck</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.truck_size}</td></tr>` : ""}
+      ${form.num_movers ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Movers</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.num_movers} movers</td></tr>` : ""}
     </table>
-
-    ${itemsHtml}
-
-    ${form.price ? `
-    <h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">💰 Pricing</h3>
-    <table style="width:100%;border-collapse:collapse;">
-      <tr style="background:#eff6ff;"><td style="padding:8px 10px;border:1px solid #bfdbfe;font-weight:bold;font-size:16px;">Total Quote</td><td style="padding:8px 10px;border:1px solid #bfdbfe;font-weight:bold;font-size:16px;color:#1d4ed8;">$${Number(form.price).toLocaleString()}</td></tr>
-      ${form.deposit ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Deposit Required</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">$${Number(form.deposit).toLocaleString()}</td></tr>` : ''}
-    </table>` : ''}
-
-    ${form.notes ? `<h3 style="color:#1e40af;margin-top:24px;margin-bottom:8px;">📝 Notes</h3><p style="background:#f8fafc;padding:12px;border-left:4px solid #3b82f6;margin:0;">${form.notes}</p>` : ''}
-
-    <p style="margin-top:24px;">If you have any questions or would like to confirm your booking, please don't hesitate to contact us.</p>
-    <p>Thank you,<br/><strong>Move On Australia Team</strong></p>
+    <p><strong>Inventory:</strong></p>
+    ${inventoryHtml}
+    ${flatRates.length > 0 ? `<p style="margin-top:16px;"><strong>Additional Charges:</strong></p>${flatRates.map(r => `<p style="margin:2px 0;font-size:14px;">${r.description}: $${Number(r.amount || 0).toLocaleString()}</p>`).join("")}<p style="font-size:14px;">Total additional: $${flatTotal.toFixed(2)}</p>` : ""}
+    ${form.notes ? `<p style="margin-top:16px;background:#f8fafc;padding:12px;border-left:4px solid #3b82f6;">${form.notes}</p>` : ""}
+    <p style="margin-top:24px;">Kind regards,<br/><strong>Move On Removals Team</strong><br/>moveme@moveonremovals.com.au</p>
   </div>
-  <div style="background:#f1f5f9;padding:12px 20px;border-radius:0 0 8px 8px;text-align:center;">
-    <p style="margin:0;font-size:12px;color:#94a3b8;">This is an automated quote from Move On Australia</p>
+  <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
+    <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
   </div>
 </div>`;
 
     await base44.integrations.Core.SendEmail({
       to: form.customer_email,
-      subject: `Removal Quote \u2013 ${form.move_date || 'Your Move'} | Move On Australia`,
+      subject: `MOVE ON REMOVALS \u2013 Booking Confirmation`,
       body,
     });
     setSendingEmail(false);
-    alert("Quote email sent to " + form.customer_email);
+    alert("Booking confirmation sent to " + form.customer_email);
   };
 
   return (
@@ -842,282 +828,41 @@ Write the email body only (no subject line in the body). Address the customer by
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <SummaryRow label="Customer" value={`${form.customer_first_name} ${form.customer_last_name}`} />
               <SummaryRow label="Mobile" value={form.customer_mobile || "—"} />
+              <SummaryRow label="Email" value={form.customer_email || "—"} />
+              <SummaryRow label="Status" value={form.status || "—"} />
               <SummaryRow label="Services" value={(form.selected_services || []).join(", ") || "—"} />
               <SummaryRow label="Move Date" value={form.move_date || "—"} />
-              <SummaryRow label="Pickup" value={form.pickup_suburb || form.pickup_address || "—"} />
-              <SummaryRow label="Delivery" value={form.delivery_suburb || form.delivery_address || "—"} />
+              <SummaryRow label="Pickup" value={[form.pickup_suburb, form.pickup_state].filter(Boolean).join(", ") || form.pickup_address || "—"} />
+              <SummaryRow label="Delivery" value={[form.delivery_suburb, form.delivery_state].filter(Boolean).join(", ") || form.delivery_address || "—"} />
               <SummaryRow label="Items" value={`${(form.items_to_move || []).length} items`} />
+              {form.truck_size && <SummaryRow label="Truck" value={form.truck_size} />}
+              {form.num_movers && <SummaryRow label="Movers" value={`${form.num_movers} movers`} />}
             </div>
           </Section>
-
-          <div className="flex gap-3 mb-5">
-            <button
-              type="button"
-              onClick={handleAiQuote}
-              disabled={aiQuoting || (form.items_to_move || []).length === 0}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50"
-            >
-              {aiQuoting ? (
-                <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating Quote...</>
-              ) : (
-                <>✨ AI Generate Quote</>
-              )}
-            </button>
-            {(form.items_to_move || []).length === 0 && (
-              <p className="text-xs text-gray-400 self-center">Add items to the inventory first</p>
-            )}
-          </div>
-
-          {aiReasoning && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-5">
-              <p className="text-xs font-semibold text-purple-700 mb-1">✨ AI Quote Reasoning</p>
-              <p className="text-sm text-purple-800">{aiReasoning}</p>
-              <p className="text-xs text-purple-500 mt-2">Pricing fields have been auto-filled below. Review and adjust as needed.</p>
-            </div>
-          )}
 
           {(form.items_to_move || []).length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
-              <p className="text-sm font-semibold text-blue-800 mb-1">
-                Recommended based on {form.items_to_move.length} items:
-              </p>
-              <p className="text-sm text-blue-700">
-                Truck: <strong>{rec.size}</strong> &middot; {rec.movers} Movers &middot; ~{rec.baseHours} hrs &middot; Est. <strong>${rec.baseHours * rec.rate}</strong>
-              </p>
-              <button type="button" onClick={applyRecommendation} className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded">
-                Apply Recommendation
-              </button>
-            </div>
+            <Section title="Inventory">
+              <div className="columns-2 md:columns-3 gap-4">
+                {form.items_to_move.map((item, i) => (
+                  <p key={i} className="text-sm text-gray-700 mb-1">• {item}</p>
+                ))}
+              </div>
+            </Section>
           )}
 
-          <Section title="Packing Pricing">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Field label="Number of People">
-                <select className={selectClass} value={form.packing_num_people || ""} onChange={(e) => set("packing_num_people", e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="2">2 People</option>
-                  <option value="3">3 People</option>
+          <Section title="Pricing">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Field label="Estimated Total ($)">
+                <input className={inputClass} type="number" min="0" step="0.01" value={form.price || ""} onChange={(e) => set("price", e.target.value)} placeholder="e.g. 1200" />
+              </Field>
+              <Field label="Deposit Required ($)">
+                <input className={inputClass} type="number" min="0" step="0.01" value={form.deposit || ""} onChange={(e) => set("deposit", e.target.value)} placeholder="e.g. 200" />
+              </Field>
+              <Field label="Payment Method">
+                <select className={selectClass} value={form.payment_method || ""} onChange={(e) => set("payment_method", e.target.value)}>
+                  <option value="">Select...</option>
+                  <option>Cash</option><option>Card</option><option>Bank Transfer</option><option>Invoice</option>
                 </select>
-              </Field>
-              <Field label="Hours">
-                <input className={inputClass} type="number" min="0" step="0.5" value={form.packing_hours || ""} onChange={(e) => {
-                  const hrs = parseFloat(e.target.value) || 0;
-                  const rate = parseFloat(form.packing_rate_per_hour) || 0;
-                  set("packing_hours", e.target.value);
-                  if (rate) set("packing_total", (hrs * rate).toFixed(2));
-                }} placeholder="e.g. 3" />
-              </Field>
-              <Field label="Rate ($/hr)">
-                <input className={inputClass} type="number" min="0" step="0.01" value={form.packing_rate_per_hour || ""} onChange={(e) => {
-                  const rate = parseFloat(e.target.value) || 0;
-                  const hrs = parseFloat(form.packing_hours) || 0;
-                  set("packing_rate_per_hour", e.target.value);
-                  if (hrs) set("packing_total", (hrs * rate).toFixed(2));
-                }} placeholder="e.g. 180" />
-              </Field>
-              <Field label="Total ($)">
-                <input className={inputClass + " font-semibold bg-green-50 border-green-300"} type="number" min="0" step="0.01" value={form.packing_total || ""} onChange={(e) => set("packing_total", e.target.value)} placeholder="Auto-calculated" />
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="Moving Pricing">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Field label="Number of People">
-                <select className={selectClass} value={form.moving_num_people || ""} onChange={(e) => set("moving_num_people", e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="2">2 People</option>
-                  <option value="3">3 People</option>
-                </select>
-              </Field>
-              <Field label="Hours">
-                <input className={inputClass} type="number" min="0" step="0.5" value={form.moving_hours || ""} onChange={(e) => {
-                  const hrs = parseFloat(e.target.value) || 0;
-                  const rate = parseFloat(form.moving_rate_per_hour) || 0;
-                  set("moving_hours", e.target.value);
-                  if (rate) set("moving_total", (hrs * rate).toFixed(2));
-                }} placeholder="e.g. 4" />
-              </Field>
-              <Field label="Rate ($/hr)">
-                <input className={inputClass} type="number" min="0" step="0.01" value={form.moving_rate_per_hour || ""} onChange={(e) => {
-                  const rate = parseFloat(e.target.value) || 0;
-                  const hrs = parseFloat(form.moving_hours) || 0;
-                  set("moving_rate_per_hour", e.target.value);
-                  if (hrs) set("moving_total", (hrs * rate).toFixed(2));
-                }} placeholder="e.g. 200" />
-              </Field>
-              <Field label="Total ($)">
-                <input className={inputClass + " font-semibold bg-green-50 border-green-300"} type="number" min="0" step="0.01" value={form.moving_total || ""} onChange={(e) => set("moving_total", e.target.value)} placeholder="Auto-calculated" />
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="Truck & Pricing">
-
-            {/* Packing Pricing */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-3">Packing Pricing ($/hr)</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="px-4 py-2 text-left text-gray-600 font-semibold border-b border-gray-200">Service</th>
-                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">2 People</th>
-                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">3 People</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="bg-white">
-                      <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-100">Packing</td>
-                      <td className="px-4 py-2 border-b border-gray-100">
-                        <input
-                          type="number" min="0" step="0.01" placeholder="0.00"
-                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
-                          value={(form.packing_rates_config || {})["2P"] || ""}
-                          onChange={(e) => set("packing_rates_config", { ...(form.packing_rates_config || {}), "2P": e.target.value })}
-                        />
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-100">
-                        <input
-                          type="number" min="0" step="0.01" placeholder="0.00"
-                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
-                          value={(form.packing_rates_config || {})["3P"] || ""}
-                          onChange={(e) => set("packing_rates_config", { ...(form.packing_rates_config || {}), "3P": e.target.value })}
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Hourly Rates Grid */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-3">Hourly Rates by Truck &amp; Movers ($/hr)</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="px-4 py-2 text-left text-gray-600 font-semibold border-b border-gray-200">Truck</th>
-                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">2 Movers</th>
-                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">3 Movers</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { key: "2T", label: "2T Van" },
-                      { key: "5T", label: "5T Truck" },
-                      { key: "6T", label: "6T Truck" },
-                      { key: "10T", label: "10T Truck" },
-                      { key: "12T", label: "12T Truck" },
-                    ].map(({ key, label }, idx) => {
-                      const rates = (form.moving_rates_config || {});
-                      const truckRates = rates[key] || {};
-                      const setRate = (movers, val) => {
-                        set("moving_rates_config", {
-                          ...rates,
-                          [key]: { ...truckRates, [movers]: val }
-                        });
-                      };
-                      return (
-                        <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-100">{label}</td>
-                          <td className="px-4 py-2 border-b border-gray-100">
-                            <input
-                              type="number" min="0" step="0.01" placeholder="0.00"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
-                              value={truckRates["2M"] || ""}
-                              onChange={(e) => setRate("2M", e.target.value)}
-                            />
-                          </td>
-                          <td className="px-4 py-2 border-b border-gray-100">
-                            <input
-                              type="number" min="0" step="0.01" placeholder="0.00"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
-                              value={truckRates["3M"] || ""}
-                              onChange={(e) => setRate("3M", e.target.value)}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Unpacking Pricing - rates grid */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-3">Unpacking Pricing ($/hr)</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="px-4 py-2 text-left text-gray-600 font-semibold border-b border-gray-200">Service</th>
-                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">2 People</th>
-                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">3 People</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="bg-white">
-                      <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-100">Unpacking</td>
-                      <td className="px-4 py-2 border-b border-gray-100">
-                        <input
-                          type="number" min="0" step="0.01" placeholder="0.00"
-                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
-                          value={(form.unpacking_rates_config || {})["2P"] || ""}
-                          onChange={(e) => set("unpacking_rates_config", { ...(form.unpacking_rates_config || {}), "2P": e.target.value })}
-                        />
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-100">
-                        <input
-                          type="number" min="0" step="0.01" placeholder="0.00"
-                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
-                          value={(form.unpacking_rates_config || {})["3P"] || ""}
-                          onChange={(e) => set("unpacking_rates_config", { ...(form.unpacking_rates_config || {}), "3P": e.target.value })}
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <Field label="Distance Between Locations (km)">
-                <input className={inputClass} type="number" value={form.distance_km} onChange={(e) => set("distance_km", e.target.value)} placeholder="e.g. 25 (optional — AI will estimate if blank)" min="0" />
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="Unpacking Pricing">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Field label="Number of People">
-                <select className={selectClass} value={form.unpacking_num_people || ""} onChange={(e) => set("unpacking_num_people", e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="2">2 People</option>
-                  <option value="3">3 People</option>
-                </select>
-              </Field>
-              <Field label="Hours">
-                <input className={inputClass} type="number" min="0" step="0.5" value={form.unpacking_hours || ""} onChange={(e) => {
-                  const hrs = parseFloat(e.target.value) || 0;
-                  const rate = parseFloat(form.unpacking_rate_per_hour) || 0;
-                  set("unpacking_hours", e.target.value);
-                  if (rate) set("unpacking_total", (hrs * rate).toFixed(2));
-                }} placeholder="e.g. 2" />
-              </Field>
-              <Field label="Rate ($/hr)">
-                <input className={inputClass} type="number" min="0" step="0.01" value={form.unpacking_rate_per_hour || ""} onChange={(e) => {
-                  const rate = parseFloat(e.target.value) || 0;
-                  const hrs = parseFloat(form.unpacking_hours) || 0;
-                  set("unpacking_rate_per_hour", e.target.value);
-                  if (hrs) set("unpacking_total", (hrs * rate).toFixed(2));
-                }} placeholder="e.g. 160" />
-              </Field>
-              <Field label="Total ($)">
-                <input className={inputClass + " font-semibold bg-green-50 border-green-300"} type="number" min="0" step="0.01" value={form.unpacking_total || ""} onChange={(e) => set("unpacking_total", e.target.value)} placeholder="Auto-calculated" />
               </Field>
             </div>
           </Section>
@@ -1138,46 +883,34 @@ Write the email body only (no subject line in the body). Address the customer by
             {flatRates.length > 0 && (
               <div className="space-y-2">
                 <div className="grid grid-cols-[1fr_140px_36px] gap-2 text-xs text-gray-500 font-medium px-1">
-                  <span>Description</span>
-                  <span>Amount ($)</span>
-                  <span></span>
+                  <span>Description</span><span>Amount ($)</span><span></span>
                 </div>
                 {flatRates.map((row, idx) => (
                   <div key={idx} className="grid grid-cols-[1fr_140px_36px] gap-2 items-center">
-                    <input
-                      type="text"
-                      className={inputClass}
-                      placeholder="e.g. Stair carry, Long walk, Fuel levy"
-                      value={row.description}
-                      onChange={(e) => { const r = [...flatRates]; r[idx].description = e.target.value; setFlatRates(r); }}
-                    />
-                    <input
-                      type="number" min="0" step="0.01"
-                      className={inputClass + " text-right"}
-                      placeholder="0.00"
-                      value={row.amount}
-                      onChange={(e) => { const r = [...flatRates]; r[idx].amount = e.target.value; setFlatRates(r); }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFlatRates(flatRates.filter((_, i) => i !== idx))}
-                      className="flex items-center justify-center w-9 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200"
-                    >
+                    <input type="text" className={inputClass} placeholder="e.g. Stair carry, Fuel levy" value={row.description}
+                      onChange={(e) => { const r = [...flatRates]; r[idx].description = e.target.value; setFlatRates(r); }} />
+                    <input type="number" min="0" step="0.01" className={inputClass + " text-right"} placeholder="0.00" value={row.amount}
+                      onChange={(e) => { const r = [...flatRates]; r[idx].amount = e.target.value; setFlatRates(r); }} />
+                    <button type="button" onClick={() => setFlatRates(flatRates.filter((_, i) => i !== idx))}
+                      className="flex items-center justify-center w-9 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200">
                       <Trash2 size={14} />
                     </button>
                   </div>
                 ))}
                 <div className="flex justify-end pt-1">
                   <p className="text-sm font-semibold text-gray-700">
-                    Total: ${
-                      flatRates.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toFixed(2)
-                    }
+                    Total: ${flatRates.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toFixed(2)}
                   </p>
                 </div>
               </div>
             )}
           </Section>
 
+          <Section title="Notes">
+            <Field label="Notes for Customer">
+              <textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Any special instructions or notes to include in the confirmation email..." />
+            </Field>
+          </Section>
         </>
       )}
 
