@@ -422,32 +422,30 @@ Write the email body only (no subject line in the body). Address the customer by
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2">
               {SERVICE_OPTIONS.map((svc) => {
                 const active = (form.selected_services || []).includes(svc);
+                const dateKey = svc === "Packaging Supplies" ? "packaging_supplies_date" : svc === "Packing" ? "packing_date" : svc === "Moving" ? "moving_date" : "unpacking_date";
                 return (
-                  <button key={svc} type="button" onClick={() => toggleService(svc)}
-                    className={`rounded-lg border-2 p-3 text-left transition-all ${active ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 hover:border-gray-300 text-gray-600"}`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 ${active ? "bg-blue-500" : "bg-gray-100"}`}>
-                      {active ? <Check size={13} className="text-white" /> : <Wrench size={13} className="text-gray-400" />}
-                    </div>
-                    <p className="font-medium text-sm">{svc}</p>
-                  </button>
+                  <div key={svc} className={`rounded-lg border-2 transition-all ${active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+                    <button type="button" onClick={() => toggleService(svc)} className="w-full p-3 text-left">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 ${active ? "bg-blue-500" : "bg-gray-100"}`}>
+                        {active ? <Check size={13} className="text-white" /> : <Wrench size={13} className="text-gray-400" />}
+                      </div>
+                      <p className={`font-medium text-sm ${active ? "text-blue-800" : "text-gray-600"}`}>{svc}</p>
+                    </button>
+                    {active && (
+                      <div className="px-3 pb-3">
+                        <label className="block text-xs text-blue-600 mb-1">Date</label>
+                        <input
+                          className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                          type="date"
+                          value={form[dateKey] || ""}
+                          onChange={(e) => set(dateKey, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+                  </div>
                 );
               })}
-            </div>
-
-            {/* Per-service dates */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Packaging Supplies Date">
-                <input className={inputClass} type="date" value={form.packaging_supplies_date} onChange={(e) => set("packaging_supplies_date", e.target.value)} />
-              </Field>
-              <Field label="Packing Date">
-                <input className={inputClass} type="date" value={form.packing_date} onChange={(e) => set("packing_date", e.target.value)} />
-              </Field>
-              <Field label="Moving Date">
-                <input className={inputClass} type="date" value={form.moving_date} onChange={(e) => set("moving_date", e.target.value)} />
-              </Field>
-              <Field label="Unpacking Date">
-                <input className={inputClass} type="date" value={form.unpacking_date} onChange={(e) => set("unpacking_date", e.target.value)} />
-              </Field>
             </div>
           </Section>
           <Section title="Move Details">
