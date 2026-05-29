@@ -125,6 +125,45 @@ export default function AddEditBooking() {
   };
 
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [aiQuoting, setAiQuoting] = useState(false);
+
+  const handleAiQuote = async () => {
+    if ((form.items_to_move || []).length === 0) { alert("Please add items to the inventory first."); return; }
+    setAiQuoting(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are a removalist quoting expert for Move On Australia in Australia. Based on the following job details, provide a professional quote.
+
+Items to move:
+${form.items_to_move.map(i => "- " + i).join("\n")}
+
+Pickup: ${[form.pickup_address, form.pickup_suburb, form.pickup_state].filter(Boolean).join(", ") || "Unknown"}
+Delivery: ${[form.delivery_address, form.delivery_suburb, form.delivery_state].filter(Boolean).join(", ") || "Unknown"}
+Customer type: ${form.customer_type || "Residential"}
+Service type: ${form.service_type || "House Removal"}
+
+Provide a realistic Australian removalist quote. Consider item volume, weight, access difficulty, and travel distance. Use current Australian market rates (typically $150-$280/hr for 2-3 movers).`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          truck_size: { type: "string", enum: ["Small (4t)", "Medium (8t)", "Large (12t)", "Extra Large (14t)"] },
+          num_movers: { type: "number" },
+          estimated_hours: { type: "number" },
+          price: { type: "number" },
+          reasoning: { type: "string" }
+        }
+      }
+    });
+    if (result) {
+      if (result.truck_size) set("truck_size", result.truck_size);
+      if (result.num_movers) set("num_movers", result.num_movers);
+      if (result.estimated_hours) set("estimated_hours", result.estimated_hours);
+      if (result.price) set("price", result.price);
+      setAiReasoning(result.reasoning || "");
+    }
+    setAiQuoting(false);
+  };
+
+  const [aiReasoning, setAiReasoning] = useState("");
   const [showDiary, setShowDiary] = useState(false);
 
   const handleSendEmail = async () => {
@@ -476,6 +515,32 @@ export default function AddEditBooking() {
               <SummaryRow label="Items" value={`${(form.items_to_move || []).length} items`} />
             </div>
           </Section>
+
+          <div className="flex gap-3 mb-5">
+            <button
+              type="button"
+              onClick={handleAiQuote}
+              disabled={aiQuoting || (form.items_to_move || []).length === 0}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50"
+            >
+              {aiQuoting ? (
+                <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating Quote...</>
+              ) : (
+                <>✨ AI Generate Quote</>
+              )}
+            </button>
+            {(form.items_to_move || []).length === 0 && (
+              <p className="text-xs text-gray-400 self-center">Add items to the inventory first</p>
+            )}
+          </div>
+
+          {aiReasoning && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-5">
+              <p className="text-xs font-semibold text-purple-700 mb-1">✨ AI Quote Reasoning</p>
+              <p className="text-sm text-purple-800">{aiReasoning}</p>
+              <p className="text-xs text-purple-500 mt-2">Pricing fields have been auto-filled below. Review and adjust as needed.</p>
+            </div>
+          )}
 
           {(form.items_to_move || []).length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
