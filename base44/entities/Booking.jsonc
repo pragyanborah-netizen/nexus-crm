@@ -212,6 +212,13 @@
       "type": "number",
       "title": "Pickup Walking Distance (metres)"
     },
+    "pickup_property_access": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Pickup Property Access"
+    },
     "delivery_address": {
       "type": "string",
       "title": "Delivery Address"
@@ -243,6 +250,13 @@
     "delivery_walking_distance": {
       "type": "number",
       "title": "Delivery Walking Distance (metres)"
+    },
+    "delivery_property_access": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Delivery Property Access"
     },
     "additional_stops": {
       "type": "array",

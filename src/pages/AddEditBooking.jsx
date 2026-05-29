@@ -21,6 +21,41 @@ const inputClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focu
 const selectClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white";
 const emptyAddress = { address: "", suburb: "", state: "VIC", postcode: "", floor: "", elevator: false };
 
+const PROPERTY_ACCESS_OPTIONS = [
+  "Ground floor", "Stairs", "Elevator", "Narrow street", "Height restrictions",
+  "No parking", "Steep driveway", "Overhanging trees", "Low powerlines",
+];
+
+function PropertyAccess({ value = [], onChange }) {
+  const toggle = (opt) => {
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+  };
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <p className="text-sm font-medium text-gray-600 mb-2">Property access</p>
+      <div className="flex flex-wrap gap-2">
+        {PROPERTY_ACCESS_OPTIONS.map((opt) => {
+          const active = value.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggle(opt)}
+              className={`px-3 py-1.5 rounded-full border text-sm transition-all ${
+                active
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const Section = ({ title, children }) => (
   <div className="bg-white rounded-lg shadow mb-5">
     <div className="px-6 py-3 border-b-2 border-blue-500">
@@ -75,8 +110,8 @@ export default function AddEditBooking() {
     customer_mobile: "", customer_phone_info: "", customer_type: "Residential",
     agent_quoted: user?.full_name || "", agent_booked: user?.full_name || "", agent_inquired: user?.full_name || "", agent_pending: user?.full_name || "",
     selected_services: [],
-    pickup_address: "", pickup_suburb: "", pickup_state: "VIC", pickup_postcode: "", pickup_floor: "", pickup_elevator: false,
-    delivery_address: "", delivery_suburb: "", delivery_state: "VIC", delivery_postcode: "", delivery_floor: "", delivery_elevator: false,
+    pickup_address: "", pickup_suburb: "", pickup_state: "VIC", pickup_postcode: "", pickup_floor: "", pickup_elevator: false, pickup_property_access: [],
+    delivery_address: "", delivery_suburb: "", delivery_state: "VIC", delivery_postcode: "", delivery_floor: "", delivery_elevator: false, delivery_property_access: [],
     additional_stops: [],
     move_date: "", move_time: "", service_type: "",
     items_to_move: [],
@@ -105,7 +140,7 @@ export default function AddEditBooking() {
       if (existing.packing_rates_config) { try { parsedPackingRates = JSON.parse(existing.packing_rates_config); } catch(e) {} }
       let parsedUnpackingRates = {};
       if (existing.unpacking_rates_config) { try { parsedUnpackingRates = JSON.parse(existing.unpacking_rates_config); } catch(e) {} }
-      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [], moving_rates_config: parsedRates, packing_rates_config: parsedPackingRates, unpacking_rates_config: parsedUnpackingRates }));
+      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [], moving_rates_config: parsedRates, packing_rates_config: parsedPackingRates, unpacking_rates_config: parsedUnpackingRates, pickup_property_access: existing.pickup_property_access || [], delivery_property_access: existing.delivery_property_access || [] }));
       if (existing.additional_stops?.length) {
         setExtraStops(existing.additional_stops.map((s) => ({ address: s, suburb: "", state: "VIC", postcode: "", floor: "", elevator: false })));
       }
@@ -507,6 +542,10 @@ Write the email body only (no subject line in the body). Address the customer by
                 </label>
               </Field>
             </div>
+            <PropertyAccess
+              value={form.pickup_property_access || []}
+              onChange={(v) => set("pickup_property_access", v)}
+            />
           </Section>
 
           {extraStops.map((stop, idx) => (
@@ -560,6 +599,10 @@ Write the email body only (no subject line in the body). Address the customer by
                 </label>
               </Field>
             </div>
+            <PropertyAccess
+              value={form.delivery_property_access || []}
+              onChange={(v) => set("delivery_property_access", v)}
+            />
           </Section>
 
         </>
