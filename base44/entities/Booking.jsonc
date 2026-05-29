@@ -280,6 +280,7 @@
       "type": "string",
       "title": "Truck Size",
       "enum": [
+        "2T",
         "5T",
         "6T",
         "10T",
