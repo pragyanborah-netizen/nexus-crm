@@ -144,9 +144,21 @@
       "type": "string",
       "title": "Unpacking Time"
     },
-    "unpacking_price": {
+    "unpacking_rate_per_hour": {
       "type": "number",
-      "title": "Unpacking Price ($)"
+      "title": "Unpacking Rate ($/hr)"
+    },
+    "unpacking_num_people": {
+      "type": "number",
+      "title": "Unpacking - Number of People"
+    },
+    "unpacking_hours": {
+      "type": "number",
+      "title": "Unpacking Hours"
+    },
+    "unpacking_total": {
+      "type": "number",
+      "title": "Unpacking Total ($)"
     },
     "pickup_address": {
       "type": "string",

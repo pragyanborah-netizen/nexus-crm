@@ -85,7 +85,8 @@ export default function AddEditBooking() {
     packing_rate_per_hour: "", packing_num_people: "", packing_hours: "", packing_total: "",
     moving_date: "", moving_time: "",
     moving_rate_per_hour: "", moving_num_people: "", moving_hours: "", moving_total: "",
-    unpacking_date: "", unpacking_time: "", unpacking_price: "",
+    unpacking_date: "", unpacking_time: "",
+    unpacking_rate_per_hour: "", unpacking_num_people: "", unpacking_hours: "", unpacking_total: "",
     distance_km: "",
     num_movers: "", truck_size: "", truck_assigned: "",
     estimated_hours: "", actual_hours: "",
@@ -519,15 +520,31 @@ Write the email body only (no subject line in the body). Address the customer by
 
                         {/* Unpacking pricing */}
                         {svc === "Unpacking" && (
-                          <div>
-                            <label className="block text-xs text-blue-600 mb-1">Price ($)</label>
-                            <input
-                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                              type="number" min="0" step="0.01" placeholder="0.00"
-                              value={form.unpacking_price || ""}
-                              onChange={(e) => set("unpacking_price", e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
+                          <div className="border-t border-blue-200 pt-2">
+                            <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rate</p>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Rate ($/hr)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.unpacking_rate_per_hour || ""} onChange={(e) => { const r = e.target.value; set("unpacking_rate_per_hour", r); if (r && form.unpacking_hours) set("unpacking_total", (parseFloat(r) * parseFloat(form.unpacking_hours)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1"># People</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="1" step="1" placeholder="e.g. 2" value={form.unpacking_num_people || ""} onChange={(e) => set("unpacking_num_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Hours</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.unpacking_hours || ""} onChange={(e) => { const h = e.target.value; set("unpacking_hours", h); if (form.unpacking_rate_per_hour && h) set("unpacking_total", (parseFloat(form.unpacking_rate_per_hour) * parseFloat(h)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Total ($)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.unpacking_total || ""} onChange={(e) => set("unpacking_total", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                              </div>
+                            </div>
+                            {form.unpacking_total && (
+                              <div className="mt-2 bg-blue-100 rounded px-2 py-1.5">
+                                <p className="text-xs font-semibold text-blue-800">Total: ${parseFloat(form.unpacking_total).toLocaleString()}</p>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -766,6 +783,39 @@ Write the email body only (no subject line in the body). Address the customer by
                     <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
                       value={form.moving_total || ""}
                       onChange={(e) => set("moving_total", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Unpacking Rates */}
+            {(form.selected_services || []).includes("Unpacking") && (
+              <div className="mb-5 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-sm font-semibold text-purple-800 mb-3">📦 Unpacking Pricing</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Rate ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
+                      value={form.unpacking_rate_per_hour || ""}
+                      onChange={(e) => { const r = e.target.value; set("unpacking_rate_per_hour", r); if (r && form.unpacking_hours) set("unpacking_total", (parseFloat(r) * parseFloat(form.unpacking_hours)).toFixed(2)); }} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1"># People</label>
+                    <input className={inputClass} type="number" min="1" step="1" placeholder="e.g. 2"
+                      value={form.unpacking_num_people || ""}
+                      onChange={(e) => set("unpacking_num_people", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Hours</label>
+                    <input className={inputClass} type="number" min="0" step="0.5" placeholder="0"
+                      value={form.unpacking_hours || ""}
+                      onChange={(e) => { const h = e.target.value; set("unpacking_hours", h); if (form.unpacking_rate_per_hour && h) set("unpacking_total", (parseFloat(form.unpacking_rate_per_hour) * parseFloat(h)).toFixed(2)); }} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Total ($)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
+                      value={form.unpacking_total || ""}
+                      onChange={(e) => set("unpacking_total", e.target.value)} />
                   </div>
                 </div>
               </div>
