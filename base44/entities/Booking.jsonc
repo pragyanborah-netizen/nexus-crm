@@ -77,20 +77,36 @@
       "format": "date",
       "title": "Packaging Supplies Date"
     },
+    "packaging_supplies_time": {
+      "type": "string",
+      "title": "Packaging Supplies Time"
+    },
     "packing_date": {
       "type": "string",
       "format": "date",
       "title": "Packing Date"
+    },
+    "packing_time": {
+      "type": "string",
+      "title": "Packing Time"
     },
     "moving_date": {
       "type": "string",
       "format": "date",
       "title": "Moving Date"
     },
+    "moving_time": {
+      "type": "string",
+      "title": "Moving Time"
+    },
     "unpacking_date": {
       "type": "string",
       "format": "date",
       "title": "Unpacking Date"
+    },
+    "unpacking_time": {
+      "type": "string",
+      "title": "Unpacking Time"
     },
     "pickup_address": {
       "type": "string",
