@@ -635,104 +635,60 @@ Write the email body only (no subject line in the body). Address the customer by
 
           <Section title="Truck & Pricing">
 
-            {/* Packing Rates */}
-            {(form.selected_services || []).includes("Packing") && (
-              <div className="mb-5 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm font-semibold text-yellow-800 mb-3">📦 Packing Pricing</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Rate ($/hr)</label>
-                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
-                      value={form.packing_rate_per_hour || ""}
-                      onChange={(e) => { const r = e.target.value; set("packing_rate_per_hour", r); if (r && form.packing_hours) set("packing_total", (parseFloat(r) * parseFloat(form.packing_hours)).toFixed(2)); }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1"># People</label>
-                    <input className={inputClass} type="number" min="1" step="1" placeholder="e.g. 2"
-                      value={form.packing_num_people || ""}
-                      onChange={(e) => set("packing_num_people", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Hours</label>
-                    <input className={inputClass} type="number" min="0" step="0.5" placeholder="0"
-                      value={form.packing_hours || ""}
-                      onChange={(e) => { const h = e.target.value; set("packing_hours", h); if (form.packing_rate_per_hour && h) set("packing_total", (parseFloat(form.packing_rate_per_hour) * parseFloat(h)).toFixed(2)); }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Total ($)</label>
-                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
-                      value={form.packing_total || ""}
-                      onChange={(e) => set("packing_total", e.target.value)} />
-                  </div>
-                </div>
+            {/* Hourly Rates Grid */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Hourly Rates by Truck &amp; Movers ($/hr)</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-4 py-2 text-left text-gray-600 font-semibold border-b border-gray-200">Truck</th>
+                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">2 Movers</th>
+                      <th className="px-4 py-2 text-center text-gray-600 font-semibold border-b border-gray-200">3 Movers</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { key: "2T", label: "2T Van" },
+                      { key: "5T", label: "5T Truck" },
+                      { key: "6T", label: "6T Truck" },
+                      { key: "10T", label: "10T Truck" },
+                      { key: "12T", label: "12T Truck" },
+                    ].map(({ key, label }, idx) => {
+                      const rates = (form.moving_rates_config || {});
+                      const truckRates = rates[key] || {};
+                      const setRate = (movers, val) => {
+                        set("moving_rates_config", {
+                          ...rates,
+                          [key]: { ...truckRates, [movers]: val }
+                        });
+                      };
+                      return (
+                        <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-100">{label}</td>
+                          <td className="px-4 py-2 border-b border-gray-100">
+                            <input
+                              type="number" min="0" step="0.01" placeholder="0.00"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
+                              value={truckRates["2M"] || ""}
+                              onChange={(e) => setRate("2M", e.target.value)}
+                            />
+                          </td>
+                          <td className="px-4 py-2 border-b border-gray-100">
+                            <input
+                              type="number" min="0" step="0.01" placeholder="0.00"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500"
+                              value={truckRates["3M"] || ""}
+                              onChange={(e) => setRate("3M", e.target.value)}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            )}
-
-            {/* Moving Rates */}
-            {(form.selected_services || []).includes("Moving") && (
-              <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-semibold text-blue-800 mb-3">🚚 Moving Pricing</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Rate ($/hr)</label>
-                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
-                      value={form.moving_rate_per_hour || ""}
-                      onChange={(e) => { const r = e.target.value; set("moving_rate_per_hour", r); if (r && form.moving_hours) set("moving_total", (parseFloat(r) * parseFloat(form.moving_hours)).toFixed(2)); }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1"># People</label>
-                    <input className={inputClass} type="number" min="1" step="1" placeholder="e.g. 2"
-                      value={form.moving_num_people || ""}
-                      onChange={(e) => set("moving_num_people", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Hours</label>
-                    <input className={inputClass} type="number" min="0" step="0.5" placeholder="0"
-                      value={form.moving_hours || ""}
-                      onChange={(e) => { const h = e.target.value; set("moving_hours", h); if (form.moving_rate_per_hour && h) set("moving_total", (parseFloat(form.moving_rate_per_hour) * parseFloat(h)).toFixed(2)); }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Total ($)</label>
-                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
-                      value={form.moving_total || ""}
-                      onChange={(e) => set("moving_total", e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Unpacking Rates */}
-            {(form.selected_services || []).includes("Unpacking") && (
-              <div className="mb-5 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <p className="text-sm font-semibold text-purple-800 mb-3">📦 Unpacking Pricing</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Rate ($/hr)</label>
-                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
-                      value={form.unpacking_rate_per_hour || ""}
-                      onChange={(e) => { const r = e.target.value; set("unpacking_rate_per_hour", r); if (r && form.unpacking_hours) set("unpacking_total", (parseFloat(r) * parseFloat(form.unpacking_hours)).toFixed(2)); }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1"># People</label>
-                    <input className={inputClass} type="number" min="1" step="1" placeholder="e.g. 2"
-                      value={form.unpacking_num_people || ""}
-                      onChange={(e) => set("unpacking_num_people", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Hours</label>
-                    <input className={inputClass} type="number" min="0" step="0.5" placeholder="0"
-                      value={form.unpacking_hours || ""}
-                      onChange={(e) => { const h = e.target.value; set("unpacking_hours", h); if (form.unpacking_rate_per_hour && h) set("unpacking_total", (parseFloat(form.unpacking_rate_per_hour) * parseFloat(h)).toFixed(2)); }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Total ($)</label>
-                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00"
-                      value={form.unpacking_total || ""}
-                      onChange={(e) => set("unpacking_total", e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Distance Between Locations (km)">
