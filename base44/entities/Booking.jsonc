@@ -184,10 +184,10 @@
       "type": "string",
       "title": "Truck Size",
       "enum": [
-        "Small (4t)",
-        "Medium (8t)",
-        "Large (12t)",
-        "Extra Large (14t)"
+        "5T",
+        "6T",
+        "10T",
+        "12T"
       ]
     },
     "truck_assigned": {

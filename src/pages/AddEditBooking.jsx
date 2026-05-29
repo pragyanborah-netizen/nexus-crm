@@ -624,7 +624,7 @@ Write the email body only (no subject line in the body). Address the customer by
               <Field label="Truck Size">
                 <select className={selectClass} value={form.truck_size} onChange={(e) => set("truck_size", e.target.value)}>
                   <option value="">-- Select Truck Size --</option>
-                  {["Small (4t)","Medium (8t)","Large (12t)","Extra Large (14t)"].map(s => <option key={s}>{s}</option>)}
+                  {["5T","6T","10T","12T"].map(s => <option key={s}>{s}</option>)}
                 </select>
               </Field>
               <Field label="Truck Assigned">
