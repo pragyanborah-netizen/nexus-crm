@@ -81,6 +81,10 @@
       "type": "string",
       "title": "Packaging Supplies Time"
     },
+    "packaging_supplies_price": {
+      "type": "number",
+      "title": "Packaging Supplies Price ($)"
+    },
     "packing_date": {
       "type": "string",
       "format": "date",
@@ -89,6 +93,30 @@
     "packing_time": {
       "type": "string",
       "title": "Packing Time"
+    },
+    "packing_rate_2_people": {
+      "type": "number",
+      "title": "Packing Rate - 2 People ($/hr)"
+    },
+    "packing_rate_3_people": {
+      "type": "number",
+      "title": "Packing Rate - 3 People ($/hr)"
+    },
+    "packing_rate_4_people": {
+      "type": "number",
+      "title": "Packing Rate - 4 People ($/hr)"
+    },
+    "packing_num_people": {
+      "type": "number",
+      "title": "Packing - Number of People"
+    },
+    "packing_hours": {
+      "type": "number",
+      "title": "Packing Hours"
+    },
+    "packing_total": {
+      "type": "number",
+      "title": "Packing Total ($)"
     },
     "moving_date": {
       "type": "string",
@@ -107,6 +135,10 @@
     "unpacking_time": {
       "type": "string",
       "title": "Unpacking Time"
+    },
+    "unpacking_price": {
+      "type": "number",
+      "title": "Unpacking Price ($)"
     },
     "pickup_address": {
       "type": "string",

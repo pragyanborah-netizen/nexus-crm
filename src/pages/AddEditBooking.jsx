@@ -80,10 +80,12 @@ export default function AddEditBooking() {
     additional_stops: [],
     move_date: "", move_time: "", service_type: "",
     items_to_move: [],
-    packaging_supplies_date: "", packaging_supplies_time: "",
+    packaging_supplies_date: "", packaging_supplies_time: "", packaging_supplies_price: "",
     packing_date: "", packing_time: "",
+    packing_rate_2_people: "", packing_rate_3_people: "", packing_rate_4_people: "",
+    packing_num_people: "", packing_hours: "", packing_total: "",
     moving_date: "", moving_time: "",
-    unpacking_date: "", unpacking_time: "",
+    unpacking_date: "", unpacking_time: "", unpacking_price: "",
     distance_km: "",
     num_movers: "", truck_size: "", truck_assigned: "",
     estimated_hours: "", actual_hours: "",
@@ -457,6 +459,78 @@ Write the email body only (no subject line in the body). Address the customer by
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
+
+                        {/* Packaging Supplies pricing */}
+                        {svc === "Packaging Supplies" && (
+                          <div>
+                            <label className="block text-xs text-blue-600 mb-1">Price ($)</label>
+                            <input
+                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              type="number" min="0" step="0.01" placeholder="0.00"
+                              value={form.packaging_supplies_price || ""}
+                              onChange={(e) => set("packaging_supplies_price", e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        )}
+
+                        {/* Packing pricing */}
+                        {svc === "Packing" && (
+                          <>
+                            <div className="border-t border-blue-200 pt-2">
+                              <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rates</p>
+                              <div className="grid grid-cols-3 gap-1.5 mb-2">
+                                <div>
+                                  <label className="block text-xs text-blue-600 mb-1">2 People ($/hr)</label>
+                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_2_people || ""} onChange={(e) => set("packing_rate_2_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-blue-600 mb-1">3 People ($/hr)</label>
+                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_3_people || ""} onChange={(e) => set("packing_rate_3_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-blue-600 mb-1">4 People ($/hr)</label>
+                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_4_people || ""} onChange={(e) => set("packing_rate_4_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <div>
+                                  <label className="block text-xs text-blue-600 mb-1"># People</label>
+                                  <select className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" value={form.packing_num_people || ""} onChange={(e) => { const n = e.target.value; set("packing_num_people", n); const rateKey = n === "2" ? "packing_rate_2_people" : n === "3" ? "packing_rate_3_people" : n === "4" ? "packing_rate_4_people" : null; if (rateKey && form[rateKey] && form.packing_hours) set("packing_total", (parseFloat(form[rateKey]) * parseFloat(form.packing_hours)).toFixed(2)); }} onClick={(e) => e.stopPropagation()}>
+                                    <option value="">--</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-blue-600 mb-1">Hours</label>
+                                  <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.packing_hours || ""} onChange={(e) => { const h = e.target.value; set("packing_hours", h); const n = form.packing_num_people; const rateKey = n === "2" ? "packing_rate_2_people" : n === "3" ? "packing_rate_3_people" : n === "4" ? "packing_rate_4_people" : null; if (rateKey && form[rateKey] && h) set("packing_total", (parseFloat(form[rateKey]) * parseFloat(h)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                                </div>
+                              </div>
+                              {form.packing_total && (
+                                <div className="mt-2 bg-blue-100 rounded px-2 py-1.5">
+                                  <p className="text-xs font-semibold text-blue-800">Total: ${parseFloat(form.packing_total).toLocaleString()}</p>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Unpacking pricing */}
+                        {svc === "Unpacking" && (
+                          <div>
+                            <label className="block text-xs text-blue-600 mb-1">Price ($)</label>
+                            <input
+                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              type="number" min="0" step="0.01" placeholder="0.00"
+                              value={form.unpacking_price || ""}
+                              onChange={(e) => set("unpacking_price", e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        )}
+
                       </div>
                     )}
                   </div>
