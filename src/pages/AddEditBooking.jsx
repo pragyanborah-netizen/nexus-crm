@@ -84,7 +84,7 @@ export default function AddEditBooking() {
     packing_date: "", packing_time: "",
     packing_rate_per_hour: "", packing_num_people: "", packing_hours: "", packing_total: "",
     moving_date: "", moving_time: "",
-    moving_rate_per_hour: "", moving_num_people: "", moving_hours: "", moving_total: "",
+    moving_rates_config: {}, moving_rate_per_hour: "", moving_num_people: "", moving_truck_size: "", moving_hours: "", moving_total: "",
     unpacking_date: "", unpacking_time: "",
     unpacking_rate_per_hour: "", unpacking_num_people: "", unpacking_hours: "", unpacking_total: "",
     distance_km: "",
@@ -98,7 +98,9 @@ export default function AddEditBooking() {
 
   useEffect(() => {
     if (existing) {
-      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [] }));
+      let parsedRates = {};
+      if (existing.moving_rates_config) { try { parsedRates = JSON.parse(existing.moving_rates_config); } catch(e) {} }
+      setForm((f) => ({ ...f, ...existing, items_to_move: existing.items_to_move || [], moving_rates_config: parsedRates }));
       if (existing.additional_stops?.length) {
         setExtraStops(existing.additional_stops.map((s) => ({ address: s, suburb: "", state: "VIC", postcode: "", floor: "", elevator: false })));
       }
@@ -120,6 +122,7 @@ export default function AddEditBooking() {
   const handleSave = () => {
     const data = {
       ...form,
+      moving_rates_config: JSON.stringify(form.moving_rates_config || {}),
       additional_stops: extraStops.filter((s) => s.address || s.suburb).map((s) => [s.address, s.suburb, s.state].filter(Boolean).join(", ")),
     };
     saveMutation.mutate(data);
@@ -507,24 +510,87 @@ Write the email body only (no subject line in the body). Address the customer by
 
                         {/* Moving pricing */}
                         {svc === "Moving" && (
-                          <div className="border-t border-blue-200 pt-2">
-                            <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rate</p>
+                          <div className="border-t border-blue-200 pt-2" onClick={(e) => e.stopPropagation()}>
+                            <p className="text-xs font-semibold text-blue-700 mb-2">Hourly Rates by Truck & Movers</p>
+                            {/* Rate table */}
+                            <div className="overflow-x-auto mb-3">
+                              <table className="w-full text-xs border-collapse">
+                                <thead>
+                                  <tr className="bg-blue-100">
+                                    <th className="border border-blue-200 px-1.5 py-1 text-left text-blue-700 font-semibold">Truck \ Movers</th>
+                                    {["1","2","3","4","6"].map(m => (
+                                      <th key={m} className="border border-blue-200 px-1.5 py-1 text-center text-blue-700 font-semibold">{m}M</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {["2T","5T","6T","10T","12T"].map(truck => (
+                                    <tr key={truck}>
+                                      <td className="border border-blue-200 px-1.5 py-1 font-semibold text-blue-700 bg-blue-50">{truck}</td>
+                                      {["1","2","3","4","6"].map(m => {
+                                        const cellKey = `${truck}_${m}`;
+                                        const isSelected = form.moving_truck_size === truck && String(form.moving_num_people) === m;
+                                        return (
+                                          <td key={m} className={`border border-blue-200 p-0.5 ${isSelected ? "bg-blue-200" : ""}`}>
+                                            <input
+                                              type="number" min="0" step="0.01" placeholder="—"
+                                              className="w-14 text-center border-0 bg-transparent text-xs focus:outline-none focus:bg-blue-50 rounded"
+                                              value={(form.moving_rates_config || {})[cellKey] || ""}
+                                              onChange={(e) => {
+                                                const rates = { ...(form.moving_rates_config || {}), [cellKey]: e.target.value };
+                                                set("moving_rates_config", rates);
+                                                if (isSelected) set("moving_rate_per_hour", e.target.value);
+                                              }}
+                                            />
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            {/* Selection & calculation */}
                             <div className="grid grid-cols-2 gap-1.5">
                               <div>
-                                <label className="block text-xs text-blue-600 mb-1">Rate ($/hr)</label>
-                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_rate_per_hour || ""} onChange={(e) => { const r = e.target.value; set("moving_rate_per_hour", r); if (r && form.moving_hours) set("moving_total", (parseFloat(r) * parseFloat(form.moving_hours)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                                <label className="block text-xs text-blue-600 mb-1">Truck Size</label>
+                                <select className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white"
+                                  value={form.moving_truck_size || ""}
+                                  onChange={(e) => {
+                                    const t = e.target.value;
+                                    set("moving_truck_size", t);
+                                    const r = (form.moving_rates_config || {})[`${t}_${form.moving_num_people}`];
+                                    if (r) { set("moving_rate_per_hour", r); if (form.moving_hours) set("moving_total", (parseFloat(r) * parseFloat(form.moving_hours)).toFixed(2)); }
+                                  }}>
+                                  <option value="">-- Select --</option>
+                                  {["2T","5T","6T","10T","12T"].map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
                               </div>
                               <div>
-                                <label className="block text-xs text-blue-600 mb-1"># People</label>
-                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="1" step="1" placeholder="e.g. 2" value={form.moving_num_people || ""} onChange={(e) => set("moving_num_people", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                                <label className="block text-xs text-blue-600 mb-1"># Movers</label>
+                                <select className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white"
+                                  value={form.moving_num_people || ""}
+                                  onChange={(e) => {
+                                    const m = e.target.value;
+                                    set("moving_num_people", m);
+                                    const r = (form.moving_rates_config || {})[`${form.moving_truck_size}_${m}`];
+                                    if (r) { set("moving_rate_per_hour", r); if (form.moving_hours) set("moving_total", (parseFloat(r) * parseFloat(form.moving_hours)).toFixed(2)); }
+                                  }}>
+                                  <option value="">-- Select --</option>
+                                  {["1","2","3","4","6"].map(m => <option key={m} value={m}>{m} Mover{m !== "1" ? "s" : ""}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-blue-600 mb-1">Rate ($/hr)</label>
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_rate_per_hour || ""} onChange={(e) => { const r = e.target.value; set("moving_rate_per_hour", r); if (r && form.moving_hours) set("moving_total", (parseFloat(r) * parseFloat(form.moving_hours)).toFixed(2)); }} />
                               </div>
                               <div>
                                 <label className="block text-xs text-blue-600 mb-1">Hours</label>
-                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.moving_hours || ""} onChange={(e) => { const h = e.target.value; set("moving_hours", h); if (form.moving_rate_per_hour && h) set("moving_total", (parseFloat(form.moving_rate_per_hour) * parseFloat(h)).toFixed(2)); }} onClick={(e) => e.stopPropagation()} />
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.5" placeholder="0" value={form.moving_hours || ""} onChange={(e) => { const h = e.target.value; set("moving_hours", h); if (form.moving_rate_per_hour && h) set("moving_total", (parseFloat(form.moving_rate_per_hour) * parseFloat(h)).toFixed(2)); }} />
                               </div>
-                              <div>
+                              <div className="col-span-2">
                                 <label className="block text-xs text-blue-600 mb-1">Total ($)</label>
-                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_total || ""} onChange={(e) => set("moving_total", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                                <input className="w-full border border-blue-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 bg-white" type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_total || ""} onChange={(e) => set("moving_total", e.target.value)} />
                               </div>
                             </div>
                             {form.moving_total && (

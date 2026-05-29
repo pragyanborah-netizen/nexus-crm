@@ -119,6 +119,10 @@
       "type": "string",
       "title": "Moving Time"
     },
+    "moving_rates_config": {
+      "type": "string",
+      "title": "Moving Rates Config (JSON)"
+    },
     "moving_rate_per_hour": {
       "type": "number",
       "title": "Moving Rate ($/hr)"
@@ -126,6 +130,10 @@
     "moving_num_people": {
       "type": "number",
       "title": "Moving - Number of People"
+    },
+    "moving_truck_size": {
+      "type": "string",
+      "title": "Moving Truck Size"
     },
     "moving_hours": {
       "type": "number",
