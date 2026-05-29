@@ -695,44 +695,6 @@ Write the email body only (no subject line in the body). Address the customer by
                 <input className={inputClass} type="number" value={form.distance_km} onChange={(e) => set("distance_km", e.target.value)} placeholder="e.g. 25 (optional — AI will estimate if blank)" min="0" />
               </Field>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <Field label="Truck Size">
-                <select className={selectClass} value={form.truck_size} onChange={(e) => set("truck_size", e.target.value)}>
-                  <option value="">-- Select Truck Size --</option>
-                  {["2T","5T","6T","10T","12T"].map(s => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="Truck Assigned">
-                <select className={selectClass} value={form.truck_assigned} onChange={(e) => set("truck_assigned", e.target.value)}>
-                  <option value="">-- Select Truck --</option>
-                  {trucks.map((t) => <option key={t.id} value={t.name}>{t.name} ({t.size})</option>)}
-                </select>
-              </Field>
-              <Field label="Number of Movers">
-                <input className={inputClass} type="number" value={form.num_movers} onChange={(e) => set("num_movers", e.target.value)} placeholder="e.g. 2" min="1" />
-              </Field>
-              <Field label="Estimated Hours">
-                <input className={inputClass} type="number" value={form.estimated_hours} onChange={(e) => set("estimated_hours", e.target.value)} placeholder="Hours" step="0.5" />
-              </Field>
-              <Field label="Price ($)">
-                <input className={inputClass} type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="0.00" step="0.01" />
-              </Field>
-              <Field label="Deposit Paid ($)">
-                <input className={inputClass} type="number" value={form.deposit} onChange={(e) => set("deposit", e.target.value)} placeholder="0.00" step="0.01" />
-              </Field>
-              <Field label="Balance Due ($)">
-                <input className={inputClass} type="number" value={form.balance_due} onChange={(e) => set("balance_due", e.target.value)} placeholder="0.00" step="0.01" />
-              </Field>
-              <Field label="Payment Method">
-                <select className={selectClass} value={form.payment_method} onChange={(e) => set("payment_method", e.target.value)}>
-                  <option value="">-- Select --</option>
-                  {["Cash","Card","Bank Transfer","Invoice"].map(s => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="Internal Notes" full>
-                <textarea className={inputClass} rows={2} value={form.internal_notes} onChange={(e) => set("internal_notes", e.target.value)} placeholder="Internal staff notes..." />
-              </Field>
-            </div>
           </Section>
         </>
       )}
