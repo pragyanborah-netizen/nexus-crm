@@ -20,6 +20,7 @@ const navItems = [
   { label: "Agents Report", icon: BarChart2, path: "/agents-report" },
   { label: "Trucks Management", icon: Truck, path: "/trucks" },
   { label: "Customer Management", icon: Users, path: "/customers" },
+  { label: "Email Templates", icon: Mail, path: "/email-templates" },
   { label: "Inventory List", icon: Package, path: "/inventory" },
   { label: "Supply List", icon: ShoppingCart, path: "/supplies" },
 ];

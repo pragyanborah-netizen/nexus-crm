@@ -1,0 +1,35 @@
+{
+  "name": "EmailTemplate",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "title": "Type"
+    },
+    "from_name": {
+      "type": "string",
+      "title": "From Name"
+    },
+    "from_email": {
+      "type": "string",
+      "title": "From Email"
+    },
+    "subject": {
+      "type": "string",
+      "title": "Subject"
+    },
+    "body": {
+      "type": "string",
+      "title": "Email Body (HTML)"
+    },
+    "active": {
+      "type": "boolean",
+      "title": "Active",
+      "default": true
+    }
+  },
+  "required": [
+    "type",
+    "subject"
+  ]
+}
