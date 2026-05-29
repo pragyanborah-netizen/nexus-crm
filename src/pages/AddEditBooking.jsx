@@ -543,13 +543,6 @@ Write the email body only (no subject line in the body). Address the customer by
             </div>
           </Section>
 
-          <Section title="Inventory / Items to Move">
-            <p className="text-sm text-gray-500 mb-3">Add all items being moved — this will be included in customer emails.</p>
-            <ItemsSelector value={form.items_to_move || []} onChange={(v) => set("items_to_move", v)} />
-            {(form.items_to_move || []).length > 0 && (
-              <p className="text-xs text-gray-400 mt-3">{form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added</p>
-            )}
-          </Section>
         </>
       )}
 
