@@ -716,6 +716,37 @@ Write the email body only (no subject line in the body). Address the customer by
             </div>
           </Section>
 
+          <Section title="Moving Pricing">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Field label="Number of People">
+                <select className={selectClass} value={form.moving_num_people || ""} onChange={(e) => set("moving_num_people", e.target.value)}>
+                  <option value="">Select</option>
+                  <option value="2">2 People</option>
+                  <option value="3">3 People</option>
+                </select>
+              </Field>
+              <Field label="Hours">
+                <input className={inputClass} type="number" min="0" step="0.5" value={form.moving_hours || ""} onChange={(e) => {
+                  const hrs = parseFloat(e.target.value) || 0;
+                  const rate = parseFloat(form.moving_rate_per_hour) || 0;
+                  set("moving_hours", e.target.value);
+                  if (rate) set("moving_total", (hrs * rate).toFixed(2));
+                }} placeholder="e.g. 4" />
+              </Field>
+              <Field label="Rate ($/hr)">
+                <input className={inputClass} type="number" min="0" step="0.01" value={form.moving_rate_per_hour || ""} onChange={(e) => {
+                  const rate = parseFloat(e.target.value) || 0;
+                  const hrs = parseFloat(form.moving_hours) || 0;
+                  set("moving_rate_per_hour", e.target.value);
+                  if (hrs) set("moving_total", (hrs * rate).toFixed(2));
+                }} placeholder="e.g. 200" />
+              </Field>
+              <Field label="Total ($)">
+                <input className={inputClass + " font-semibold bg-green-50 border-green-300"} type="number" min="0" step="0.01" value={form.moving_total || ""} onChange={(e) => set("moving_total", e.target.value)} placeholder="Auto-calculated" />
+              </Field>
+            </div>
+          </Section>
+
           <Section title="Truck & Pricing">
 
             {/* Packing Pricing */}
