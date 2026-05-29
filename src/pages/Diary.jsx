@@ -12,7 +12,14 @@ const statusColors = {
   "No Show": "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-const truckOrder = ["Small (4t)", "Medium (8t)", "Large (12t)", "Extra Large (14t)"];
+const SECTIONS = [
+  { key: "pack",  label: "Pack & Wrap",  color: "bg-yellow-500", match: b => (b.selected_services || []).includes("Packing") || b.service_type === "Packing" },
+  { key: "5T",    label: "5T Truck",    color: "bg-orange-500", match: b => (b.truck_size || "") === "5T" },
+  { key: "6T",    label: "6T Truck",    color: "bg-green-600",  match: b => (b.truck_size || "") === "6T" },
+  { key: "10T",   label: "10T Truck",   color: "bg-blue-600",   match: b => (b.truck_size || "") === "10T" },
+  { key: "12T",   label: "12T Truck",   color: "bg-gray-800",   match: b => (b.truck_size || "") === "12T" },
+  { key: "unpack",label: "Unpack",      color: "bg-purple-600", match: b => (b.selected_services || []).includes("Unpacking") || b.service_type === "Unpacking" },
+];
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
@@ -40,18 +47,13 @@ export default function Diary() {
 
   const dayBookings = bookings.filter((b) => b.move_date === selectedDate);
 
-  // Group by truck_size
+  // Group by sections in defined order
   const grouped = {};
+  SECTIONS.forEach(s => { grouped[s.key] = []; });
   dayBookings.forEach((b) => {
-    const key = b.truck_size || "Unassigned";
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(b);
-  });
-
-  const sortedGroups = Object.keys(grouped).sort((a, b) => {
-    const ai = truckOrder.indexOf(a);
-    const bi = truckOrder.indexOf(b);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    const section = SECTIONS.find(s => s.match(b));
+    if (section) grouped[section.key].push(b);
+    // bookings that don't match any section are silently skipped
   });
 
   return (
@@ -112,8 +114,8 @@ export default function Diary() {
             <p className="text-xs opacity-80">Total Jobs</p>
           </div>
           <div className="bg-white border border-gray-100 rounded-xl px-5 py-3 text-center min-w-24 shadow-sm">
-            <p className="text-2xl font-bold text-gray-800">{sortedGroups.length}</p>
-            <p className="text-xs text-gray-400">Truck Groups</p>
+            <p className="text-2xl font-bold text-gray-800">{SECTIONS.filter(s => (grouped[s.key] || []).length > 0).length}</p>
+            <p className="text-xs text-gray-400">Active Groups</p>
           </div>
           <div className="bg-white border border-gray-100 rounded-xl px-5 py-3 text-center min-w-24 shadow-sm">
             <p className="text-2xl font-bold text-green-600">
@@ -124,28 +126,30 @@ export default function Diary() {
         </div>
       )}
 
-      {/* Truck Groups */}
+      {/* Sections */}
       <div className="space-y-6">
-        {sortedGroups.map((truckSize) => (
-          <div key={truckSize}>
-            {/* Truck header */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-gray-800 text-white rounded-lg px-4 py-2 flex items-center gap-2">
-                <Truck size={16} />
-                <span className="font-semibold text-sm">{truckSize}</span>
+        {SECTIONS.map((section) => {
+          const jobs = grouped[section.key] || [];
+          return (
+            <div key={section.key}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`${section.color} text-white rounded-lg px-4 py-2 flex items-center gap-2`}>
+                  <Truck size={16} />
+                  <span className="font-semibold text-sm">{section.label}</span>
+                </div>
+                <span className="text-gray-400 text-sm">{jobs.length} job{jobs.length !== 1 ? "s" : ""}</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
               </div>
-              <span className="text-gray-400 text-sm">{grouped[truckSize].length} job{grouped[truckSize].length !== 1 ? "s" : ""}</span>
-              <div className="flex-1 h-px bg-gray-200"></div>
+              {jobs.length === 0 ? (
+                <p className="text-sm text-gray-400 pl-2">No jobs</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {jobs.map((b) => <BookingCard key={b.id} booking={b} />)}
+                </div>
+              )}
             </div>
-
-            {/* Job cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {grouped[truckSize].map((b) => (
-                <BookingCard key={b.id} booking={b} />
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
