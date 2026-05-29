@@ -436,7 +436,7 @@ Write the email body only (no subject line in the body). Address the customer by
                       <p className={`font-medium text-sm ${active ? "text-blue-800" : "text-gray-600"}`}>{svc}</p>
                     </button>
                     {active && (
-                      <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+                      <div className="px-3 pb-3 flex flex-col gap-2">
                         <div>
                           <label className="block text-xs text-blue-600 mb-1">Date</label>
                           <input
