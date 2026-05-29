@@ -411,11 +411,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 <option>Residential</option><option>Commercial</option><option>Office</option>
               </select>
             </Field>
-            <Field label="Status">
-              <select className={selectClass} value={form.status} onChange={(e) => set("status", e.target.value)}>
-                {["New","Confirmed","In Progress","Completed","Cancelled","No Show"].map(s => <option key={s}>{s}</option>)}
-              </select>
-            </Field>
+
             <Field label="Booking Number">
               <input className={inputClass} value={form.booking_number} onChange={(e) => set("booking_number", e.target.value)} placeholder="Auto-generated if blank" />
             </Field>
