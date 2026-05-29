@@ -94,17 +94,9 @@
       "type": "string",
       "title": "Packing Time"
     },
-    "packing_rate_2_people": {
+    "packing_rate_per_hour": {
       "type": "number",
-      "title": "Packing Rate - 2 People ($/hr)"
-    },
-    "packing_rate_3_people": {
-      "type": "number",
-      "title": "Packing Rate - 3 People ($/hr)"
-    },
-    "packing_rate_4_people": {
-      "type": "number",
-      "title": "Packing Rate - 4 People ($/hr)"
+      "title": "Packing Rate ($/hr)"
     },
     "packing_num_people": {
       "type": "number",
@@ -127,17 +119,9 @@
       "type": "string",
       "title": "Moving Time"
     },
-    "moving_rate_2_people": {
+    "moving_rate_per_hour": {
       "type": "number",
-      "title": "Moving Rate - 2 People ($/hr)"
-    },
-    "moving_rate_3_people": {
-      "type": "number",
-      "title": "Moving Rate - 3 People ($/hr)"
-    },
-    "moving_rate_4_people": {
-      "type": "number",
-      "title": "Moving Rate - 4 People ($/hr)"
+      "title": "Moving Rate ($/hr)"
     },
     "moving_num_people": {
       "type": "number",
