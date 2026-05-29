@@ -151,6 +151,10 @@
       },
       "title": "Items to Move"
     },
+    "distance_km": {
+      "type": "number",
+      "title": "Distance (km)"
+    },
     "num_movers": {
       "type": "number",
       "title": "Number of Movers"

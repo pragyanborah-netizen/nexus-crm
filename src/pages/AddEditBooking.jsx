@@ -77,6 +77,7 @@ export default function AddEditBooking() {
     additional_stops: [],
     move_date: "", move_time: "", service_type: "",
     items_to_move: [],
+    distance_km: "",
     num_movers: "", truck_size: "", truck_assigned: "",
     estimated_hours: "", actual_hours: "",
     price: "", deposit: "", balance_due: "", payment_method: "",
@@ -138,10 +139,15 @@ ${form.items_to_move.map(i => "- " + i).join("\n")}
 
 Pickup: ${[form.pickup_address, form.pickup_suburb, form.pickup_state].filter(Boolean).join(", ") || "Unknown"}
 Delivery: ${[form.delivery_address, form.delivery_suburb, form.delivery_state].filter(Boolean).join(", ") || "Unknown"}
+${form.distance_km ? `Distance between pickup and delivery: ${form.distance_km} km` : `Estimate the driving distance between the pickup and delivery locations and factor it into the quote.`}
 Customer type: ${form.customer_type || "Residential"}
 Service type: ${form.service_type || "House Removal"}
+${form.pickup_floor ? `Pickup floor/level: ${form.pickup_floor}` : ""}
+${form.pickup_elevator ? "Pickup has elevator access" : "No elevator at pickup"}
+${form.delivery_floor ? `Delivery floor/level: ${form.delivery_floor}` : ""}
+${form.delivery_elevator ? "Delivery has elevator access" : "No elevator at delivery"}
 
-Provide a realistic Australian removalist quote. Consider item volume, weight, access difficulty, and travel distance. Use current Australian market rates (typically $150-$280/hr for 2-3 movers).`,
+Provide a realistic Australian removalist quote. Factor in: item volume and weight, floor access difficulty, travel distance (include travel time cost at the hourly rate), and current Australian market rates (typically $150-$280/hr for 2-3 movers). For longer distances over 30km add a travel surcharge.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -558,6 +564,11 @@ Provide a realistic Australian removalist quote. Consider item volume, weight, a
 
           <Section title="Truck & Pricing">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Distance Between Locations (km)">
+                <input className={inputClass} type="number" value={form.distance_km} onChange={(e) => set("distance_km", e.target.value)} placeholder="e.g. 25 (optional — AI will estimate if blank)" min="0" />
+              </Field>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <Field label="Truck Size">
                 <select className={selectClass} value={form.truck_size} onChange={(e) => set("truck_size", e.target.value)}>
                   <option value="">-- Select Truck Size --</option>
