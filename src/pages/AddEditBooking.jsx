@@ -85,6 +85,8 @@ export default function AddEditBooking() {
     packing_rate_2_people: "", packing_rate_3_people: "", packing_rate_4_people: "",
     packing_num_people: "", packing_hours: "", packing_total: "",
     moving_date: "", moving_time: "",
+    moving_rate_2_people: "", moving_rate_3_people: "", moving_rate_4_people: "",
+    moving_num_people: "", moving_hours: "", moving_total: "",
     unpacking_date: "", unpacking_time: "", unpacking_price: "",
     distance_km: "",
     num_movers: "", truck_size: "", truck_assigned: "",
@@ -704,6 +706,81 @@ Write the email body only (no subject line in the body). Address the customer by
           )}
 
           <Section title="Truck & Pricing">
+
+            {/* Packing Rates */}
+            {(form.selected_services || []).includes("Packing") && (
+              <div className="mb-5 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm font-semibold text-yellow-800 mb-3">📦 Packing Rates</p>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">2 People ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_2_people || ""} onChange={(e) => set("packing_rate_2_people", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">3 People ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_3_people || ""} onChange={(e) => set("packing_rate_3_people", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">4 People ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_rate_4_people || ""} onChange={(e) => set("packing_rate_4_people", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1"># People</label>
+                    <select className={selectClass} value={form.packing_num_people || ""} onChange={(e) => { const n = e.target.value; set("packing_num_people", n); const rk = n === "2" ? form.packing_rate_2_people : n === "3" ? form.packing_rate_3_people : n === "4" ? form.packing_rate_4_people : null; if (rk && form.packing_hours) set("packing_total", (parseFloat(rk) * parseFloat(form.packing_hours)).toFixed(2)); }}>
+                      <option value="">--</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Hours</label>
+                    <input className={inputClass} type="number" min="0" step="0.5" placeholder="0" value={form.packing_hours || ""} onChange={(e) => { const h = e.target.value; set("packing_hours", h); const n = String(form.packing_num_people); const rk = n === "2" ? form.packing_rate_2_people : n === "3" ? form.packing_rate_3_people : n === "4" ? form.packing_rate_4_people : null; if (rk && h) set("packing_total", (parseFloat(rk) * parseFloat(h)).toFixed(2)); }} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Total ($)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.packing_total || ""} onChange={(e) => set("packing_total", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Moving Rates */}
+            {(form.selected_services || []).includes("Moving") && (
+              <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-semibold text-blue-800 mb-3">🚚 Moving Rates</p>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">2 People ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_rate_2_people || ""} onChange={(e) => set("moving_rate_2_people", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">3 People ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_rate_3_people || ""} onChange={(e) => set("moving_rate_3_people", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">4 People ($/hr)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_rate_4_people || ""} onChange={(e) => set("moving_rate_4_people", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1"># People</label>
+                    <select className={selectClass} value={form.moving_num_people || ""} onChange={(e) => { const n = e.target.value; set("moving_num_people", n); const rk = n === "2" ? form.moving_rate_2_people : n === "3" ? form.moving_rate_3_people : n === "4" ? form.moving_rate_4_people : null; if (rk && form.moving_hours) set("moving_total", (parseFloat(rk) * parseFloat(form.moving_hours)).toFixed(2)); }}>
+                      <option value="">--</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Hours</label>
+                    <input className={inputClass} type="number" min="0" step="0.5" placeholder="0" value={form.moving_hours || ""} onChange={(e) => { const h = e.target.value; set("moving_hours", h); const n = String(form.moving_num_people); const rk = n === "2" ? form.moving_rate_2_people : n === "3" ? form.moving_rate_3_people : n === "4" ? form.moving_rate_4_people : null; if (rk && h) set("moving_total", (parseFloat(rk) * parseFloat(h)).toFixed(2)); }} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Total ($)</label>
+                    <input className={inputClass} type="number" min="0" step="0.01" placeholder="0.00" value={form.moving_total || ""} onChange={(e) => set("moving_total", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Distance Between Locations (km)">
                 <input className={inputClass} type="number" value={form.distance_km} onChange={(e) => set("distance_km", e.target.value)} placeholder="e.g. 25 (optional — AI will estimate if blank)" min="0" />

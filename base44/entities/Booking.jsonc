@@ -127,6 +127,30 @@
       "type": "string",
       "title": "Moving Time"
     },
+    "moving_rate_2_people": {
+      "type": "number",
+      "title": "Moving Rate - 2 People ($/hr)"
+    },
+    "moving_rate_3_people": {
+      "type": "number",
+      "title": "Moving Rate - 3 People ($/hr)"
+    },
+    "moving_rate_4_people": {
+      "type": "number",
+      "title": "Moving Rate - 4 People ($/hr)"
+    },
+    "moving_num_people": {
+      "type": "number",
+      "title": "Moving - Number of People"
+    },
+    "moving_hours": {
+      "type": "number",
+      "title": "Moving Hours"
+    },
+    "moving_total": {
+      "type": "number",
+      "title": "Moving Total ($)"
+    },
     "unpacking_date": {
       "type": "string",
       "format": "date",
