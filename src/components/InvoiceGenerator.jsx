@@ -225,6 +225,22 @@ function generateInvoicePdf(form, flatRates = [], packFlatRates = [], movingFlat
     doc.text("* Deposit is not subject to GST", totalsX, y);
     y += 6;
 
+    // Deposit warning note below the orange box
+    y += 4;
+    doc.setFillColor(255, 247, 237);
+    doc.setDrawColor(253, 215, 170);
+    const depositNote = "Please note that if the deposit is not received within 24 hours, we will no longer be able to hold your booking as pending, and the truck and time slot may become available to other customers.";
+    const depositNoteLines = doc.splitTextToSize(depositNote, pageW - margin * 2 - 8);
+    doc.rect(margin, y - 4, pageW - margin * 2, depositNoteLines.length * 5 + 8, "F");
+    doc.rect(margin, y - 4, pageW - margin * 2, depositNoteLines.length * 5 + 8, "S");
+    doc.setFillColor(234, 88, 12);
+    doc.rect(margin, y - 4, 3, depositNoteLines.length * 5 + 8, "F");
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8.5);
+    doc.setTextColor(154, 52, 18);
+    doc.text(depositNoteLines, margin + 7, y + 2);
+    y += depositNoteLines.length * 5 + 10;
+
     const bal = grandTotal - Number(form.deposit);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
