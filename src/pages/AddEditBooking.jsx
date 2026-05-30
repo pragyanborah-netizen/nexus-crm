@@ -16,6 +16,7 @@ const TABS = [
   { id: "services", label: "Services & Pricing", icon: Wrench },
   { id: "content", label: "Content", icon: Package },
   { id: "summary", label: "Summary & Pricing", icon: Truck },
+  { id: "deposit", label: "Deposit", icon: FileText },
 ];
 
 const SERVICE_OPTIONS = ["Packaging Supplies", "Packing", "Moving", "Unpacking"];
@@ -1417,6 +1418,82 @@ Write the email body only (no subject line in the body). Address the customer by
           )}
         </>
       )}
+
+      {/* TAB: Deposit */}
+      {tab === "deposit" && (() => {
+        const svcs = form.selected_services || [];
+        const lines = [];
+
+        // Determine deposit hours for moving based on truck size
+        const isLargeTruck = ["10 Tonne Truck", "12 Tonne Truck"].some(t => (form.moving_truck_size || "").includes(t) || (form.truck_size || "").includes("10T") || (form.truck_size || "").includes("12T"));
+        const movingDepositHrs = isLargeTruck ? 3 : 2;
+
+        if (svcs.includes("Packing") && form.packing_rate_per_hour) {
+          const rate = Number(form.packing_rate_per_hour);
+          const extraPackers = Math.max(0, Number(form.packing_num_people || 0) - 2);
+          const effectiveRate = rate + extraPackers * 68;
+          lines.push({ label: `Packing (${form.packing_num_people || 2} packers @ $${effectiveRate}/hr × 2 hrs)`, amount: effectiveRate * 2 });
+        }
+
+        if (svcs.includes("Moving") && form.moving_rate_per_hour) {
+          const rate = Number(form.moving_rate_per_hour);
+          const baseMovers = TRUCK_RATES.find(t => t.label === form.moving_truck_size && t.rate === rate)?.movers ||
+            SAT_TRUCK_RATES.find(t => t.label === form.moving_truck_size && t.rate === rate)?.movers || 2;
+          const extraMovers = Math.max(0, Number(form.moving_num_people || 0) - baseMovers);
+          const extraRate = (() => {
+            const moveDay = form.moving_date || form.move_date;
+            const dow = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
+            return dow === 0 ? 136 : dow === 6 ? 82 : 68;
+          })();
+          const effectiveRate = rate + extraMovers * extraRate;
+          lines.push({ label: `Moving (${form.moving_truck_size || "truck"} @ $${effectiveRate}/hr × ${movingDepositHrs} hrs)`, amount: effectiveRate * movingDepositHrs });
+        }
+
+        if (svcs.includes("Unpacking") && form.unpacking_rate_per_hour) {
+          const rate = Number(form.unpacking_rate_per_hour);
+          const extraUnpackers = Math.max(0, Number(form.unpacking_num_people || 0) - 2);
+          const effectiveRate = rate + extraUnpackers * 68;
+          lines.push({ label: `Unpacking (${form.unpacking_num_people || 2} unpackers @ $${effectiveRate}/hr × 2 hrs)`, amount: effectiveRate * 2 });
+        }
+
+        const totalDeposit = lines.reduce((s, l) => s + l.amount, 0);
+
+        return (
+          <>
+            <Section title="Deposit Calculator">
+              <p className="text-sm text-gray-500 mb-4">Deposit is calculated at <strong>2 hours</strong> for standard trucks and <strong>3 hours</strong> for 10 Tonne &amp; 12 Tonne trucks.</p>
+              {lines.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <p className="text-sm">No services with rates selected yet.</p>
+                  <p className="text-xs mt-1">Go to Services &amp; Pricing to set up your rates first.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 mb-6">
+                  {lines.map((line, i) => (
+                    <div key={i} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <span className="text-sm text-gray-700">{line.label}</span>
+                      <span className="text-sm font-bold text-gray-900">${line.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between px-4 py-4 bg-blue-600 rounded-lg mt-4">
+                    <span className="text-base font-bold text-white">Total Deposit</span>
+                    <span className="text-2xl font-bold text-white">${totalDeposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { set("deposit", totalDeposit); setTab("summary"); }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded flex items-center gap-2"
+                    >
+                      <Check size={14} /> Apply Deposit &amp; Go to Summary
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Section>
+          </>
+        );
+      })()}
 
       {showDiary && (
         <DiaryModal onClose={() => setShowDiary(false)} initialDate={form.move_date || undefined} />
