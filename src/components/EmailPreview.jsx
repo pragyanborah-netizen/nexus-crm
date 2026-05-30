@@ -261,7 +261,7 @@ function getEmailContent(form, inventoryLink, flatRates, packFlatRates = [], mov
   };
 }
 
-export default function EmailPreview({ form, inventoryLink, flatRates, packFlatRates = [], movingFlatRates = [], unpackFlatRates = [] }) {
+export default function EmailPreview({ form, inventoryLink, flatRates, packFlatRates = [], movingFlatRates = [], unpackFlatRates = [], onSend, sending }) {
   const [open, setOpen] = useState(true);
   const email = getEmailContent(form, inventoryLink, flatRates, packFlatRates, movingFlatRates, unpackFlatRates);
 
@@ -300,6 +300,18 @@ export default function EmailPreview({ form, inventoryLink, flatRates, packFlatR
               dangerouslySetInnerHTML={{ __html: email.body }}
             />
           </div>
+          {onSend && (
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={onSend}
+                disabled={sending}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+              >
+                <Mail size={16} /> {sending ? "Sending..." : "Send Email"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

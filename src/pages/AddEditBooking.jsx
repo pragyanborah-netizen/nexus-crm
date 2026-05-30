@@ -1634,7 +1634,16 @@ Write the email body only (no subject line in the body). Address the customer by
 
           {/* Email Preview */}
           {["Enquiry", "Quoted", "Tentative Booking", "Booked Job"].includes(form.status) && (
-            <EmailPreview form={form} inventoryLink={inventoryLink} flatRates={flatRates} packFlatRates={packFlatRates} movingFlatRates={movingFlatRates} unpackFlatRates={unpackFlatRates} />
+            <EmailPreview
+              form={form}
+              inventoryLink={inventoryLink}
+              flatRates={flatRates}
+              packFlatRates={packFlatRates}
+              movingFlatRates={movingFlatRates}
+              unpackFlatRates={unpackFlatRates}
+              onSend={handleSendEmail}
+              sending={sendingEmail}
+            />
           )}
         </>
       )}
