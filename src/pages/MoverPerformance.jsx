@@ -125,6 +125,62 @@ export default function MoverPerformance() {
     return data;
   })();
 
+  const earningsOverTime = (() => {
+    const data = [];
+    const days = parseInt(timeRange);
+    const today = new Date();
+
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
+
+      const dayEarnings = bookings
+        .filter(b => {
+          if (b.status !== "Completed") return false;
+          const moveDate = new Date(b.move_date);
+          return moveDate.toDateString() === date.toDateString();
+        })
+        .reduce((sum, b) => sum + (b.price || 0), 0);
+
+      data.push({ date: dateStr, earnings: Math.round(dayEarnings) });
+    }
+
+    return data;
+  })();
+
+  const moverEarningsTrends = (() => {
+    const trends = {};
+    const days = parseInt(timeRange);
+    const today = new Date();
+
+    moverMetrics.forEach(mover => {
+      trends[mover.name] = [];
+      for (let i = days; i >= 0; i -= Math.ceil(days / 7)) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
+
+        const moverEarnings = bookings
+          .filter(b => {
+            if (b.status !== "Completed") return false;
+            const moveDate = new Date(b.move_date);
+            if (moveDate.toDateString() !== date.toDateString()) return false;
+            const movers = [b.agent_booked, b.agent_inquired, b.agent_quoted].filter(Boolean);
+            return movers.includes(mover.name);
+          })
+          .reduce((sum, b) => {
+            const movers = [b.agent_booked, b.agent_inquired, b.agent_quoted].filter(Boolean);
+            return sum + (b.price || 0) / movers.length;
+          }, 0);
+
+        trends[mover.name].push({ date: dateStr, earnings: Math.round(moverEarnings) });
+      }
+    });
+
+    return trends;
+  })();
+
   const ratingDistribution = (() => {
     const distribution = { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
     surveys.forEach(s => {
@@ -228,29 +284,86 @@ export default function MoverPerformance() {
 
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Star size={18} className="text-yellow-600" />
-            Customer Rating Distribution
+            <TrendingUp size={18} className="text-green-600" />
+            Daily Earnings Trend
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={ratingDistribution}
-                dataKey="count"
-                nameKey="rating"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={(entry) => `${entry.rating}: ${entry.count}`}
-              >
-                {ratingDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
+            <LineChart data={earningsOverTime}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+              <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `$${value}`} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: "white", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+                formatter={(value) => [`$${value}`, "Earnings"]}
+              />
+              <Line type="monotone" dataKey="earnings" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", strokeWidth: 2 }} />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <Star size={18} className="text-yellow-600" />
+          Customer Rating Distribution
+        </h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={ratingDistribution}
+              dataKey="count"
+              nameKey="rating"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              label={(entry) => `${entry.rating}: ${entry.count}`}
+            >
+              {ratingDistribution.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {moverMetrics.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <TrendingUp size={18} className="text-purple-600" />
+            Individual Mover Earnings Trends
+          </h2>
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={earningsOverTime}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+              <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `$${value}`} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: "white", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+                formatter={(value) => [`$${value}`, "Earnings"]}
+              />
+              <Legend />
+              {moverMetrics.slice(0, 4).map((mover, idx) => (
+                <Line
+                  key={mover.name}
+                  type="monotone"
+                  dataKey={(dataPoint) => {
+                    const moverTrend = moverEarningsTrends[mover.name] || [];
+                    const trendData = moverTrend.find(t => t.date === dataPoint.date);
+                    return trendData ? trendData.earnings : 0;
+                  }}
+                  data={earningsOverTime}
+                  stroke={COLORS[idx % COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  name={mover.name}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+          <p className="text-xs text-gray-500 mt-3">Showing top {Math.min(4, moverMetrics.length)} movers by job count</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b border-gray-100">
