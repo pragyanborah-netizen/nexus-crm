@@ -34,6 +34,7 @@ import CustomerPortal from './pages/CustomerPortal';
 import CustomerTracking from './pages/CustomerTracking';
 import CustomerInvoice from './pages/CustomerInvoice';
 import AgentMoverPortal from './pages/AgentMoverPortal';
+import GmailEnquiryProcessor from './pages/GmailEnquiryProcessor';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -99,6 +100,7 @@ const AuthenticatedApp = () => {
         <Route path="/customer/tracking" element={<CustomerTracking />} />
         <Route path="/customer/invoice" element={<CustomerInvoice />} />
         <Route path="/agent-portal" element={<AgentMoverPortal />} />
+      <Route path="/gmail-processor" element={<GmailEnquiryProcessor />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

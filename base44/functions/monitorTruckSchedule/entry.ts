@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
     });
 
     const scheduleAnalysis = [];
+    const notificationsSent = [];
 
     for (const booking of activeBookings) {
       if (!booking.truck_assigned) continue;
@@ -93,6 +94,33 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Automatically send delay notification if behind schedule and not already notified
+      if (isBehindSchedule && delayMinutes >= 15 && booking.customer_email) {
+        try {
+          await base44.functions.invoke('sendDelayNotification', {
+            booking_id: booking.id,
+            booking_number: booking.booking_number,
+            customer_name: booking.customer_first_name,
+            customer_email: booking.customer_email,
+            customer_mobile: booking.customer_mobile,
+            delay_minutes: delayMinutes,
+            new_eta: eta,
+            message: `Our team is monitoring your move and working to minimize delays. Current status: ${truckLocation.status}.`,
+          });
+          
+          notificationsSent.push({
+            booking_number: booking.booking_number,
+            customer_email: booking.customer_email,
+            delay_minutes: delayMinutes,
+            sent_at: new Date().toISOString(),
+          });
+          
+          console.log(`Delay notification sent for booking ${booking.booking_number}: ${delayMinutes} minutes`);
+        } catch (error) {
+          console.error(`Failed to send delay notification for ${booking.booking_number}:`, error);
+        }
+      }
+
       // Calculate ETA
       let eta = null;
       if (truckLocation.status === 'At Pickup') {
@@ -127,6 +155,8 @@ Deno.serve(async (req) => {
       total_active: activeBookings.length,
       behind_schedule_count: scheduleAnalysis.filter(j => j.is_behind_schedule).length,
       on_schedule_count: scheduleAnalysis.filter(j => !j.is_behind_schedule).length,
+      notifications_sent: notificationsSent.length,
+      notifications_details: notificationsSent,
       checked_at: new Date().toISOString()
     });
 
