@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Plus, X, CheckCircle, Loader2, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, X, CheckCircle, Loader2, Search, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 
 const CATEGORIES = [
   {
@@ -98,6 +98,7 @@ export default function InventoryForm() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -131,6 +132,31 @@ export default function InventoryForm() {
   };
 
   const removeItem = (item) => setItems(items.filter(i => i !== item));
+
+  const handleAiSuggest = async () => {
+    setAiLoading(true);
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are an expert Australian removalist. Based on the following move details, generate a realistic list of household items the customer is likely moving.
+
+Customer type: ${booking?.customer_type || 'Residential'}
+Pickup: ${booking?.pickup_suburb || 'unknown suburb'}
+Delivery: ${booking?.delivery_suburb || 'unknown suburb'}
+Move date: ${booking?.move_date || 'unknown'}
+
+Generate a comprehensive but realistic list of items a typical ${booking?.customer_type || 'residential'} customer would have. Include furniture, appliances, and boxes. Only include items from common household moves. Return 15-30 items.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          items: { type: "array", items: { type: "string" } }
+        }
+      }
+    });
+    if (res?.items?.length) {
+      const newItems = res.items.filter(i => !items.includes(i));
+      setItems(prev => [...prev, ...newItems]);
+    }
+    setAiLoading(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -211,6 +237,23 @@ export default function InventoryForm() {
             </p>
           </div>
         </div>
+
+        {/* AI Suggest */}
+        <button
+          type="button"
+          onClick={handleAiSuggest}
+          disabled={aiLoading}
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-3.5 rounded-2xl font-semibold text-sm shadow-lg shadow-purple-100 disabled:opacity-60 transition-all"
+        >
+          {aiLoading ? (
+            <><Loader2 size={18} className="animate-spin" /> AI is generating your checklist...</>
+          ) : (
+            <><Sparkles size={18} /> ✨ Auto-fill with AI Suggestions</>
+          )}
+        </button>
+        {items.length === 0 && !aiLoading && (
+          <p className="text-center text-xs text-gray-400 -mt-2">AI will suggest items based on your move — you can edit after</p>
+        )}
 
         {/* Search */}
         <div className="relative">
