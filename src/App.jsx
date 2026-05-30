@@ -25,6 +25,7 @@ import FeedbackDashboard from './pages/FeedbackDashboard';
 import MoverPerformance from './pages/MoverPerformance';
 import Payroll from './pages/Payroll';
 import Scheduling from './pages/Scheduling';
+import TruckTracking from './pages/TruckTracking';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -81,6 +82,7 @@ const AuthenticatedApp = () => {
         <Route path="/mover-performance" element={<MoverPerformance />} />
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/scheduling" element={<Scheduling />} />
+        <Route path="/truck-tracking" element={<TruckTracking />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -49,6 +49,7 @@ const navGroups = [
     group: "Scheduling",
     items: [
       { label: "Mover Scheduling", icon: Calendar, path: "/scheduling" },
+      { label: "Truck Tracking", icon: Truck, path: "/truck-tracking" },
     ]
   },
   {

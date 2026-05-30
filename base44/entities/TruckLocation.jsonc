@@ -1,0 +1,66 @@
+{
+  "name": "TruckLocation",
+  "type": "object",
+  "properties": {
+    "truck_name": {
+      "type": "string",
+      "title": "Truck Name"
+    },
+    "booking_id": {
+      "type": "string",
+      "title": "Booking ID"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number"
+    },
+    "latitude": {
+      "type": "number",
+      "title": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "title": "Longitude"
+    },
+    "speed": {
+      "type": "number",
+      "title": "Speed (km/h)"
+    },
+    "heading": {
+      "type": "number",
+      "title": "Heading (degrees)"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "En Route to Pickup",
+        "At Pickup",
+        "En Route to Delivery",
+        "At Delivery",
+        "Completed",
+        "Idle"
+      ],
+      "default": "Idle"
+    },
+    "last_update": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Last Update"
+    },
+    "driver_name": {
+      "type": "string",
+      "title": "Driver Name"
+    },
+    "driver_phone": {
+      "type": "string",
+      "title": "Driver Phone"
+    }
+  },
+  "required": [
+    "truck_name",
+    "latitude",
+    "longitude",
+    "last_update"
+  ]
+}
