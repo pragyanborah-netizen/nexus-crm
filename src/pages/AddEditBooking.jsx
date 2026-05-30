@@ -733,6 +733,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 const active = (form.selected_services || []).includes(svc);
                 const dateKey = svc === "Packaging Supplies" ? "packaging_supplies_date" : svc === "Packing" ? "packing_date" : svc === "Moving" ? "moving_date" : "unpacking_date";
                 const timeKey = svc === "Packaging Supplies" ? "packaging_supplies_time" : svc === "Packing" ? "packing_time" : svc === "Moving" ? "moving_time" : "unpacking_time";
+                const hoursKey = svc === "Packaging Supplies" ? "packaging_supplies_hours" : svc === "Packing" ? "packing_hours" : svc === "Moving" ? "moving_hours" : "unpacking_hours";
                 return (
                   <div key={svc} className={`rounded-lg border-2 transition-all ${active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
                     <button type="button" onClick={() => toggleService(svc)} className="w-full p-3 text-left">
@@ -762,6 +763,20 @@ Write the email body only (no subject line in the body). Address the customer by
                             onChange={(e) => set(timeKey, e.target.value)}
                             onClick={(e) => e.stopPropagation()}
                           />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-blue-600 mb-1">Estimated Hours</label>
+                          <select
+                            className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                            value={form[hoursKey] || ""}
+                            onChange={(e) => set(hoursKey, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="">Select hours...</option>
+                            {Array.from({ length: 32 }, (_, i) => (i + 1) * 0.5).map(h => (
+                              <option key={h} value={h}>{h} hr{h !== 1 ? "s" : ""}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     )}
