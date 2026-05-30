@@ -1522,6 +1522,72 @@ Write the email body only (no subject line in the body). Address the customer by
             </Section>
           )}
 
+          {/* Quote Breakdown */}
+          {(() => {
+            const services = form.selected_services || [];
+            const lines = [];
+
+            if (services.includes("Packaging Supplies") && form.packaging_supplies_price) {
+              lines.push({ label: "Packaging Supplies – Delivery Charge", amount: Number(form.packaging_supplies_price) });
+            }
+
+            if (services.includes("Packing")) {
+              const packRate = Number(form.packing_rate_per_hour) || 0;
+              const packHrs = Number(form.packing_hours) || 0;
+              const packAmt = packRate && packHrs ? packRate * packHrs : Number(form.packing_total) || 0;
+              if (packAmt) lines.push({ label: `Packing – ${packHrs} hrs @ $${packRate}/hr`, amount: packAmt });
+              packFlatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: `Packing – ${r.description}`, amount: Number(r.amount) }); });
+            }
+
+            if (services.includes("Moving")) {
+              const moveRate = Number(form.moving_rate_per_hour) || 0;
+              const moveHrs = Number(form.moving_hours) || 0;
+              const moveAmt = moveRate && moveHrs ? moveRate * moveHrs : Number(form.moving_total) || 0;
+              if (moveAmt) lines.push({ label: `Moving – ${moveHrs} hrs @ $${moveRate}/hr${form.moving_truck_size ? ` (${form.moving_truck_size})` : ""}`, amount: moveAmt });
+              movingFlatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: `Moving – ${r.description}`, amount: Number(r.amount) }); });
+            }
+
+            if (services.includes("Unpacking")) {
+              const unpackRate = Number(form.unpacking_rate_per_hour) || 0;
+              const unpackHrs = Number(form.unpacking_hours) || 0;
+              const unpackAmt = unpackRate && unpackHrs ? unpackRate * unpackHrs : Number(form.unpacking_total) || 0;
+              if (unpackAmt) lines.push({ label: `Unpacking – ${unpackHrs} hrs @ $${unpackRate}/hr`, amount: unpackAmt });
+              unpackFlatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: `Unpacking – ${r.description}`, amount: Number(r.amount) }); });
+            }
+
+            flatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: r.description, amount: Number(r.amount) }); });
+
+            const grandTotal = lines.reduce((s, l) => s + l.amount, 0);
+
+            if (lines.length === 0) return null;
+
+            return (
+              <Section title="Quote Breakdown">
+                <div className="space-y-2">
+                  {lines.map((line, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                      <span className="text-sm text-gray-600">{line.label}</span>
+                      <span className="text-sm font-semibold text-gray-800">${line.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-3 mt-2 border-t-2 border-blue-200 bg-blue-50 rounded-lg px-4 py-3">
+                    <span className="text-base font-bold text-blue-800">Total Quote</span>
+                    <span className="text-2xl font-bold text-blue-700">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => set("price", grandTotal)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-2"
+                    >
+                      <Check size={14} /> Apply to Quote
+                    </button>
+                  </div>
+                </div>
+              </Section>
+            );
+          })()}
+
           <Section title="Pricing">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Field label="Estimated Total ($)">
