@@ -14,6 +14,7 @@ import CustomerManagement from './pages/CustomerManagement';
 import TrucksManagement from './pages/TrucksManagement';
 import AgentsReport from './pages/AgentsReport';
 import Diary from './pages/Diary';
+import BulkSmsTool from './pages/BulkSmsTool';
 import TimeLog from './pages/TimeLog';
 import EmailTemplates from './pages/EmailTemplates';
 import Calendars from './pages/Calendars';
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
         <Route path="/email-templates" element={<EmailTemplates />} />
         <Route path="/calendars" element={<Calendars />} />
         <Route path="/feedback" element={<FeedbackDashboard />} />
+        <Route path="/bulk-sms" element={<BulkSmsTool />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
