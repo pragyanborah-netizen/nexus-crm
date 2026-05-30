@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
-  ChevronRight, Menu, X, PlusCircle, Star, MessageSquare
+  ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -30,7 +30,7 @@ const navGroups = [
   {
     group: "Time & Availability",
     items: [
-      { label: "Mover Availability", icon: UserCheck, path: "/mover-availability" },
+      { label: "Mover Availability", icon: Calendar, path: "/mover-availability" },
       { label: "Manual Time Log", icon: Clock, path: "/time-log" },
       { label: "Hours Worked", icon: Clock, path: "/hours-worked" },
     ]

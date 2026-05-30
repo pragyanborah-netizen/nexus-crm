@@ -1,0 +1,53 @@
+{
+  "name": "MoverAvailability",
+  "type": "object",
+  "properties": {
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "employee_email": {
+      "type": "string",
+      "title": "Employee Email"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+    },
+    "reason": {
+      "type": "string",
+      "title": "Reason"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected"
+      ],
+      "default": "Pending",
+      "title": "Status"
+    },
+    "admin_notes": {
+      "type": "string",
+      "title": "Admin Notes"
+    },
+    "requested_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Requested Date"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "start_date",
+    "end_date"
+  ]
+}

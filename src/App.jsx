@@ -20,6 +20,7 @@ import EmailTemplates from './pages/EmailTemplates';
 import Calendars from './pages/Calendars';
 import InventoryForm from './pages/InventoryForm';
 import SurveyPage from './pages/Survey';
+import MoverAvailability from './pages/MoverAvailability';
 import FeedbackDashboard from './pages/FeedbackDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/inventory/:bookingId" element={<InventoryForm />} />
       <Route path="/survey/:survey_id" element={<SurveyPage />} />
+      <Route path="/mover-availability" element={<MoverAvailability />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
