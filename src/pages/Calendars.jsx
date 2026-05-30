@@ -214,8 +214,8 @@ export default function Calendars() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Calendar</h1>
-          <p className="text-sm text-gray-500">Drag bookings between days to reschedule</p>
+          <h1 className="text-2xl font-bold text-gray-800">Booking Calendar</h1>
+          <p className="text-sm text-gray-500">Drag and drop bookings to reschedule • Click to edit</p>
         </div>
         {/* View toggle */}
         <div className="flex items-center gap-2">

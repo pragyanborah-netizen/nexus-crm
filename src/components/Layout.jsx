@@ -14,8 +14,8 @@ const navGroups = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, path: "/" },
       { label: "Bookings", icon: BookOpen, path: "/bookings" },
+      { label: "Calendar View", icon: CalendarDays, path: "/calendars" },
       { label: "Diary", icon: CalendarDays, path: "/diary" },
-      { label: "Calendars", icon: CalendarDays, path: "/calendars" },
     ]
   },
   {
