@@ -164,6 +164,7 @@ function getEmailContent(form, inventoryLink, flatRates, packFlatRates = [], mov
       <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Delivery</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
       ${form.customer_mobile ? `<tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Mobile</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.customer_mobile}</td></tr>` : ""}
       ${form.deposit ? `<tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Deposit Required</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;color:#1d4ed8;">$${Number(form.deposit).toLocaleString()}</td></tr>` : ""}
+      ${form.price ? `<tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Total Quote</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;color:#1d4ed8;">$${Number(form.price).toLocaleString()}</td></tr>` : ""}
     </table>
 
     ${inventoryHtml !== `<p style="color:#64748b;font-style:italic;">No items listed.</p>` ? `
