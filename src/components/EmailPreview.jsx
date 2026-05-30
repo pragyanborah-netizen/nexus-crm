@@ -169,7 +169,7 @@ function getEmailContent(form, inventoryLink, flatRates) {
 }
 
 export default function EmailPreview({ form, inventoryLink, flatRates }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const email = getEmailContent(form, inventoryLink, flatRates);
 
   const statusLabel = {
