@@ -854,6 +854,114 @@ Write the email body only (no subject line in the body). Address the customer by
             </Section>
           )}
 
+          {(form.selected_services || []).includes("Unpacking") && (
+            <Section title="Unpacking Rate">
+              {(() => {
+                const EXTRA_UNPACKER_RATE = 68;
+                const unpackDay = form.unpacking_date || form.move_date;
+                const unpackDow = unpackDay ? new Date(unpackDay + "T00:00:00").getDay() : null;
+                const selectedRate = Number(form.unpacking_rate_per_hour) === 168 ? { label: "2 Unpackers", movers: 2, rate: 168 } : null;
+                const baseUnpackers = selectedRate ? selectedRate.movers : 0;
+                const extraUnpackers = selectedRate ? Math.max(0, Number(form.unpacking_num_people) - baseUnpackers) : 0;
+                const totalUnpackRate = selectedRate ? selectedRate.rate + extraUnpackers * EXTRA_UNPACKER_RATE : 0;
+                return (
+                  <>
+                    <p className="text-sm text-gray-500 mb-4">Select unpacking crew size and enter estimated hours</p>
+                    <div className={`rounded-xl border-2 p-4 mb-4 border-gray-200 bg-white`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-semibold text-gray-700">📅 Monday – Friday Unpacking Rates</h3>
+                        <p className="text-xs text-gray-400 ml-auto">Extra unpacker: <span className="font-medium text-gray-600">${EXTRA_UNPACKER_RATE}/hr</span></p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {[{ label: "2 Unpackers", movers: 2, rate: 168 }].map((p) => {
+                          const active = Number(form.unpacking_rate_per_hour) === p.rate;
+                          return (
+                            <button
+                              key={p.label}
+                              type="button"
+                              onClick={() => {
+                                set("unpacking_num_people", p.movers);
+                                set("unpacking_rate_per_hour", p.rate);
+                                if (form.unpacking_hours) set("unpacking_total", p.rate * Number(form.unpacking_hours));
+                              }}
+                              className={`rounded-lg border-2 p-4 text-left transition-all ${
+                                active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{p.label}</span>
+                                {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
+                              </div>
+                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
+                                ${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
+                              </p>
+                              <p className="text-xs text-gray-500 mb-2">{p.movers} unpackers included</p>
+                              <div className="border-t border-gray-100 pt-2 space-y-1">
+                                <p className="text-xs text-gray-400 font-medium">+Extra unpackers (${EXTRA_UNPACKER_RATE}/hr):</p>
+                                <p className="text-xs text-gray-500">+1 → <span className="font-semibold text-gray-700">${p.rate + EXTRA_UNPACKER_RATE}/hr</span></p>
+                                <p className="text-xs text-gray-500">+2 → <span className="font-semibold text-gray-700">${p.rate + EXTRA_UNPACKER_RATE * 2}/hr</span></p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selectedRate && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                          <div className="flex flex-wrap items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Base rate:</span>
+                              <span className="font-semibold text-gray-800">${selectedRate.rate}/hr ({baseUnpackers} unpackers)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Total rate:</span>
+                              <span className="font-semibold text-green-700 text-base">${totalUnpackRate}/hr</span>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-sm font-medium text-gray-700 mb-1">Additional Unpackers <span className="text-xs font-normal text-gray-400">(${EXTRA_UNPACKER_RATE}/unpacker/hr)</span></p>
+                            <div className="flex items-center gap-3 mt-2">
+                              <button type="button" onClick={() => { if (Number(form.unpacking_num_people) > baseUnpackers) set("unpacking_num_people", Number(form.unpacking_num_people) - 1); }} disabled={Number(form.unpacking_num_people) <= baseUnpackers} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold">−</button>
+                              <div className="text-center">
+                                <span className="text-2xl font-bold text-gray-800">{extraUnpackers}</span>
+                                <p className="text-xs text-gray-400">extra unpacker{extraUnpackers !== 1 ? "s" : ""}</p>
+                              </div>
+                              <button type="button" onClick={() => set("unpacking_num_people", Number(form.unpacking_num_people) + 1)} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold">+</button>
+                              <div className="ml-4 text-sm text-gray-500">
+                                Total unpackers: <span className="font-semibold text-gray-800">{form.unpacking_num_people}</span>
+                                {extraUnpackers > 0 && <span className="ml-2 text-orange-600">(+${extraUnpackers * EXTRA_UNPACKER_RATE}/hr)</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-4 items-end">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Estimated Hours</label>
+                              <input
+                                type="number" min="0" step="0.5"
+                                className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500"
+                                placeholder="e.g. 3"
+                                value={form.unpacking_hours || ""}
+                                onChange={(e) => {
+                                  set("unpacking_hours", e.target.value);
+                                  set("unpacking_total", totalUnpackRate * Number(e.target.value));
+                                }}
+                              />
+                            </div>
+                            {form.unpacking_hours && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                                <p className="text-xs text-blue-500 mb-0.5">Unpacking Total</p>
+                                <p className="text-xl font-bold text-blue-700">${(totalUnpackRate * Number(form.unpacking_hours)).toFixed(0)}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </Section>
+          )}
+
           {(form.selected_services || []).includes("Moving") && <Section title="Truck &amp; Rate Selection">
             {(() => {
               const moveDay = form.moving_date || form.move_date;
