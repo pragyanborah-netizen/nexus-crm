@@ -723,7 +723,11 @@ Write the email body only (no subject line in the body). Address the customer by
               handleSave();
             }}
             disabled={saveMutation.isPending}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+            className={`px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50 ${
+              form.status === "Confirmed"
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
+            }`}
           >
             <Check size={16} /> Deposit Collected
           </button>
