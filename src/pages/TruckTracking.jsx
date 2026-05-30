@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
-import { Truck, MapPin, Phone, Navigation, Clock, AlertCircle, RefreshCw, Search, Filter } from "lucide-react";
+import { Truck, MapPin, Phone, Navigation, Clock, AlertCircle, RefreshCw, Search, Filter, Route } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -47,6 +47,8 @@ export default function TruckTracking() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [showOptimizedRoutes, setShowOptimizedRoutes] = useState(false);
+  const [routeData, setRouteData] = useState({});
 
   const { data: locations = [], isLoading } = useQuery({
     queryKey: ["truck-locations"],
@@ -72,6 +74,16 @@ export default function TruckTracking() {
   const { data: bookings = [] } = useQuery({
     queryKey: ["active-bookings"],
     queryFn: () => base44.entities.Booking.list(),
+  });
+
+  const calculateRouteMutation = useMutation({
+    mutationFn: async (bookingId) => {
+      const response = await base44.functions.invoke('calculateOptimalRoute', { booking_id: bookingId });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setRouteData(prev => ({ ...prev, [data.booking_id]: data.route }));
+    }
   });
 
   const filteredLocations = locations.filter(loc => {
@@ -106,15 +118,38 @@ export default function TruckTracking() {
       ? [activeTrucks[0].latitude, activeTrucks[0].longitude]
       : [-37.8136, 144.9631]; // Melbourne CBD
 
+  const handleToggleRoute = (loc) => {
+    if (loc.booking_id) {
+      if (routeData[loc.booking_id]) {
+        // Remove route
+        const newData = { ...routeData };
+        delete newData[loc.booking_id];
+        setRouteData(newData);
+      } else {
+        // Calculate route
+        calculateRouteMutation.mutate(loc.booking_id);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Live Truck Tracking</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time location monitoring for active moves</p>
+          <p className="text-sm text-gray-500 mt-1">Real-time location monitoring with AI-optimized routes</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowOptimizedRoutes(!showOptimizedRoutes)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
+              showOptimizedRoutes ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            <Route size={16} />
+            AI Routes: {showOptimizedRoutes ? "ON" : "OFF"}
+          </button>
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
@@ -238,13 +273,34 @@ export default function TruckTracking() {
               />
               <MapUpdater center={centerMap} />
               
-              {filteredLocations.map((loc) => (
+              {/* Render optimized routes */}
+              {showOptimizedRoutes && Object.entries(routeData).map(([bookingId, route]) => (
+                route.polyline && route.polyline.length > 0 && (
+                  <Polyline
+                    key={`route-${bookingId}`}
+                    positions={route.polyline}
+                    color={route.traffic_condition === 'heavy' ? '#ef4444' : route.traffic_condition === 'moderate' ? '#f59e0b' : '#10b981'}
+                    weight={4}
+                    opacity={0.7}
+                    dashArray={route.traffic_condition === 'heavy' ? '5, 5' : null}
+                  />
+                )
+              ))}
+              
+              {filteredLocations.map((loc) => {
+                const hasRoute = routeData[loc.booking_id];
+                return (
                 <Marker
                   key={loc.truck_name}
                   position={[loc.latitude, loc.longitude]}
                   icon={getTruckIcon(loc.status)}
                   eventHandlers={{
-                    click: () => setSelectedTruck(loc),
+                    click: () => {
+                      setSelectedTruck(loc);
+                      if (showOptimizedRoutes && loc.booking_id) {
+                        handleToggleRoute(loc);
+                      }
+                    },
                   }}
                 >
                   <Popup>
@@ -275,7 +331,8 @@ export default function TruckTracking() {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
+              );
+              })}
             </MapContainer>
           </div>
         </div>
@@ -408,35 +465,95 @@ export default function TruckTracking() {
           </div>
 
           {selectedTruck.booking_number && (
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Booking Information</h3>
-              {(() => {
-                const booking = getBookingDetails(selectedTruck.booking_id);
-                if (!booking) return null;
-                return (
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-500">Customer:</span>
-                      <p className="font-medium">{booking.customer_first_name} {booking.customer_last_name}</p>
+            <>
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Booking Information</h3>
+                {(() => {
+                  const booking = getBookingDetails(selectedTruck.booking_id);
+                  if (!booking) return null;
+                  return (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500">Customer:</span>
+                        <p className="font-medium">{booking.customer_first_name} {booking.customer_last_name}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Pickup:</span>
+                        <p className="font-medium">{booking.pickup_suburb || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Delivery:</span>
+                        <p className="font-medium">{booking.delivery_suburb || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Status:</span>
+                        <span className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[booking.status]}`}>
+                          {booking.status}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Pickup:</span>
-                      <p className="font-medium">{booking.pickup_suburb || "N/A"}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Delivery:</span>
-                      <p className="font-medium">{booking.delivery_suburb || "N/A"}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Status:</span>
-                      <span className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[booking.status]}`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+                  );
+                })()}
+              </div>
+
+              {/* AI Route Information */}
+              {showOptimizedRoutes && routeData[selectedTruck.booking_id] && (
+                <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                    <Route size={16} />
+                    AI-Optimized Route
+                  </h3>
+                  {(() => {
+                    const route = routeData[selectedTruck.booking_id];
+                    return (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Distance:</span>
+                          <span className="font-medium text-gray-800">{route.distance_km?.toFixed(1)} km</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Est. Duration:</span>
+                          <span className="font-medium text-gray-800">{route.duration_minutes} min</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Traffic:</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            route.traffic_condition === 'heavy' ? 'bg-red-100 text-red-700' :
+                            route.traffic_condition === 'moderate' ? 'bg-orange-100 text-orange-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {route.traffic_condition?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Traffic-Adjusted ETA:</span>
+                          <span className="font-medium text-gray-800">{route.traffic_adjusted_duration} min</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Expected Arrival:</span>
+                          <span className="font-medium text-gray-800">
+                            {route.eta ? new Date(route.eta).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                          </span>
+                        </div>
+                        {route.waypoints && route.waypoints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-purple-200">
+                            <p className="text-xs text-purple-700 font-medium mb-2">Route Waypoints:</p>
+                            <ul className="space-y-1">
+                              {route.waypoints.map((wp, idx) => (
+                                <li key={idx} className="text-xs text-gray-600 flex items-center gap-2">
+                                  <span className="w-4 h-4 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px]">{idx + 1}</span>
+                                  {wp.description}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
