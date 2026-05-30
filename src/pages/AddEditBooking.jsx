@@ -854,7 +854,7 @@ Write the email body only (no subject line in the body). Address the customer by
             </Section>
           )}
 
-          <Section title="Truck &amp; Rate Selection">
+          {(form.selected_services || []).includes("Moving") && <Section title="Truck &amp; Rate Selection">
             {(() => {
               const moveDay = form.moving_date || form.move_date;
               const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
@@ -1079,7 +1079,7 @@ Write the email body only (no subject line in the body). Address the customer by
               );
             })()}
 
-          </Section>
+          </Section>}
         </>
       )}
 
