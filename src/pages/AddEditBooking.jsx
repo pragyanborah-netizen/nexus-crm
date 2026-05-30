@@ -731,13 +731,9 @@ Write the email body only (no subject line in the body). Address the customer by
                 const EXTRA_PACKER_RATE = 68;
                 const PACKING_RATES_WEEKDAY = [
                   { label: "2 Packers", movers: 2, rate: 168 },
-                  { label: "3 Packers", movers: 3, rate: 236 },
-                  { label: "4 Packers", movers: 4, rate: 304 },
                 ];
                 const PACKING_RATES_SAT = [
                   { label: "2 Packers", movers: 2, rate: 196 },
-                  { label: "3 Packers", movers: 3, rate: 264 },
-                  { label: "4 Packers", movers: 4, rate: 332 },
                 ];
 
                 const PackRateGrid = ({ rates, sectionLabel, isActive }) => {
