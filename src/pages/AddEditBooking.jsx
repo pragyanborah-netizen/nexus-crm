@@ -252,6 +252,50 @@ export default function AddEditBooking() {
     if (!form.price) set("price", rec.baseHours * rec.rate);
   };
 
+  const inventoryLink = isEdit ? `${window.location.origin}/inventory/${id}` : null;
+  const [copiedLink, setCopiedLink] = useState(false);
+  const copyInventoryLink = () => {
+    navigator.clipboard.writeText(inventoryLink);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const [sendingEnquiry, setSendingEnquiry] = useState(false);
+  const handleSendEnquiryEmail = async () => {
+    if (!form.customer_email) { alert("No customer email address on file."); return; }
+    setSendingEnquiry(true);
+    const link = inventoryLink || "";
+    const body = `
+<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1e293b;">
+  <div style="background:#1d4ed8;padding:20px 24px;">
+    <h1 style="color:white;margin:0;font-size:20px;">MOVE ON REMOVALS</h1>
+  </div>
+  <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
+    <p>Hi ${form.customer_first_name},</p>
+    <p>Thank you for reaching out to Move On Australia!</p>
+    <p>We tried to contact you recently but were unable to get through. We'd love to help you with your upcoming move and provide you with an accurate quote.</p>
+    <p>To help us prepare the best quote for you, please click the button below to fill in a list of items you'll need moved:</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${link}" style="background:#1d4ed8;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;">📋 Add My Inventory</a>
+    </div>
+    <p style="font-size:13px;color:#64748b;">Or copy this link: <a href="${link}" style="color:#1d4ed8;">${link}</a></p>
+    <p>Once we receive your inventory, we'll prepare a detailed quote and reach out shortly.</p>
+    <p>Please feel free to call us back at your earliest convenience, or reply to this email with any questions.</p>
+    <p style="margin-top:24px;">Kind regards,<br/><strong>Move On Removals Team</strong><br/>moveme@moveonremovals.com.au</p>
+  </div>
+  <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
+    <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
+  </div>
+</div>`;
+    await base44.integrations.Core.SendEmail({
+      to: form.customer_email,
+      subject: `Move On Removals – We tried to reach you`,
+      body,
+    });
+    setSendingEnquiry(false);
+    alert("Enquiry email sent to " + form.customer_email);
+  };
+
   const [sendingEmail, setSendingEmail] = useState(false);
   const [aiQuoting, setAiQuoting] = useState(false);
 
@@ -598,8 +642,25 @@ Write the email body only (no subject line in the body). Address the customer by
           >
             <CalendarDays size={16} /> Diary
           </button>
+          {isEdit && inventoryLink && (
+            <button
+              type="button"
+              onClick={copyInventoryLink}
+              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
+            >
+              <Package size={16} /> {copiedLink ? "Copied!" : "Copy Inventory Link"}
+            </button>
+          )}
           {form.customer_email && (
             <>
+              <button
+                type="button"
+                onClick={handleSendEnquiryEmail}
+                disabled={sendingEnquiry || !isEdit}
+                className="bg-white border border-orange-300 hover:bg-orange-50 text-orange-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+              >
+                <Mail size={16} /> {sendingEnquiry ? "Sending..." : "Send Enquiry"}
+              </button>
               <button
                 type="button"
                 onClick={() => { setAiEmailPrompt(""); setAiEmailDraft(""); setAiEmailSubject(""); setShowAiEmailModal(true); }}

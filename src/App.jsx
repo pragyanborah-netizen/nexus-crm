@@ -17,6 +17,7 @@ import Diary from './pages/Diary';
 import TimeLog from './pages/TimeLog';
 import EmailTemplates from './pages/EmailTemplates';
 import Calendars from './pages/Calendars';
+import InventoryForm from './pages/InventoryForm';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      <Route path="/inventory/:bookingId" element={<InventoryForm />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
