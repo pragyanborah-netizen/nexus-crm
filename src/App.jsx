@@ -23,6 +23,7 @@ import SurveyPage from './pages/Survey';
 import MoverAvailability from './pages/MoverAvailability';
 import FeedbackDashboard from './pages/FeedbackDashboard';
 import MoverPerformance from './pages/MoverPerformance';
+import Payroll from './pages/Payroll';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -77,6 +78,7 @@ const AuthenticatedApp = () => {
         <Route path="/feedback" element={<FeedbackDashboard />} />
         <Route path="/bulk-sms" element={<BulkSmsTool />} />
         <Route path="/mover-performance" element={<MoverPerformance />} />
+        <Route path="/payroll" element={<Payroll />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

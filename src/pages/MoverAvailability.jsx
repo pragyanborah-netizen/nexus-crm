@@ -723,7 +723,7 @@ export default function MoverAvailability() {
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Request Modal */}
       {showRequestModal && (
