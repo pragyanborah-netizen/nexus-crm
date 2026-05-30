@@ -719,13 +719,6 @@ Write the email body only (no subject line in the body). Address the customer by
           <InvoiceGenerator form={form} flatRates={flatRates} packFlatRates={packFlatRates} movingFlatRates={movingFlatRates} unpackFlatRates={unpackFlatRates} />
           <button
             type="button"
-            onClick={handleGeneratePdf}
-            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
-          >
-            <FileText size={16} /> PDF Quote
-          </button>
-          <button
-            type="button"
             onClick={handleSaveDraft}
             disabled={saveDraftMutation.isPending}
             className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
