@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, Star, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
@@ -18,10 +18,15 @@ const StatCard = ({ icon: Icon, label, value, sublabel, color }) => (
 );
 
 export default function Payroll() {
-  const [startDate, setStartDate] = useState(new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramStart = urlParams.get('period_start');
+  const paramEnd = urlParams.get('period_end');
+  
+  const [startDate, setStartDate] = useState(paramStart || new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(paramEnd || new Date().toISOString().split('T')[0]);
   const [payrollData, setPayrollData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
 
   const calculatePayrollMutation = useMutation({
     mutationFn: async (payload) => {
@@ -39,6 +44,25 @@ export default function Payroll() {
     }
   });
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        if (user) {
+          setCurrentUserEmail(user.email);
+          if (paramStart && paramEnd) {
+            setLoading(true);
+            calculatePayrollMutation.mutate({ start_date: paramStart, end_date: paramEnd });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      }
+    };
+    fetchUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCalculate = () => {
     setLoading(true);
     calculatePayrollMutation.mutate({ start_date: startDate, end_date: endDate });
@@ -50,7 +74,6 @@ export default function Payroll() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Header
     doc.setFillColor(37, 99, 235);
     doc.rect(0, 0, pageWidth, 30, 'F');
     doc.setTextColor(255, 255, 255);
@@ -63,7 +86,6 @@ export default function Payroll() {
 
     let y = 40;
 
-    // Summary Section
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
@@ -90,13 +112,11 @@ export default function Payroll() {
 
     y += 10;
 
-    // Mover Details
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Mover Breakdown', 14, y);
     y += 8;
 
-    // Table headers
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setFillColor(241, 245, 249);
@@ -109,7 +129,6 @@ export default function Payroll() {
     doc.text('Total', 170, y, { align: 'right' });
     y += 2;
 
-    // Table rows
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     payrollData.payroll_data.forEach((mover, idx) => {
@@ -129,7 +148,6 @@ export default function Payroll() {
       y += 6;
     });
 
-    // Footer
     const footerY = doc.internal.pageSize.getHeight() - 15;
     doc.setFontSize(8);
     doc.setTextColor(156, 163, 175);
@@ -138,61 +156,79 @@ export default function Payroll() {
     doc.save(`Payroll_Summary_${startDate}_to_${endDate}.pdf`);
   };
 
+  const isIndividualView = !!paramStart && !!paramEnd;
+  const displayData = payrollData && isIndividualView && currentUserEmail
+    ? {
+        ...payrollData,
+        payroll_data: payrollData.payroll_data.filter(p => p.mover_name === currentUserEmail),
+        summary: {
+          ...payrollData.summary,
+          mover_count: 1,
+          total_payroll: payrollData.payroll_data.find(p => p.mover_name === currentUserEmail)?.total_wage || 0
+        }
+      }
+    : payrollData;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payroll Management</h1>
-          <p className="text-sm text-gray-500 mt-1">Calculate mover wages, bonuses, and export payroll summaries</p>
+          <h1 className="text-2xl font-bold text-gray-800">{isIndividualView ? 'My Payroll Summary' : 'Payroll Management'}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isIndividualView 
+              ? `Pay period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+              : 'Calculate mover wages, bonuses, and export payroll summaries'}
+          </p>
         </div>
       </div>
 
-      {/* Date Range Selector */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Calendar size={18} className="text-blue-600" />
-          Select Payroll Period
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleCalculate}
-              disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <DollarSign size={16} />
-              {loading ? 'Calculating...' : 'Calculate Payroll'}
-            </button>
-            {payrollData && (
+      {!isIndividualView && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Calendar size={18} className="text-blue-600" />
+            Select Payroll Period
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="flex gap-2">
               <button
-                onClick={handleExportPDF}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                onClick={handleCalculate}
+                disabled={loading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <Download size={16} />
-                Export PDF
+                <DollarSign size={16} />
+                {loading ? 'Calculating...' : 'Calculate Payroll'}
               </button>
-            )}
+              {payrollData && (
+                <button
+                  onClick={handleExportPDF}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                >
+                  <Download size={16} />
+                  Export PDF
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {loading && (
         <div className="flex items-center justify-center py-12">
@@ -203,41 +239,39 @@ export default function Payroll() {
         </div>
       )}
 
-      {payrollData && !loading && (
+      {displayData && !loading && (
         <>
-          {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatCard
               icon={DollarSign}
               label="Total Payroll"
-              value={`$${payrollData.summary.total_payroll.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={`$${displayData.summary.total_payroll.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               sublabel="Total wages + bonuses"
               color="bg-blue-500"
             />
             <StatCard
               icon={Users}
               label="Movers Paid"
-              value={payrollData.summary.mover_count}
-              sublabel={`For ${payrollData.summary.total_jobs} jobs`}
+              value={displayData.summary.mover_count}
+              sublabel={`For ${displayData.summary.total_jobs} jobs`}
               color="bg-green-500"
             />
             <StatCard
               icon={Clock}
               label="Total Hours"
-              value={payrollData.summary.total_hours.toFixed(1)}
+              value={displayData.summary.total_hours.toFixed(1)}
               sublabel="Logged hours"
               color="bg-purple-500"
             />
             <StatCard
               icon={TrendingUp}
               label="Total Bonuses"
-              value={`$${payrollData.summary.total_bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={`$${displayData.summary.total_bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               sublabel="Performance bonuses"
               color="bg-yellow-500"
             />
           </div>
 
-          {/* Wage Breakdown */}
           <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b border-gray-100">
               <h2 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -245,7 +279,7 @@ export default function Payroll() {
                 Wage Breakdown
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                {new Date(payrollData.period.start_date).toLocaleDateString()} - {new Date(payrollData.period.end_date).toLocaleDateString()}
+                {new Date(displayData.period.start_date).toLocaleDateString()} - {new Date(displayData.period.end_date).toLocaleDateString()}
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -262,7 +296,7 @@ export default function Payroll() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payrollData.payroll_data.map((mover) => (
+                  {displayData.payroll_data.map((mover) => (
                     <tr key={mover.mover_name} className="border-t border-gray-100 hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
@@ -298,7 +332,7 @@ export default function Payroll() {
                 </tbody>
               </table>
             </div>
-            {payrollData.payroll_data.length === 0 && (
+            {displayData.payroll_data.length === 0 && (
               <div className="text-center py-12 text-gray-400">
                 <DollarSign size={40} className="mx-auto mb-3 opacity-50" />
                 <p>No payroll data for this period</p>
@@ -306,9 +340,8 @@ export default function Payroll() {
             )}
           </div>
 
-          {/* Detailed Breakdown per Mover */}
           <div className="space-y-4">
-            {payrollData.payroll_data.map((mover) => (
+            {displayData.payroll_data.map((mover) => (
               <div key={mover.mover_name} className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -378,7 +411,7 @@ export default function Payroll() {
         </>
       )}
 
-      {!payrollData && !loading && (
+      {!displayData && !loading && (
         <div className="text-center py-12 text-gray-400">
           <DollarSign size={48} className="mx-auto mb-4 opacity-50" />
           <p className="text-gray-600 font-medium">Select a date range and calculate payroll</p>
