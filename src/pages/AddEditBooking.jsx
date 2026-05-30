@@ -26,6 +26,16 @@ const TRUCK_RATES = [
   { label: "12 Tonne Truck", truckSize: "12T", movers: 3, rate: 288 },
 ];
 
+const SAT_TRUCK_RATES = [
+  { label: "2 Tonne Truck",  truckSize: "2T",  movers: 1, rate: 170 },
+  { label: "2 Tonne Truck",  truckSize: "2T",  movers: 2, rate: 186 },
+  { label: "5 Tonne Truck",  truckSize: "5T",  movers: 2, rate: 196 },
+  { label: "6 Tonne Truck",  truckSize: "6T",  movers: 2, rate: 206 },
+  { label: "10 Tonne Truck", truckSize: "10T", movers: 2, rate: 246 },
+  { label: "10 Tonne Truck", truckSize: "10T", movers: 3, rate: 368 },
+  { label: "12 Tonne Truck", truckSize: "12T", movers: 3, rate: 378 },
+];
+
 const inputClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500";
 const selectClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white";
 const emptyAddress = { address: "", suburb: "", state: "VIC", postcode: "", floor: "", elevator: false };
@@ -714,28 +724,26 @@ Write the email body only (no subject line in the body). Address the customer by
             {(() => {
               const moveDay = form.moving_date || form.move_date;
               const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
-              const extraRate = dayOfWeek === 0 ? 136 : dayOfWeek === 6 ? 82 : 68;
-              const dayLabel = dayOfWeek === 0 ? "Sun" : dayOfWeek === 6 ? "Sat" : "M–F";
-              return (
-                <>
-                  <p className="text-sm text-gray-500 mb-1">Select the truck configuration for this job</p>
-                  <p className="text-xs text-gray-400 mb-4">
-                    Additional movers charged at:
-                    <span className={`ml-1 font-medium ${dayOfWeek !== null && dayOfWeek !== 6 && dayOfWeek !== 0 ? "text-blue-600" : "text-gray-500"}`}>$68/hr Mon–Fri</span>
-                    {" · "}
-                    <span className={`font-medium ${dayOfWeek === 6 ? "text-blue-600" : "text-gray-500"}`}>$82/hr Sat</span>
-                    {" · "}
-                    <span className={`font-medium ${dayOfWeek === 0 ? "text-blue-600" : "text-gray-500"}`}>$136/hr Sun</span>
-                    {dayOfWeek !== null && <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-semibold">{dayLabel} applies</span>}
-                  </p>
+              const isSaturday = dayOfWeek === 6;
+              const isSunday = dayOfWeek === 0;
+              const extraRate = isSunday ? 136 : isSaturday ? 82 : 68;
+              const dayLabel = isSunday ? "Sun" : isSaturday ? "Sat" : "M–F";
+
+              const RateGrid = ({ rates, sectionDay, sectionExtraRate, sectionLabel, isActive }) => (
+                <div className={`rounded-xl border-2 p-4 mb-4 ${ isActive ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white" }`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className={`text-sm font-semibold ${ isActive ? "text-blue-800" : "text-gray-700" }`}>{sectionLabel}</h3>
+                    {isActive && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this move</span>}
+                    <p className="text-xs text-gray-400 ml-auto">Extra mover: <span className="font-medium text-gray-600">${sectionExtraRate}/hr</span></p>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {TRUCK_RATES.map((t) => {
-                      const active = form.moving_truck_size === t.label && Number(form.moving_num_people) === t.movers;
-                      const with1Extra = t.rate + extraRate;
-                      const with2Extra = t.rate + extraRate * 2;
+                    {rates.map((t) => {
+                      const active = form.moving_truck_size === t.label && Number(form.moving_num_people) === t.movers && form.moving_rate_per_hour === t.rate;
+                      const with1Extra = t.rate + sectionExtraRate;
+                      const with2Extra = t.rate + sectionExtraRate * 2;
                       return (
                         <button
-                          key={t.label + t.movers}
+                          key={t.label + t.movers + t.rate}
                           type="button"
                           onClick={() => {
                             set("moving_truck_size", t.label);
@@ -755,9 +763,9 @@ Write the email body only (no subject line in the body). Address the customer by
                           <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
                             ${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
                           </p>
-                          <p className="text-xs text-gray-500 mb-2">{t.movers} movers included</p>
+                          <p className="text-xs text-gray-500 mb-2">{t.movers} mover{t.movers !== 1 ? "s" : ""} included</p>
                           <div className="border-t border-gray-100 pt-2 space-y-1">
-                            <p className="text-xs text-gray-400 font-medium">+Extra movers ({dayOfWeek !== null ? dayLabel : "M–F"} ${extraRate}/hr):</p>
+                            <p className="text-xs text-gray-400 font-medium">+Extra movers (${sectionExtraRate}/hr):</p>
                             <p className="text-xs text-gray-500">+1 mover → <span className="font-semibold text-gray-700">${with1Extra}/hr</span></p>
                             <p className="text-xs text-gray-500">+2 movers → <span className="font-semibold text-gray-700">${with2Extra}/hr</span></p>
                           </div>
@@ -765,6 +773,24 @@ Write the email body only (no subject line in the body). Address the customer by
                       );
                     })}
                   </div>
+                </div>
+              );
+
+              return (
+                <>
+                  <p className="text-sm text-gray-500 mb-4">Select the truck configuration for this job</p>
+                  <RateGrid
+                    rates={TRUCK_RATES}
+                    sectionExtraRate={68}
+                    sectionLabel="📅 Monday – Friday Rates"
+                    isActive={dayOfWeek !== null && !isSaturday && !isSunday}
+                  />
+                  <RateGrid
+                    rates={SAT_TRUCK_RATES}
+                    sectionExtraRate={82}
+                    sectionLabel="📅 Saturday Rates"
+                    isActive={isSaturday}
+                  />
                 </>
               );
             })()}
