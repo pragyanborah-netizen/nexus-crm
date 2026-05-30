@@ -1,169 +1,285 @@
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Link } from "lucide-react";
+import { Link as RouterLink } from "react-router-dom";
+import {
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  addDays, addMonths, addWeeks, subMonths, subWeeks,
+  format, isSameMonth, isSameDay, isToday, parseISO,
+} from "date-fns";
 
-// Color coding rules (checked in order — first match wins)
-const JOB_TYPES = [
-  { id: "packing",  label: "Packing",   dot: "bg-yellow-400",  pill: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-  { id: "5T",       label: "5T Truck",  dot: "bg-orange-500",  pill: "bg-orange-100 text-orange-800 border-orange-300" },
-  { id: "6T",       label: "6T Truck",  dot: "bg-green-500",   pill: "bg-green-100 text-green-800 border-green-300" },
-  { id: "10T",      label: "10T Truck", dot: "bg-blue-500",    pill: "bg-blue-100 text-blue-800 border-blue-300" },
-  { id: "12T",      label: "12T Truck", dot: "bg-gray-800",    pill: "bg-gray-800 text-white border-gray-700" },
-];
+const STATUS_COLORS = {
+  "Enquiry":          { bg: "bg-sky-100",    text: "text-sky-800",    dot: "bg-sky-500" },
+  "Quoted":           { bg: "bg-purple-100", text: "text-purple-800", dot: "bg-purple-500" },
+  "Tentative Booking":{ bg: "bg-yellow-100", text: "text-yellow-800", dot: "bg-yellow-500" },
+  "Booked Job":       { bg: "bg-green-100",  text: "text-green-800",  dot: "bg-green-600" },
+  "Completed":        { bg: "bg-gray-100",   text: "text-gray-600",   dot: "bg-gray-400" },
+  "Cancelled":        { bg: "bg-red-100",    text: "text-red-700",    dot: "bg-red-500" },
+  "No Show":          { bg: "bg-orange-100", text: "text-orange-700", dot: "bg-orange-500" },
+};
 
-function getJobType(booking) {
-  const isPacking =
-    booking.service_type === "Packing" ||
-    (booking.selected_services || []).includes("Packing");
-  if (isPacking) return JOB_TYPES[0];
-  const size = (booking.truck_size || "").toUpperCase();
-  if (size.includes("5T")) return JOB_TYPES[1];
-  if (size.includes("6T")) return JOB_TYPES[2];
-  if (size.includes("10T")) return JOB_TYPES[3];
-  if (size.includes("12T")) return JOB_TYPES[4];
-  return { id: "other", label: "Other", dot: "bg-gray-300", pill: "bg-gray-100 text-gray-600 border-gray-200" };
+function statusStyle(status) {
+  return STATUS_COLORS[status] || { bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400" };
 }
 
-function getDaysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
-function getFirstDayOfMonth(year, month) { return new Date(year, month, 1).getDay(); }
-function toDateStr(year, month, day) {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+function BookingChip({ booking, index, compact }) {
+  const s = statusStyle(booking.status);
+  return (
+    <Draggable draggableId={booking.id} index={index}>
+      {(provided, snapshot) => (
+        <RouterLink
+          to={`/bookings/${booking.id}`}
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          onClick={(e) => { if (snapshot.isDragging) e.preventDefault(); }}
+          className={`block rounded px-1.5 py-0.5 text-xs font-medium truncate select-none cursor-grab active:cursor-grabbing transition-shadow
+            ${s.bg} ${s.text}
+            ${snapshot.isDragging ? "shadow-lg ring-2 ring-blue-400 opacity-90" : "hover:brightness-95"}
+            ${compact ? "text-[10px]" : ""}
+          `}
+          title={`${booking.customer_first_name} ${booking.customer_last_name} — ${booking.status}`}
+        >
+          <span className={`inline-block w-1.5 h-1.5 rounded-full ${s.dot} mr-1 mb-px`} />
+          {booking.customer_first_name} {booking.customer_last_name}
+          {booking.move_time && !compact ? ` · ${booking.move_time}` : ""}
+        </RouterLink>
+      )}
+    </Draggable>
+  );
 }
 
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function DayCell({ dateStr, bookings, isCurrentMonth = true, today }) {
+  const date = parseISO(dateStr);
+  const todayCell = isToday(date);
+  return (
+    <Droppable droppableId={dateStr}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.droppableProps}
+          className={`min-h-[90px] p-1 border border-gray-100 rounded-md flex flex-col gap-0.5 transition-colors
+            ${!isCurrentMonth ? "bg-gray-50" : "bg-white"}
+            ${snapshot.isDraggingOver ? "bg-blue-50 border-blue-300 ring-1 ring-blue-300" : ""}
+          `}
+        >
+          <span className={`text-xs font-semibold mb-0.5 self-start px-1 rounded-full
+            ${todayCell ? "bg-blue-600 text-white px-1.5" : isCurrentMonth ? "text-gray-700" : "text-gray-300"}
+          `}>
+            {format(date, "d")}
+          </span>
+          {bookings.map((b, i) => (
+            <BookingChip key={b.id} booking={b} index={i} compact />
+          ))}
+          {provided.placeholder}
+        </div>
+      )}
+    </Droppable>
+  );
+}
 
 export default function Calendars() {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [filter, setFilter] = useState("all");
+  const [view, setView] = useState("month");
+  const [current, setCurrent] = useState(new Date());
+  const queryClient = useQueryClient();
 
-  const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ["bookings-calendar"],
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["bookings"],
     queryFn: () => base44.entities.Booking.list("-move_date", 500),
   });
 
-  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
-  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
-
-  const filtered = filter === "all"
-    ? bookings
-    : bookings.filter(b => getJobType(b).id === filter);
-
-  const byDate = {};
-  filtered.forEach(b => {
-    if (!b.move_date) return;
-    if (!byDate[b.move_date]) byDate[b.move_date] = [];
-    byDate[b.move_date].push(b);
+  const updateBooking = useMutation({
+    mutationFn: ({ id, move_date }) => base44.entities.Booking.update(id, { move_date }),
+    onMutate: async ({ id, move_date }) => {
+      await queryClient.cancelQueries({ queryKey: ["bookings"] });
+      const prev = queryClient.getQueryData(["bookings"]);
+      queryClient.setQueryData(["bookings"], (old) =>
+        old.map((b) => b.id === id ? { ...b, move_date } : b)
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => queryClient.setQueryData(["bookings"], ctx.prev),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["bookings"] }),
   });
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  const todayStr = today.toISOString().split("T")[0];
+  const handleDragEnd = ({ source, destination, draggableId }) => {
+    if (!destination || source.droppableId === destination.droppableId) return;
+    updateBooking.mutate({ id: draggableId, move_date: destination.droppableId });
+  };
+
+  const bookingsByDate = (dateStr) =>
+    bookings.filter((b) => b.move_date === dateStr);
+
+  // ── Monthly view ────────────────────────────────────────────────────────
+  const MonthView = () => {
+    const monthStart = startOfMonth(current);
+    const monthEnd   = endOfMonth(current);
+    const gridStart  = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const gridEnd    = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+    const days = [];
+    let d = gridStart;
+    while (d <= gridEnd) {
+      days.push(d);
+      d = addDays(d, 1);
+    }
+
+    return (
+      <div>
+        {/* Day headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((day) => (
+            <div key={day} className="text-center text-xs font-semibold text-gray-400 py-1">{day}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((day) => {
+            const dateStr = format(day, "yyyy-MM-dd");
+            return (
+              <DayCell
+                key={dateStr}
+                dateStr={dateStr}
+                bookings={bookingsByDate(dateStr)}
+                isCurrentMonth={isSameMonth(day, current)}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Weekly view ──────────────────────────────────────────────────────────
+  const WeekView = () => {
+    const weekStart = startOfWeek(current, { weekStartsOn: 1 });
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+    return (
+      <div className="grid grid-cols-7 gap-2">
+        {days.map((day) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const dayBookings = bookingsByDate(dateStr);
+          const todayCell = isToday(day);
+          return (
+            <div key={dateStr} className="flex flex-col">
+              <div className={`text-center py-2 mb-1 rounded-t-lg ${todayCell ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>
+                <p className="text-xs font-semibold">{format(day, "EEE")}</p>
+                <p className={`text-lg font-bold ${todayCell ? "text-white" : "text-gray-800"}`}>{format(day, "d")}</p>
+                <p className="text-xs opacity-70">{format(day, "MMM")}</p>
+              </div>
+              <Droppable droppableId={dateStr}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`flex-1 min-h-[400px] p-1.5 rounded-b-lg border flex flex-col gap-1 transition-colors
+                      ${snapshot.isDraggingOver ? "bg-blue-50 border-blue-300 ring-1 ring-blue-300" : "bg-white border-gray-200"}
+                    `}
+                  >
+                    {dayBookings.length === 0 && !snapshot.isDraggingOver && (
+                      <p className="text-xs text-gray-300 text-center mt-4 italic">No bookings</p>
+                    )}
+                    {dayBookings.map((b, i) => (
+                      <BookingChip key={b.id} booking={b} index={i} />
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const navigatePrev = () => view === "month" ? setCurrent(subMonths(current, 1)) : setCurrent(subWeeks(current, 1));
+  const navigateNext = () => view === "month" ? setCurrent(addMonths(current, 1)) : setCurrent(addWeeks(current, 1));
+  const title = view === "month" ? format(current, "MMMM yyyy") : `${format(startOfWeek(current, { weekStartsOn: 1 }), "d MMM")} – ${format(endOfWeek(current, { weekStartsOn: 1 }), "d MMM yyyy")}`;
+
+  // Stats bar
+  const viewBookings = bookings.filter((b) => {
+    if (!b.move_date) return false;
+    if (view === "month") return isSameMonth(parseISO(b.move_date), current);
+    const ws = startOfWeek(current, { weekStartsOn: 1 });
+    const we = endOfWeek(current, { weekStartsOn: 1 });
+    const d  = parseISO(b.move_date);
+    return d >= ws && d <= we;
+  });
 
   return (
     <div>
-      <div className="mb-6">
-        <nav className="text-xs text-gray-400 mb-1">Home › Calendars</nav>
-        <h1 className="text-2xl font-bold text-gray-800">Calendars</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Calendar</h1>
+          <p className="text-sm text-gray-500">Drag bookings between days to reschedule</p>
+        </div>
+        {/* View toggle */}
+        <div className="flex items-center gap-2">
+          <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+            <button
+              onClick={() => setView("month")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-all ${view === "month" ? "bg-white shadow text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <LayoutGrid size={14} /> Month
+            </button>
+            <button
+              onClick={() => setView("week")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-all ${view === "week" ? "bg-white shadow text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <CalendarDays size={14} /> Week
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-            filter === "all" ? "bg-gray-800 text-white border-transparent" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-          }`}
-        >
-          All Jobs
-        </button>
-        {JOB_TYPES.map(jt => (
-          <button
-            key={jt.id}
-            onClick={() => setFilter(jt.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-              filter === jt.id ? "bg-gray-700 text-white border-transparent" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-            }`}
-          >
-            <span className={`w-3 h-3 rounded-full ${jt.dot}`} />
-            {jt.label}
-          </button>
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3 mb-4">
+        {[
+          { label: "Total Bookings", value: viewBookings.length, color: "text-blue-600" },
+          { label: "Booked Jobs", value: viewBookings.filter(b => b.status === "Booked Job").length, color: "text-green-600" },
+          { label: "Tentative", value: viewBookings.filter(b => b.status === "Tentative Booking").length, color: "text-yellow-600" },
+          { label: "Enquiries / Quoted", value: viewBookings.filter(b => ["Enquiry","Quoted"].includes(b.status)).length, color: "text-purple-600" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white rounded-lg shadow px-4 py-3">
+            <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+          </div>
         ))}
       </div>
 
-      {/* Calendar */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b">
-          <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronLeft size={18} /></button>
-          <h2 className="text-lg font-bold text-gray-800">{MONTH_NAMES[month]} {year}</h2>
-          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronRight size={18} /></button>
+      {/* Calendar card */}
+      <div className="bg-white rounded-xl shadow p-4">
+        {/* Nav bar */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={navigatePrev} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+            <ChevronLeft size={16} />
+          </button>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+            <button onClick={() => setCurrent(new Date())} className="text-xs text-blue-600 hover:underline border border-blue-200 rounded px-2 py-0.5 hover:bg-blue-50">Today</button>
+          </div>
+          <button onClick={navigateNext} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+            <ChevronRight size={16} />
+          </button>
         </div>
 
-        <div className="grid grid-cols-7 border-b">
-          {DAY_NAMES.map(d => (
-            <div key={d} className="text-center text-xs font-semibold text-gray-500 py-2">{d}</div>
+        {/* Legend */}
+        <div className="flex flex-wrap gap-3 mb-4 pb-3 border-b border-gray-100">
+          {Object.entries(STATUS_COLORS).map(([status, s]) => (
+            <div key={status} className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+              {status}
+            </div>
           ))}
         </div>
 
-        {isLoading ? (
-          <div className="p-10 text-center text-gray-400">Loading...</div>
-        ) : (
-          <div className="grid grid-cols-7">
-            {cells.map((day, idx) => {
-              if (!day) return <div key={`empty-${idx}`} className="border-b border-r border-gray-100 min-h-24 bg-gray-50/50" />;
-              const dateStr = toDateStr(year, month, day);
-              const dayBookings = byDate[dateStr] || [];
-              const isToday = dateStr === todayStr;
-              return (
-                <div
-                  key={dateStr}
-                  className={`border-b border-r border-gray-100 min-h-24 p-1.5 ${isToday ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                >
-                  <div className={`text-sm font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
-                    isToday ? "bg-blue-600 text-white" : "text-gray-700"
-                  }`}>
-                    {day}
-                  </div>
-                  <div className="space-y-0.5">
-                    {dayBookings.slice(0, 3).map(b => {
-                      const jt = getJobType(b);
-                      return (
-                        <Link
-                          key={b.id}
-                          to={`/bookings/${b.id}/edit`}
-                          className={`block text-xs px-1.5 py-0.5 rounded border truncate ${jt.pill} hover:opacity-80`}
-                          title={`${b.customer_first_name} ${b.customer_last_name} — ${jt.label}`}
-                        >
-                          {b.customer_first_name} {b.customer_last_name}
-                        </Link>
-                      );
-                    })}
-                    {dayBookings.length > 3 && (
-                      <p className="text-xs text-gray-400 px-1">+{dayBookings.length - 3} more</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">
-        {JOB_TYPES.map(jt => (
-          <div key={jt.id} className="flex items-center gap-1.5">
-            <span className={`w-3 h-3 rounded-full ${jt.dot}`} />
-            <span>{jt.label}</span>
-          </div>
-        ))}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          {view === "month" ? <MonthView /> : <WeekView />}
+        </DragDropContext>
       </div>
     </div>
   );
