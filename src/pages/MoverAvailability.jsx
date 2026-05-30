@@ -553,7 +553,7 @@ export default function MoverAvailability() {
                     </table>
                   </div>
                 )}
-              </div>
+              </>
             ) : (
               <div className="text-center py-12 text-red-500">
                 <AlertCircle size={32} className="mx-auto mb-2" />
@@ -568,7 +568,7 @@ export default function MoverAvailability() {
             )}
           </div>
         </div>
-      ) : (
+      ) : view === "ai-scheduler" ? (
         <div className="space-y-4">
           {/* AI Scheduler */}
           <div className="bg-white rounded-lg shadow p-6">
