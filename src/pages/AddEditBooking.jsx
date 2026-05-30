@@ -721,6 +721,84 @@ Write the email body only (no subject line in the body). Address the customer by
             </div>
           </Section>
 
+          {(form.selected_services || []).includes("Packing") && (
+            <Section title="Packing Rate">
+              {(() => {
+                const packDay = form.packing_date || form.move_date;
+                const packDow = packDay ? new Date(packDay + "T00:00:00").getDay() : null;
+                const isPackSat = packDow === 6;
+                const isPackSun = packDow === 0;
+                const PACKING_RATES = [
+                  { label: "2 Packers", movers: 2, rate: 168 },
+                  { label: "3 Packers", movers: 3, rate: 236 },
+                  { label: "4 Packers", movers: 4, rate: 304 },
+                ];
+                return (
+                  <>
+                    <p className="text-sm text-gray-500 mb-4">Select packing crew size and enter estimated hours</p>
+                    <div className="rounded-xl border-2 border-gray-200 bg-white p-4 mb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-semibold text-gray-700">📦 Monday – Friday Packing Rates</h3>
+                        {packDow !== null && !isPackSat && !isPackSun && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this job</span>}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        {PACKING_RATES.map((p) => {
+                          const active = Number(form.packing_num_people) === p.movers && Number(form.packing_rate_per_hour) === p.rate;
+                          return (
+                            <button
+                              key={p.label}
+                              type="button"
+                              onClick={() => {
+                                set("packing_num_people", p.movers);
+                                set("packing_rate_per_hour", p.rate);
+                                if (form.packing_hours) set("packing_total", p.rate * Number(form.packing_hours));
+                              }}
+                              className={`rounded-lg border-2 p-4 text-left transition-all ${
+                                active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{p.label}</span>
+                                {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
+                              </div>
+                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
+                                ${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
+                              </p>
+                              <p className="text-xs text-gray-500">{p.movers} packers included</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {form.packing_rate_per_hour && (
+                        <div className="flex flex-wrap gap-4 items-end mt-2">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Estimated Hours</label>
+                            <input
+                              type="number" min="0" step="0.5"
+                              className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500"
+                              placeholder="e.g. 3"
+                              value={form.packing_hours || ""}
+                              onChange={(e) => {
+                                set("packing_hours", e.target.value);
+                                set("packing_total", Number(form.packing_rate_per_hour) * Number(e.target.value));
+                              }}
+                            />
+                          </div>
+                          {form.packing_hours && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                              <p className="text-xs text-blue-500 mb-0.5">Packing Total</p>
+                              <p className="text-xl font-bold text-blue-700">${(Number(form.packing_rate_per_hour) * Number(form.packing_hours)).toFixed(0)}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </Section>
+          )}
+
           <Section title="Truck &amp; Rate Selection">
             {(() => {
               const moveDay = form.moving_date || form.move_date;
