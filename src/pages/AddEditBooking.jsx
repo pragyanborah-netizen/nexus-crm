@@ -890,42 +890,44 @@ Write the email body only (no subject line in the body). Address the customer by
                       <p className={`font-medium text-sm ${active ? "text-blue-800" : "text-gray-600"}`}>{svc}</p>
                     </button>
                     {active && (
-                      <div className="px-3 pb-3 flex flex-col gap-2">
-                        <div>
-                          <label className="block text-xs text-blue-600 mb-1">Date</label>
-                          <input
-                            className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                            type="date"
-                            value={form[dateKey] || ""}
-                            onChange={(e) => set(dateKey, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-blue-600 mb-1">Time</label>
-                          <input
-                            className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                            type="time"
-                            value={form[timeKey] || ""}
-                            onChange={(e) => set(timeKey, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                      <div className="px-3 pb-3">
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div>
+                            <label className="block text-xs text-blue-600 mb-1">Date</label>
+                            <input
+                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              type="date"
+                              value={form[dateKey] || ""}
+                              onChange={(e) => set(dateKey, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-blue-600 mb-1">Time</label>
+                            <input
+                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              type="time"
+                              value={form[timeKey] || ""}
+                              onChange={(e) => set(timeKey, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
                         </div>
                         {svc !== "Packaging Supplies" && (
-                        <div>
-                          <label className="block text-xs text-blue-600 mb-1">Estimated Hours</label>
-                          <select
-                            className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                            value={form[hoursKey] || ""}
-                            onChange={(e) => set(hoursKey, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <option value="">Select hours...</option>
-                            {Array.from({ length: 32 }, (_, i) => (i + 1) * 0.5).map(h => (
-                              <option key={h} value={h}>{h} hr{h !== 1 ? "s" : ""}</option>
-                            ))}
-                          </select>
-                        </div>
+                          <div>
+                            <label className="block text-xs text-blue-600 mb-1">Estimated Hours</label>
+                            <select
+                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              value={form[hoursKey] || ""}
+                              onChange={(e) => set(hoursKey, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <option value="">Select hours...</option>
+                              {Array.from({ length: 32 }, (_, i) => (i + 1) * 0.5).map(h => (
+                                <option key={h} value={h}>{h} hr{h !== 1 ? "s" : ""}</option>
+                              ))}
+                            </select>
+                          </div>
                         )}
                       </div>
                     )}
