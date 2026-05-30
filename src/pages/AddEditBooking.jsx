@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, Bell } from "lucide-react";
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import InvoiceGenerator from "../components/InvoiceGenerator";
@@ -386,6 +386,7 @@ Provide a realistic Australian removalist quote. Factor in: item volume and weig
   const [aiEmailPrompt, setAiEmailPrompt] = useState("");
   const [generatingEmail, setGeneratingEmail] = useState(false);
   const [sendingAiEmail, setSendingAiEmail] = useState(false);
+  const [sendingMilestone, setSendingMilestone] = useState(null);
 
   const handleGenerateAiEmail = async () => {
     setGeneratingEmail(true);
@@ -438,6 +439,24 @@ Write the email body only (no subject line in the body). Address the customer by
     setSendingAiEmail(false);
     setShowAiEmailModal(false);
     alert("Email sent to " + form.customer_email);
+  };
+
+  const handleSendMilestoneNotification = async (milestone) => {
+    if (!form.customer_email || !form.customer_mobile) {
+      alert("Customer contact information missing.");
+      return;
+    }
+    setSendingMilestone(milestone);
+    try {
+      const result = await base44.functions.invoke('triggerMilestoneNotification', {
+        booking_id: id,
+        milestone,
+      });
+      alert(`✓ ${milestone} notification sent to ${form.customer_email} and ${form.customer_mobile}`);
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    }
+    setSendingMilestone(null);
   };
 
   const handleGeneratePdf = () => {
@@ -714,6 +733,47 @@ Write the email body only (no subject line in the body). Address the customer by
               >
                 <Mail size={16} /> {sendingEmail ? "Sending..." : "Send Quote"}
               </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  disabled={!isEdit}
+                  className="bg-white border border-green-300 hover:bg-green-50 text-green-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+                >
+                  <Bell size={16} /> Milestone Alerts
+                </button>
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden hover:block group-hover:block">
+                  <div className="p-3">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Send Test Notification:</p>
+                    <button
+                      onClick={() => handleSendMilestoneNotification('dispatched')}
+                      disabled={sendingMilestone === 'dispatched'}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 rounded flex items-center justify-between"
+                    >
+                      <span>🚚 Dispatched</span>
+                      {sendingMilestone === 'dispatched' && <span className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
+                    </button>
+                    <button
+                      onClick={() => handleSendMilestoneNotification('nearby')}
+                      disabled={sendingMilestone === 'nearby'}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 rounded flex items-center justify-between"
+                    >
+                      <span>📍 Nearby (15min)</span>
+                      {sendingMilestone === 'nearby' && <span className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
+                    </button>
+                    <button
+                      onClick={() => handleSendMilestoneNotification('delivered')}
+                      disabled={sendingMilestone === 'delivered'}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 rounded flex items-center justify-between"
+                    >
+                      <span>✅ Delivered</span>
+                      {sendingMilestone === 'delivered' && <span className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
+                    </button>
+                    <div className="border-t mt-2 pt-2">
+                      <p className="text-xs text-gray-400">Auto-sends when truck status changes</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </>
           )}
           <button
@@ -1659,6 +1719,58 @@ Write the email body only (no subject line in the body). Address the customer by
               onSend={handleSendEmail}
               sending={sendingEmail}
             />
+          )}
+
+          {/* Milestone Notifications Status */}
+          {isEdit && (
+            <Section title="Automated Notifications">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={`rounded-lg border-2 p-4 ${form.notification_dispatched_sent ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${form.notification_dispatched_sent ? 'bg-green-500' : 'bg-gray-200'}`}>
+                      {form.notification_dispatched_sent ? <Check size={14} className="text-white" /> : <Truck size={14} className="text-gray-400" />}
+                    </div>
+                    <span className={`font-semibold text-sm ${form.notification_dispatched_sent ? 'text-green-800' : 'text-gray-600'}`}>Dispatched</span>
+                  </div>
+                  {form.notification_dispatched_sent ? (
+                    <p className="text-xs text-green-600">Sent {new Date(form.notification_dispatched_date).toLocaleString()}</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">Not yet sent</p>
+                  )}
+                </div>
+
+                <div className={`rounded-lg border-2 p-4 ${form.notification_nearby_sent ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${form.notification_nearby_sent ? 'bg-green-500' : 'bg-gray-200'}`}>
+                      {form.notification_nearby_sent ? <Check size={14} className="text-white" /> : <MapPin size={14} className="text-gray-400" />}
+                    </div>
+                    <span className={`font-semibold text-sm ${form.notification_nearby_sent ? 'text-green-800' : 'text-gray-600'}`}>Nearby (15min)</span>
+                  </div>
+                  {form.notification_nearby_sent ? (
+                    <p className="text-xs text-green-600">Sent {new Date(form.notification_nearby_date).toLocaleString()}</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">Not yet sent</p>
+                  )}
+                </div>
+
+                <div className={`rounded-lg border-2 p-4 ${form.notification_delivered_sent ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${form.notification_delivered_sent ? 'bg-green-500' : 'bg-gray-200'}`}>
+                      {form.notification_delivered_sent ? <Check size={14} className="text-white" /> : <Check size={14} className="text-gray-400" />}
+                    </div>
+                    <span className={`font-semibold text-sm ${form.notification_delivered_sent ? 'text-green-800' : 'text-gray-600'}`}>Delivered</span>
+                  </div>
+                  {form.notification_delivered_sent ? (
+                    <p className="text-xs text-green-600">Sent {new Date(form.notification_delivered_date).toLocaleString()}</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">Not yet sent</p>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-4">
+                💡 Notifications are automatically sent when truck status changes. Use the "Milestone Alerts" button above to send test notifications.
+              </p>
+            </Section>
           )}
         </>
       )}

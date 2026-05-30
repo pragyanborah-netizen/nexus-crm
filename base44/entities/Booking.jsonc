@@ -375,6 +375,36 @@
       "type": "boolean",
       "title": "Survey Completed",
       "default": false
+    },
+    "notification_dispatched_sent": {
+      "type": "boolean",
+      "title": "Notification: Dispatched Sent",
+      "default": false
+    },
+    "notification_dispatched_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Notification: Dispatched Date"
+    },
+    "notification_nearby_sent": {
+      "type": "boolean",
+      "title": "Notification: Nearby Sent",
+      "default": false
+    },
+    "notification_nearby_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Notification: Nearby Date"
+    },
+    "notification_delivered_sent": {
+      "type": "boolean",
+      "title": "Notification: Delivered Sent",
+      "default": false
+    },
+    "notification_delivered_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Notification: Delivered Date"
     }
   },
   "required": [
