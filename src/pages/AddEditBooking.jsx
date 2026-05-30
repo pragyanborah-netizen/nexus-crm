@@ -729,52 +729,99 @@ Write the email body only (no subject line in the body). Address the customer by
               const extraRate = isSunday ? 136 : isSaturday ? 82 : 68;
               const dayLabel = isSunday ? "Sun" : isSaturday ? "Sat" : "M–F";
 
-              const RateGrid = ({ rates, sectionDay, sectionExtraRate, sectionLabel, isActive }) => (
-                <div className={`rounded-xl border-2 p-4 mb-4 ${ isActive ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white" }`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <h3 className={`text-sm font-semibold ${ isActive ? "text-blue-800" : "text-gray-700" }`}>{sectionLabel}</h3>
-                    {isActive && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this move</span>}
-                    <p className="text-xs text-gray-400 ml-auto">Extra mover: <span className="font-medium text-gray-600">${sectionExtraRate}/hr</span></p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {rates.map((t) => {
-                      const active = form.moving_truck_size === t.label && Number(form.moving_num_people) === t.movers && form.moving_rate_per_hour === t.rate;
-                      const with1Extra = t.rate + sectionExtraRate;
-                      const with2Extra = t.rate + sectionExtraRate * 2;
-                      return (
-                        <button
-                          key={t.label + t.movers + t.rate}
-                          type="button"
-                          onClick={() => {
-                            set("moving_truck_size", t.label);
-                            set("moving_num_people", t.movers);
-                            set("moving_rate_per_hour", t.rate);
-                            set("truck_size", t.truckSize);
-                            set("num_movers", t.movers);
-                          }}
-                          className={`rounded-lg border-2 p-4 text-left transition-all ${
-                            active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
-                            {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
+              const RateGrid = ({ rates, sectionExtraRate, sectionLabel, isActive }) => {
+                const selectedInSection = rates.find(
+                  t => t.label === form.moving_truck_size && t.rate === Number(form.moving_rate_per_hour)
+                );
+                const baseMovers = selectedInSection ? selectedInSection.movers : 0;
+                const extraMovers = selectedInSection ? Math.max(0, Number(form.moving_num_people) - baseMovers) : 0;
+                const totalRate = selectedInSection ? selectedInSection.rate + extraMovers * sectionExtraRate : 0;
+
+                return (
+                  <div className={`rounded-xl border-2 p-4 mb-4 ${ isActive ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white" }`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className={`text-sm font-semibold ${ isActive ? "text-blue-800" : "text-gray-700" }`}>{sectionLabel}</h3>
+                      {isActive && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this move</span>}
+                      <p className="text-xs text-gray-400 ml-auto">Extra mover: <span className="font-medium text-gray-600">${sectionExtraRate}/hr</span></p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {rates.map((t) => {
+                        const active = form.moving_truck_size === t.label && Number(form.moving_rate_per_hour) === t.rate;
+                        const with1Extra = t.rate + sectionExtraRate;
+                        const with2Extra = t.rate + sectionExtraRate * 2;
+                        return (
+                          <button
+                            key={t.label + t.movers + t.rate}
+                            type="button"
+                            onClick={() => {
+                              set("moving_truck_size", t.label);
+                              set("moving_num_people", t.movers);
+                              set("moving_rate_per_hour", t.rate);
+                              set("truck_size", t.truckSize);
+                              set("num_movers", t.movers);
+                            }}
+                            className={`rounded-lg border-2 p-4 text-left transition-all ${
+                              active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
+                              {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
+                            </div>
+                            <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
+                              ${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
+                            </p>
+                            <p className="text-xs text-gray-500 mb-2">{t.movers} mover{t.movers !== 1 ? "s" : ""} included</p>
+                            <div className="border-t border-gray-100 pt-2 space-y-1">
+                              <p className="text-xs text-gray-400 font-medium">+Extra movers (${sectionExtraRate}/hr):</p>
+                              <p className="text-xs text-gray-500">+1 mover → <span className="font-semibold text-gray-700">${with1Extra}/hr</span></p>
+                              <p className="text-xs text-gray-500">+2 movers → <span className="font-semibold text-gray-700">${with2Extra}/hr</span></p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedInSection && (
+                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                        <div className="flex flex-wrap items-center gap-6 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">Base rate:</span>
+                            <span className="font-semibold text-gray-800">${selectedInSection.rate}/hr ({baseMovers} movers)</span>
                           </div>
-                          <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
-                            ${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
-                          </p>
-                          <p className="text-xs text-gray-500 mb-2">{t.movers} mover{t.movers !== 1 ? "s" : ""} included</p>
-                          <div className="border-t border-gray-100 pt-2 space-y-1">
-                            <p className="text-xs text-gray-400 font-medium">+Extra movers (${sectionExtraRate}/hr):</p>
-                            <p className="text-xs text-gray-500">+1 mover → <span className="font-semibold text-gray-700">${with1Extra}/hr</span></p>
-                            <p className="text-xs text-gray-500">+2 movers → <span className="font-semibold text-gray-700">${with2Extra}/hr</span></p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">Total rate:</span>
+                            <span className="font-semibold text-green-700 text-base">${totalRate}/hr</span>
                           </div>
-                        </button>
-                      );
-                    })}
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <p className="text-sm font-medium text-gray-700 mb-1">Additional Movers <span className="text-xs font-normal text-gray-400">(${sectionExtraRate}/mover/hr)</span></p>
+                          <div className="flex items-center gap-3 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => { if (Number(form.moving_num_people) > baseMovers) set("moving_num_people", Number(form.moving_num_people) - 1); }}
+                              disabled={Number(form.moving_num_people) <= baseMovers}
+                              className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold"
+                            >−</button>
+                            <div className="text-center">
+                              <span className="text-2xl font-bold text-gray-800">{extraMovers}</span>
+                              <p className="text-xs text-gray-400">extra mover{extraMovers !== 1 ? "s" : ""}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)}
+                              className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold"
+                            >+</button>
+                            <div className="ml-4 text-sm text-gray-500">
+                              Total movers: <span className="font-semibold text-gray-800">{form.moving_num_people}</span>
+                              {extraMovers > 0 && <span className="ml-2 text-orange-600">(+${extraMovers * sectionExtraRate}/hr)</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              );
+                );
+              };
 
               return (
                 <>
@@ -794,62 +841,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 </>
               );
             })()}
-            {form.moving_truck_size && (() => {
-              const baseTruck = TRUCK_RATES.find(t => t.label === form.moving_truck_size && t.movers === Number(form.moving_num_people));
-              const baseMovers = baseTruck ? baseTruck.movers : Number(form.moving_num_people);
-              const baseRate = baseTruck ? baseTruck.rate : Number(form.moving_rate_per_hour);
-              const extraMovers = Math.max(0, Number(form.moving_num_people) - baseMovers);
-              const moveDay = form.moving_date || form.move_date;
-              const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
-              const extraRate = dayOfWeek === 0 ? 136 : dayOfWeek === 6 ? 82 : 68;
-              const extraLabel = dayOfWeek === 0 ? "Sunday rate" : dayOfWeek === 6 ? "Saturday rate" : "Mon–Fri rate";
-              const totalRate = baseRate + extraMovers * extraRate;
-              return (
-                <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
-                  <div className="flex flex-wrap items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Truck:</span>
-                      <span className="font-semibold text-gray-800">{form.moving_truck_size}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Base rate:</span>
-                      <span className="font-semibold text-gray-800">${baseRate}/hr ({baseMovers} movers)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Total rate:</span>
-                      <span className="font-semibold text-green-700 text-base">${totalRate}/hr</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Additional Movers</p>
-                    <p className="text-xs text-gray-400 mb-3">
-                      ${extraRate}/mover/hr {moveDay ? `(${extraLabel})` : "— set a move date to see day rate"}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => { if (Number(form.moving_num_people) > baseMovers) set("moving_num_people", Number(form.moving_num_people) - 1); }}
-                        disabled={Number(form.moving_num_people) <= baseMovers}
-                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold"
-                      >−</button>
-                      <div className="text-center">
-                        <span className="text-2xl font-bold text-gray-800">{extraMovers}</span>
-                        <p className="text-xs text-gray-400">extra mover{extraMovers !== 1 ? "s" : ""}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)}
-                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold"
-                      >+</button>
-                      <div className="ml-4 text-sm text-gray-500">
-                        Total movers: <span className="font-semibold text-gray-800">{form.moving_num_people}</span>
-                        {extraMovers > 0 && <span className="ml-2 text-orange-600">(+${extraMovers * extraRate}/hr)</span>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+
           </Section>
         </>
       )}
