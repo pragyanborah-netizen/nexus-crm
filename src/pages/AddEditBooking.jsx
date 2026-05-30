@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, FileText } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import InvoiceGenerator from "../components/InvoiceGenerator";
@@ -716,7 +716,17 @@ Write the email body only (no subject line in the body). Address the customer by
               </button>
             </>
           )}
-          <InvoiceGenerator form={form} flatRates={flatRates} packFlatRates={packFlatRates} movingFlatRates={movingFlatRates} unpackFlatRates={unpackFlatRates} />
+          <button
+            type="button"
+            onClick={() => {
+              set("status", "Confirmed");
+              handleSave();
+            }}
+            disabled={saveMutation.isPending}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+          >
+            <Check size={16} /> Deposit Collected
+          </button>
           <button
             type="button"
             onClick={handleSaveDraft}
