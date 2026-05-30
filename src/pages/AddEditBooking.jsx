@@ -1586,9 +1586,7 @@ Write the email body only (no subject line in the body). Address the customer by
                     className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
                       active
                         ? `${color} text-white border-transparent shadow`
-                        : value === "Confirmed"
-                          ? "bg-black border-black text-white hover:bg-gray-800"
-                          : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
                     }`}
                   >
                     {value}
