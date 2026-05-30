@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
   ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar,
-  Trophy, DollarSign
+  Trophy, DollarSign, Award
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";

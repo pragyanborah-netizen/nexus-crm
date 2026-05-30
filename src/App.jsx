@@ -26,6 +26,7 @@ import MoverPerformance from './pages/MoverPerformance';
 import Payroll from './pages/Payroll';
 import Scheduling from './pages/Scheduling';
 import TruckTracking from './pages/TruckTracking';
+import DriverPerformance from './pages/DriverPerformance';
 import TimeClock from './pages/TimeClock';
 import Login from './pages/Login';
 import Register from './pages/Register';
