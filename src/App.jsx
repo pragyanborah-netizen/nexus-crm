@@ -33,6 +33,7 @@ import BookingTimeClock from './pages/BookingTimeClock';
 import CustomerPortal from './pages/CustomerPortal';
 import CustomerTracking from './pages/CustomerTracking';
 import CustomerInvoice from './pages/CustomerInvoice';
+import AgentMoverPortal from './pages/AgentMoverPortal';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
         <Route path="/customer" element={<CustomerPortal />} />
         <Route path="/customer/tracking" element={<CustomerTracking />} />
         <Route path="/customer/invoice" element={<CustomerInvoice />} />
+        <Route path="/agent-portal" element={<AgentMoverPortal />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
