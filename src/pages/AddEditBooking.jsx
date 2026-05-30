@@ -150,6 +150,7 @@ export default function AddEditBooking() {
 
   const [extraStops, setExtraStops] = useState([]);
   const [flatRates, setFlatRates] = useState([]);
+  const [customRates, setCustomRates] = useState([]);
 
   useEffect(() => {
     if (existing) {
@@ -838,6 +839,109 @@ Write the email body only (no subject line in the body). Address the customer by
                     sectionLabel="📅 Saturday Rates"
                     isActive={isSaturday}
                   />
+
+                  {/* Custom Rates Section */}
+                  <div className="rounded-xl border-2 border-dashed border-gray-300 p-4 mb-4 bg-white">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-gray-700">➕ Custom / Other Rates</h3>
+                      <button
+                        type="button"
+                        onClick={() => setCustomRates([...customRates, { label: "", truckSize: "", movers: 2, rate: "", extraRate: 68 }])}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50"
+                      >
+                        <Plus size={13} /> Add Custom Rate
+                      </button>
+                    </div>
+                    {customRates.length === 0 && (
+                      <p className="text-sm text-gray-400 italic">No custom rates added. Click "Add Custom Rate" to create one.</p>
+                    )}
+                    {customRates.length > 0 && (
+                      <div className="space-y-3">
+                        {customRates.map((cr, idx) => {
+                          const isSelected = form.moving_truck_size === (cr.label || `Custom ${idx+1}`) && Number(form.moving_rate_per_hour) === Number(cr.rate);
+                          const extraMoversCount = isSelected ? Math.max(0, Number(form.moving_num_people) - Number(cr.movers)) : 0;
+                          return (
+                            <div key={idx} className={`rounded-lg border-2 p-3 transition-all ${isSelected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Label</label>
+                                  <input
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                                    placeholder="e.g. 8T Truck"
+                                    value={cr.label}
+                                    onChange={(e) => { const r = [...customRates]; r[idx].label = e.target.value; setCustomRates(r); }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Movers included</label>
+                                  <input
+                                    type="number" min="1"
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                                    value={cr.movers}
+                                    onChange={(e) => { const r = [...customRates]; r[idx].movers = e.target.value; setCustomRates(r); }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label>
+                                  <input
+                                    type="number" min="0"
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                                    placeholder="e.g. 220"
+                                    value={cr.rate}
+                                    onChange={(e) => { const r = [...customRates]; r[idx].rate = e.target.value; setCustomRates(r); }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Extra mover ($/hr)</label>
+                                  <input
+                                    type="number" min="0"
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                                    value={cr.extraRate}
+                                    onChange={(e) => { const r = [...customRates]; r[idx].extraRate = e.target.value; setCustomRates(r); }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {cr.rate && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      set("moving_truck_size", cr.label || `Custom ${idx+1}`);
+                                      set("moving_num_people", Number(cr.movers));
+                                      set("moving_rate_per_hour", Number(cr.rate));
+                                      set("truck_size", cr.label || `Custom ${idx+1}`);
+                                      set("num_movers", Number(cr.movers));
+                                    }}
+                                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                                      isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    {isSelected ? "✓ Selected" : "Select"}
+                                  </button>
+                                )}
+                                {isSelected && (
+                                  <div className="flex items-center gap-2 ml-2">
+                                    <span className="text-xs text-gray-500">Extra movers:</span>
+                                    <button type="button" onClick={() => { if (Number(form.moving_num_people) > Number(cr.movers)) set("moving_num_people", Number(form.moving_num_people) - 1); }} disabled={Number(form.moving_num_people) <= Number(cr.movers)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 font-bold">−</button>
+                                    <span className="font-bold text-gray-800 w-5 text-center">{extraMoversCount}</span>
+                                    <button type="button" onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 font-bold">+</button>
+                                    {extraMoversCount > 0 && <span className="text-xs text-orange-600 ml-1">(+${extraMoversCount * Number(cr.extraRate)}/hr)</span>}
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setCustomRates(customRates.filter((_, i) => i !== idx))}
+                                  className="ml-auto text-red-400 hover:text-red-600"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </>
               );
             })()}
