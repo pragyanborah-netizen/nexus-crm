@@ -145,8 +145,6 @@ function getEmailContent(form, inventoryLink, flatRates) {
       serviceLines.push({ label: "Packaging Supplies – Delivery Charge", total: form.packaging_supplies_price, date: form.packaging_supplies_date, time: form.packaging_supplies_time });
     }
 
-    const flatTotal = (flatRates || []).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-
     return {
       subject: `MOVE ON REMOVALS – Tentative Booking Confirmation`,
       body: `
@@ -155,34 +153,34 @@ function getEmailContent(form, inventoryLink, flatRates) {
     <h1 style="color:white;margin:0;font-size:22px;letter-spacing:1px;">MOVE ON REMOVALS</h1>
   </div>
   <div style="padding:28px 32px;border:1px solid #e2e8f0;border-top:none;background:#fff;">
-    <p style="font-size:15px;">Hi <strong>${firstName}</strong>,</p>
-    <p style="font-size:15px;">Thank you for booking with Move On Removals. <strong>This booking is not yet confirmed, awaiting payment of your deposit.</strong> Once paid, you will receive a booking confirmation email that will require you to respond.</p>
-    <p style="font-size:15px;">A deposit invoice has been sent via our Square account and should be paid within <strong>24 hours</strong> to secure your booking. The deposit amount will be deducted from the total bill on the day of your move.</p>
+    <p style="font-size:15px;">Hi ${firstName},</p>
+    <p style="font-size:15px;">Thank you for booking with Move On Removals. This booking is not yet confirmed, awaiting payment of your deposit. Once paid, you will receive a booking confirmation email that will require you to respond.</p>
+    <p style="font-size:15px;">A deposit invoice has been sent via our Square account and should be paid within 24 hours to secure your booking. The deposit amount will be deducted from the total bill on the day of your move.</p>
 
-    <p style="font-size:15px;font-weight:600;margin-bottom:8px;">Your booking details are as follows;</p>
+    <p style="font-size:15px;margin-bottom:8px;">Your booking details are as follows;</p>
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-      <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;width:150px;font-size:13.5px;">Move Date</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
-      <tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Pickup</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
-      <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Delivery</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
-      ${form.customer_mobile ? `<tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Mobile</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.customer_mobile}</td></tr>` : ""}
-      ${form.deposit ? `<tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Deposit Required</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;font-weight:bold;color:#1d4ed8;">$${Number(form.deposit).toLocaleString()}</td></tr>` : ""}
+      <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;width:150px;font-size:13.5px;">Move Date</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
+      <tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Pickup</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Delivery</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
+      ${form.customer_mobile ? `<tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Mobile</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.customer_mobile}</td></tr>` : ""}
+      ${form.deposit ? `<tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Deposit Required</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;color:#1d4ed8;">$${Number(form.deposit).toLocaleString()}</td></tr>` : ""}
     </table>
 
     ${inventoryHtml !== `<p style="color:#64748b;font-style:italic;">No items listed.</p>` ? `
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
-      <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#334155;">Inventory:</p>
+      <p style="margin:0 0 10px;font-size:14px;color:#334155;">Inventory:</p>
       ${inventoryHtml}
     </div>` : ""}
 
     ${serviceLines.length > 0 ? `
     <div style="background:#f0f7ff;border-left:4px solid #1d4ed8;border-radius:6px;padding:16px 20px;margin-bottom:20px;">
-      <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.5px;">Services &amp; Pricing</p>
+      <p style="margin:0 0 10px;font-size:14px;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.5px;">Services &amp; Pricing</p>
       <table style="width:100%;border-collapse:collapse;">
         ${serviceLines.map((s, i) => `
-        <tr style="${i % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${s.label}${s.date ? " · " + s.date : ""}${s.time ? " at " + s.time : ""}</td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">${s.hours ? s.hours + " hrs" : ""}</td><td style="padding:6px 8px;font-size:13.5px;font-weight:bold;text-align:right;">${s.total ? "$" + Number(s.total).toLocaleString() : ""}</td></tr>`).join("")}
-        ${(flatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;font-weight:bold;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
+        <tr style="${i % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${s.label}${s.date ? " · " + s.date : ""}${s.time ? " at " + s.time : ""}</td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">${s.hours ? s.hours + " hrs" : ""}</td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">${s.total ? "$" + Number(s.total).toLocaleString() : ""}</td></tr>`).join("")}
+        ${(flatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
       </table>
-      ${form.price ? `<div style="border-top:2px solid #1d4ed8;margin-top:10px;padding-top:10px;"><p style="margin:0;font-size:16px;font-weight:bold;color:#1d4ed8;text-align:right;">Total Estimate: $${Number(form.price).toLocaleString()}</p></div>` : ""}
+      ${form.price ? `<div style="border-top:2px solid #1d4ed8;margin-top:10px;padding-top:10px;"><p style="margin:0;font-size:16px;color:#1d4ed8;text-align:right;">Total Estimate: $${Number(form.price).toLocaleString()}</p></div>` : ""}
     </div>
     <p style="font-size:12px;color:#64748b;">All pricing is excluding GST unless otherwise noted.</p>` : ""}
 
@@ -191,7 +189,7 @@ function getEmailContent(form, inventoryLink, flatRates) {
     <p style="font-size:14px;color:#475569;">We do not provide fixed quotations or time estimates as you know your destinations better than us. The better organised you are, the more efficient we can be!</p>
 
     <div style="margin:20px 0;">
-      <p style="font-size:14px;margin-bottom:10px;font-weight:600;color:#334155;">Important Information:</p>
+      <p style="font-size:14px;margin-bottom:10px;color:#334155;">Important Information:</p>
       <table style="width:100%;">
         <tr><td style="vertical-align:top;padding:5px 8px 5px 0;width:16px;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">Charges are door to door, with no depot fees.</td></tr>
         <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">Move on Removals has Public Liability Insurance and Transit Insurance. Please refer to our terms and conditions at <a href="http://www.moveonremovals.com.au" style="color:#1d4ed8;">www.moveonremovals.com.au</a> for further information. We do not accept liability for any damages to pre-wrapped goods. Our company policy is to ensure all goods are wrapped in transit.</td></tr>
@@ -210,7 +208,7 @@ function getEmailContent(form, inventoryLink, flatRates) {
 
     <p style="font-size:14px;color:#475569;">In the meantime, if you have any further questions regarding your move please do not hesitate to contact us.</p>
     <p style="font-size:14px;color:#475569;">Wishing you all the best for your move.</p>
-    <p style="margin-top:24px;font-size:14px;">Kind regards,<br/><strong>Move On Removals Team</strong><br/><a href="mailto:moveme@moveonremovals.com.au" style="color:#1d4ed8;">moveme@moveonremovals.com.au</a></p>
+    <p style="margin-top:24px;font-size:14px;">Kind regards,<br/>Move On Removals Team<br/><a href="mailto:moveme@moveonremovals.com.au" style="color:#1d4ed8;">moveme@moveonremovals.com.au</a></p>
   </div>
   <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
     <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
