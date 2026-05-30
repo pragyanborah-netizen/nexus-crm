@@ -222,6 +222,25 @@ export default function AddEditBooking() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Auto-calculate deposit when a rate/truck is selected
+  useEffect(() => {
+    const truckSize = form.truck_size || "";
+    const movingRate = Number(form.moving_rate_per_hour) || 0;
+    const packingRate = Number(form.packing_rate_per_hour) || 0;
+    const unpackingRate = Number(form.unpacking_rate_per_hour) || 0;
+
+    if (movingRate) {
+      const smallTruck = ["2T", "5T", "6T"].includes(truckSize);
+      const depositHrs = smallTruck ? 2 : 3;
+      setForm((f) => ({ ...f, deposit: movingRate * depositHrs }));
+    } else if (packingRate) {
+      setForm((f) => ({ ...f, deposit: packingRate * 3 }));
+    } else if (unpackingRate) {
+      setForm((f) => ({ ...f, deposit: unpackingRate * 3 }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.moving_rate_per_hour, form.truck_size, form.packing_rate_per_hour, form.unpacking_rate_per_hour]);
+
   const toggleService = (svc) => {
     const curr = form.selected_services || [];
     set("selected_services", curr.includes(svc) ? curr.filter((s) => s !== svc) : [...curr, svc]);
@@ -1716,7 +1735,7 @@ Write the email body only (no subject line in the body). Address the customer by
 
           {/* Email Preview */}
           {["Enquiry", "Quoted", "Tentative Booking", "Booked Job"].includes(form.status) && (
-            <EmailPreview form={form} inventoryLink={inventoryLink} flatRates={flatRates} />
+            <EmailPreview form={form} inventoryLink={inventoryLink} flatRates={flatRates} packFlatRates={packFlatRates} movingFlatRates={movingFlatRates} unpackFlatRates={unpackFlatRates} />
           )}
         </>
       )}
