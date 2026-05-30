@@ -33,6 +33,38 @@ export default function MoverAvailability() {
     queryFn: () => base44.entities.MoverAvailability.list("-requested_date"),
   });
 
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["bookings-staffing"],
+    queryFn: () => base44.entities.Booking.list("-move_date", 500),
+  });
+
+  // Calculate staffing levels for each date
+  const getStaffingLevel = (dateStr) => {
+    const dayBookings = bookings.filter(b => b.move_date === dateStr && 
+      ["Confirmed", "Booked Job", "Tentative Booking"].includes(b.status));
+    
+    // Calculate total movers needed for this day
+    const moversNeeded = dayBookings.reduce((sum, b) => sum + (b.num_movers || 2), 0);
+    
+    // Calculate movers unavailable (on approved leave)
+    const unavailableMovers = availability.filter(req => {
+      const start = new Date(req.start_date + "T00:00:00");
+      const end = new Date(req.end_date + "T00:00:00");
+      const checkDate = new Date(dateStr + "T00:00:00");
+      return checkDate >= start && checkDate <= end && req.status === "Approved";
+    }).length;
+    
+    // Assume 10 total movers (you can adjust this based on your actual team size)
+    const TOTAL_MOVERS = 10;
+    const availableMovers = TOTAL_MOVERS - unavailableMovers;
+    
+    // Calculate if understaffed
+    const isUnderstaffed = moversNeeded > availableMovers * 3; // Assume each mover can handle 3 jobs
+    const utilizationRate = moversNeeded / (availableMovers * 3);
+    
+    return { moversNeeded, availableMovers, isUnderstaffed, utilizationRate, jobCount: dayBookings.length };
+  };
+
   const submitMutation = useMutation({
     mutationFn: async (data) => {
       const response = await base44.functions.invoke('submitAvailabilityRequest', data);
@@ -81,6 +113,16 @@ export default function MoverAvailability() {
       const end = new Date(req.end_date);
       return checkDate >= start && checkDate <= end && req.status === 'Approved';
     });
+  };
+
+  const getStaffingWarning = (day) => {
+    const checkDate = new Date(year, month, day);
+    const dateStr = checkDate.toISOString().split("T")[0];
+    const staffing = getStaffingLevel(dateStr);
+    
+    if (staffing.utilizationRate > 1.2) return "critical"; // Over 120% utilization
+    if (staffing.utilizationRate > 0.9) return "warning"; // Over 90% utilization
+    return null;
   };
 
   const isDateSelected = (day) => {
@@ -172,49 +214,62 @@ export default function MoverAvailability() {
             ))}
             
             {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1;
-            const unavailable = isDateUnavailable(day);
-            const selected = isDateSelected(day);
-            const dateStr = new Date(year, month, day).toISOString().split('T')[0];
-            const within48Hours = dateStr < minSelectableDateStr;
+              const day = i + 1;
+              const unavailable = isDateUnavailable(day);
+              const selected = isDateSelected(day);
+              const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+              const within48Hours = dateStr < minSelectableDateStr;
+              const staffingWarning = getStaffingWarning(day);
 
-            return (
-            <div
-              key={day}
-              onClick={() => !within48Hours && !unavailable && toggleDate(day)}
-              className={`h-24 border rounded p-2 transition-all ${
-                selected
-                  ? "bg-blue-100 border-blue-500"
-                  : unavailable
-                  ? "bg-red-50 border-red-300"
-                  : within48Hours
-                  ? "bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed"
-                  : "bg-white border-gray-200 cursor-pointer hover:shadow-md"
-              }`}
-            >
-              <div className="text-sm font-semibold mb-1">{day}</div>
-              {unavailable && (
-                <div className="text-xs text-red-600 flex items-center gap-1">
-                  <AlertCircle size={10} /> Unavailable
+              return (
+                <div
+                  key={day}
+                  onClick={() => !within48Hours && !unavailable && toggleDate(day)}
+                  className={`h-24 border rounded p-2 transition-all ${
+                    selected
+                      ? "bg-blue-100 border-blue-500"
+                      : unavailable
+                      ? "bg-red-50 border-red-300"
+                      : within48Hours
+                      ? "bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed"
+                      : staffingWarning === "critical"
+                      ? "bg-orange-100 border-orange-400 cursor-pointer hover:shadow-md"
+                      : staffingWarning === "warning"
+                      ? "bg-yellow-50 border-yellow-300 cursor-pointer hover:shadow-md"
+                      : "bg-white border-gray-200 cursor-pointer hover:shadow-md"
+                  }`}
+                >
+                  <div className="text-sm font-semibold mb-1">{day}</div>
+                  {unavailable && (
+                    <div className="text-xs text-red-600 flex items-center gap-1">
+                      <AlertCircle size={10} /> Unavailable
+                    </div>
+                  )}
+                  {within48Hours && !unavailable && (
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <Clock size={10} /> Within 48hrs
+                    </div>
+                  )}
+                  {staffingWarning && !unavailable && !within48Hours && (
+                    <div className={`text-xs flex items-center gap-1 ${
+                      staffingWarning === "critical" ? "text-orange-700 font-medium" : "text-yellow-700"
+                    }`}>
+                      <AlertCircle size={10} /> 
+                      {staffingWarning === "critical" ? "High demand" : "Limited capacity"}
+                    </div>
+                  )}
+                  {selected && (
+                    <div className="text-xs text-blue-600 flex items-center gap-1">
+                      <Check size={10} /> Selected
+                    </div>
+                  )}
                 </div>
-              )}
-              {within48Hours && !unavailable && (
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <Clock size={10} /> Within 48hrs
-                </div>
-              )}
-              {selected && (
-                <div className="text-xs text-blue-600 flex items-center gap-1">
-                  <Check size={10} /> Selected
-                </div>
-              )}
-            </div>
-            );
+              );
             })}
           </div>
 
           {/* Legend */}
-          <div className="flex gap-4 mt-6 pt-4 border-t">
+          <div className="flex gap-4 mt-6 pt-4 border-t flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-white border border-gray-200 rounded" />
               <span className="text-sm text-gray-600">Available</span>
@@ -230,6 +285,14 @@ export default function MoverAvailability() {
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded opacity-50" />
               <span className="text-sm text-gray-600">Unavailable (Within 48hrs)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-50 border border-yellow-300 rounded" />
+              <span className="text-sm text-gray-600">Limited Capacity</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-orange-100 border border-orange-400 rounded" />
+              <span className="text-sm text-gray-600">High Demand</span>
             </div>
           </div>
         </div>
