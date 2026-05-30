@@ -46,6 +46,12 @@ const navGroups = [
     ]
   },
   {
+    group: "Scheduling",
+    items: [
+      { label: "Mover Scheduling", icon: Calendar, path: "/scheduling" },
+    ]
+  },
+  {
     group: "Analytics",
     items: [
       { label: "Mover Performance", icon: Trophy, path: "/mover-performance" },

@@ -24,6 +24,7 @@ import MoverAvailability from './pages/MoverAvailability';
 import FeedbackDashboard from './pages/FeedbackDashboard';
 import MoverPerformance from './pages/MoverPerformance';
 import Payroll from './pages/Payroll';
+import Scheduling from './pages/Scheduling';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -79,6 +80,7 @@ const AuthenticatedApp = () => {
         <Route path="/bulk-sms" element={<BulkSmsTool />} />
         <Route path="/mover-performance" element={<MoverPerformance />} />
         <Route path="/payroll" element={<Payroll />} />
+        <Route path="/scheduling" element={<Scheduling />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
