@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Calendar, ChevronLeft, ChevronRight, X, Check, Clock, AlertCircle, User } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, X, Check, Clock, AlertCircle, User, DollarSign, Loader2 } from "lucide-react";
 
 const statusColors = {
   Pending: "bg-yellow-100 text-yellow-700 border-yellow-300",
@@ -26,7 +26,11 @@ export default function MoverAvailability() {
   const minSelectableDate = new Date();
   minSelectableDate.setHours(minSelectableDate.getHours() + 48);
   const minSelectableDateStr = minSelectableDate.toISOString().split("T")[0];
-  const [view, setView] = useState("calendar"); // "calendar" or "requests"
+  const [view, setView] = useState("calendar"); // "calendar", "requests", or "earnings"
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [earningsData, setEarningsData] = useState(null);
+  const [loadingEarnings, setLoadingEarnings] = useState(false);
 
   const { data: availability = [] } = useQuery({
     queryKey: ["mover-availability"],
@@ -37,6 +41,29 @@ export default function MoverAvailability() {
     queryKey: ["bookings-staffing"],
     queryFn: () => base44.entities.Booking.list("-move_date", 500),
   });
+
+  const { data: user } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // Fetch earnings when earnings tab is active
+  const fetchEarnings = async () => {
+    if (!user?.email) return;
+    setLoadingEarnings(true);
+    try {
+      const response = await base44.functions.invoke('calculateMoverEarnings', {
+        mover_email: user.email,
+        month: selectedMonth,
+        year: selectedYear
+      });
+      setEarningsData(response.data);
+    } catch (error) {
+      console.error('Error fetching earnings:', error);
+      setEarningsData(null);
+    }
+    setLoadingEarnings(false);
+  };
 
   // Calculate staffing levels for each date
   const getStaffingLevel = (dateStr) => {
@@ -166,10 +193,14 @@ export default function MoverAvailability() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setView(view === "calendar" ? "requests" : "calendar")}
+            onClick={() => {
+              if (view === "calendar") setView("requests");
+              else if (view === "requests") { setView("earnings"); fetchEarnings(); }
+              else setView("calendar");
+            }}
             className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
           >
-            {view === "calendar" ? "View Requests" : "View Calendar"}
+            {view === "calendar" ? "View Requests" : view === "requests" ? "View Earnings" : "View Calendar"}
           </button>
           <button
             onClick={() => setShowRequestModal(true)}
@@ -296,7 +327,7 @@ export default function MoverAvailability() {
             </div>
           </div>
         </div>
-      ) : (
+      ) : view === "requests" ? (
         <div className="space-y-4">
           {/* Pending Requests */}
           <div className="bg-white rounded-lg shadow p-4">
@@ -403,6 +434,116 @@ export default function MoverAvailability() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Earnings Header */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <DollarSign size={18} className="text-green-600" />
+                  Monthly Earnings
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {user?.full_name || user?.email} • {monthNames[selectedMonth - 1]} {selectedYear}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); fetchEarnings(); }}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                >
+                  {monthNames.map((m, i) => (
+                    <option key={i} value={i + 1}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => { setSelectedYear(parseInt(e.target.value)); fetchEarnings(); }}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                >
+                  {[2024, 2025, 2026, 2027].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {loadingEarnings ? (
+              <div className="text-center py-12 text-gray-400">
+                <Loader2 size={32} className="animate-spin mx-auto mb-2" />
+                <p>Loading earnings...</p>
+              </div>
+            ) : earningsData ? (
+              <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-600 font-medium">Total Earnings</p>
+                    <p className="text-3xl font-bold text-green-700 mt-1">
+                      ${earningsData.total_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-600 font-medium">Jobs Completed</p>
+                    <p className="text-3xl font-bold text-blue-700 mt-1">{earningsData.job_count}</p>
+                  </div>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <p className="text-sm text-purple-600 font-medium">Avg per Job</p>
+                    <p className="text-3xl font-bold text-purple-700 mt-1">
+                      ${earningsData.job_count > 0 ? (earningsData.total_earnings / earningsData.job_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Earnings Breakdown */}
+                <h3 className="font-semibold text-gray-800 mb-3">Job Breakdown</h3>
+                {earningsData.earnings_breakdown.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No completed jobs for this month</p>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-medium text-gray-600">Booking #</th>
+                          <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                          <th className="text-left px-4 py-3 font-medium text-gray-600">Customer</th>
+                          <th className="text-right px-4 py-3 font-medium text-gray-600">Job Value</th>
+                          <th className="text-right px-4 py-3 font-medium text-gray-600">Your Share</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {earningsData.earnings_breakdown.map((job, idx) => (
+                          <tr key={idx} className="border-t border-gray-100 hover:bg-gray-50">
+                            <td className="px-4 py-3 text-gray-700">{job.booking_number || 'N/A'}</td>
+                            <td className="px-4 py-3 text-gray-700">{new Date(job.move_date).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-gray-700">{job.customer}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">${job.total_job_value.toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right font-semibold text-green-700">
+                              ${job.mover_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12 text-red-500">
+                <AlertCircle size={32} className="mx-auto mb-2" />
+                <p>Error loading earnings. Please try again.</p>
+                <button
+                  onClick={fetchEarnings}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                >
+                  Retry
+                </button>
               </div>
             )}
           </div>
