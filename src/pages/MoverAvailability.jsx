@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Calendar, ChevronLeft, ChevronRight, X, Check, Clock, AlertCircle, User, DollarSign, Loader2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, X, Check, Clock, AlertCircle, User, DollarSign, Loader2, Sparkles, Users, Truck } from "lucide-react";
 
 const statusColors = {
   Pending: "bg-yellow-100 text-yellow-700 border-yellow-300",
@@ -26,11 +26,14 @@ export default function MoverAvailability() {
   const minSelectableDate = new Date();
   minSelectableDate.setHours(minSelectableDate.getHours() + 48);
   const minSelectableDateStr = minSelectableDate.toISOString().split("T")[0];
-  const [view, setView] = useState("calendar"); // "calendar", "requests", or "earnings"
+  const [view, setView] = useState("calendar"); // "calendar", "requests", "earnings", or "ai-scheduler"
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [earningsData, setEarningsData] = useState(null);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
+  const [schedulerDate, setSchedulerDate] = useState(new Date().toISOString().split("T")[0]);
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleResult, setScheduleResult] = useState(null);
 
   const { data: availability = [] } = useQuery({
     queryKey: ["mover-availability"],
@@ -63,6 +66,22 @@ export default function MoverAvailability() {
       setEarningsData(null);
     }
     setLoadingEarnings(false);
+  };
+
+  // AI Scheduler
+  const handleAiSchedule = async () => {
+    setScheduling(true);
+    setScheduleResult(null);
+    try {
+      const response = await base44.functions.invoke('aiScheduleMovers', {
+        target_date: schedulerDate
+      });
+      setScheduleResult(response.data);
+    } catch (error) {
+      console.error('Error in AI scheduling:', error);
+      setScheduleResult({ error: error.message });
+    }
+    setScheduling(false);
   };
 
   // Calculate staffing levels for each date
@@ -196,11 +215,12 @@ export default function MoverAvailability() {
             onClick={() => {
               if (view === "calendar") setView("requests");
               else if (view === "requests") { setView("earnings"); fetchEarnings(); }
+              else if (view === "earnings") { setView("ai-scheduler"); setScheduleResult(null); }
               else setView("calendar");
             }}
             className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
           >
-            {view === "calendar" ? "View Requests" : view === "requests" ? "View Earnings" : "View Calendar"}
+            {view === "calendar" ? "View Requests" : view === "requests" ? "View Earnings" : view === "earnings" ? "AI Scheduler" : "View Calendar"}
           </button>
           <button
             onClick={() => setShowRequestModal(true)}
@@ -533,7 +553,7 @@ export default function MoverAvailability() {
                     </table>
                   </div>
                 )}
-              </>
+              </div>
             ) : (
               <div className="text-center py-12 text-red-500">
                 <AlertCircle size={32} className="mx-auto mb-2" />
@@ -544,6 +564,161 @@ export default function MoverAvailability() {
                 >
                   Retry
                 </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* AI Scheduler */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Sparkles size={18} className="text-purple-600" />
+                  AI-Powered Mover Scheduling
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Automatically assign movers to jobs based on availability, performance, and proximity
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={schedulerDate}
+                  onChange={(e) => setSchedulerDate(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  onClick={handleAiSchedule}
+                  disabled={scheduling}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium disabled:opacity-50 transition-all"
+                >
+                  {scheduling ? (
+                    <><Loader2 size={16} className="animate-spin" /> Optimizing...</>
+                  ) : (
+                    <><Sparkles size={16} /> Run AI Scheduler</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {scheduling && (
+              <div className="text-center py-16">
+                <div className="relative inline-block">
+                  <Loader2 size={48} className="animate-spin text-purple-600" />
+                  <Sparkles size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-400" />
+                </div>
+                <p className="text-gray-600 font-medium mt-4">Analyzing bookings and mover availability...</p>
+                <p className="text-gray-400 text-sm mt-1">AI is optimizing assignments based on performance and proximity</p>
+              </div>
+            )}
+
+            {scheduleResult && !scheduling && (
+              <div className="space-y-4">
+                {scheduleResult.error ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                    <AlertCircle size={20} className="text-red-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-800">Scheduling Failed</p>
+                      <p className="text-sm text-red-600 mt-1">{scheduleResult.error}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-600 font-medium">Total Bookings</p>
+                        <p className="text-2xl font-bold text-blue-700 mt-1">{scheduleResult.total_bookings}</p>
+                      </div>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <p className="text-sm text-green-600 font-medium">Assigned</p>
+                        <p className="text-2xl font-bold text-green-700 mt-1">{scheduleResult.assigned_bookings}</p>
+                      </div>
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <p className="text-sm text-purple-600 font-medium">Available Movers</p>
+                        <p className="text-2xl font-bold text-purple-700 mt-1">{scheduleResult.available_movers_count}</p>
+                      </div>
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <p className="text-sm text-orange-600 font-medium">Unavailable</p>
+                        <p className="text-2xl font-bold text-orange-700 mt-1">{scheduleResult.unavailable_movers_count}</p>
+                      </div>
+                    </div>
+
+                    {/* Assignments */}
+                    {scheduleResult.assignments && scheduleResult.assignments.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                          <Users size={18} /> AI Assignments
+                        </h3>
+                        <div className="space-y-3">
+                          {scheduleResult.assignments.map((assignment, idx) => (
+                            <div key={idx} className={`border rounded-lg p-4 ${
+                              assignment.status === 'assigned' 
+                                ? 'border-green-200 bg-green-50' 
+                                : 'border-red-200 bg-red-50'
+                            }`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <p className="font-semibold text-gray-800">
+                                    {assignment.booking_number || assignment.booking_id?.slice(0, 8)}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    Truck: {assignment.truck_size || 'Not specified'}
+                                  </p>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  assignment.status === 'assigned'
+                                    ? 'bg-green-200 text-green-800'
+                                    : 'bg-red-200 text-red-800'
+                                }`}>
+                                  {assignment.status === 'assigned' ? '✓ Assigned' : '✗ Failed'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Users size={14} className="text-gray-400" />
+                                <span className="text-sm text-gray-600 font-medium">
+                                  {assignment.assigned_movers.length} mover{assignment.assigned_movers.length !== 1 ? 's' : ''} assigned:
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {assignment.assigned_movers.map((email, i) => (
+                                  <span key={i} className="bg-white border border-gray-200 px-2 py-1 rounded text-xs text-gray-700">
+                                    {email}
+                                  </span>
+                                ))}
+                              </div>
+                              {assignment.reasoning && (
+                                <div className="bg-white/50 rounded p-2 mt-2">
+                                  <p className="text-xs text-gray-500">
+                                    <Sparkles size={10} className="inline mr-1 text-purple-500" />
+                                    {assignment.reasoning}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {scheduleResult.assignments && scheduleResult.assignments.length === 0 && (
+                      <div className="text-center py-12 text-gray-400">
+                        <Truck size={40} className="mx-auto mb-3 opacity-50" />
+                        <p>No assignments made. All bookings may already be assigned or no pending bookings found.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {!scheduleResult && !scheduling && (
+              <div className="text-center py-16 text-gray-400">
+                <Sparkles size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-gray-600 font-medium">Select a date and run the AI scheduler</p>
+                <p className="text-gray-400 text-sm mt-1">AI will automatically assign optimal movers to each job</p>
               </div>
             )}
           </div>
