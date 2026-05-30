@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, Star, FileText } from "lucide-react";
+import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, Star, FileText, FileSpreadsheet } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 const StatCard = ({ icon: Icon, label, value, sublabel, color }) => (
@@ -156,6 +156,107 @@ export default function Payroll() {
     doc.save(`Payroll_Summary_${startDate}_to_${endDate}.pdf`);
   };
 
+  const handleExportCSV = () => {
+    if (!payrollData) return;
+
+    const headers = ['Mover', 'Jobs Completed', 'Total Hours', 'Base Wage', 'Hourly Wage', 'Performance Bonus', 'Total Wage'];
+    const rows = displayData.payroll_data.map(mover => [
+      mover.mover_name,
+      mover.jobs_completed,
+      mover.total_hours.toFixed(1),
+      mover.base_wage.toFixed(2),
+      (mover.hourly_wage || 0).toFixed(2),
+      mover.performance_bonus.toFixed(2),
+      mover.total_wage.toFixed(2)
+    ]);
+
+    const csvContent = [
+      ['PAYROLL REPORT'],
+      [`Period: ${new Date(payrollData.period.start_date).toLocaleDateString()} - ${new Date(payrollData.period.end_date).toLocaleDateString()}`],
+      [],
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Payroll_Report_${startDate}_to_${endDate}.csv`;
+    link.click();
+  };
+
+  const handleExportIndividualReports = () => {
+    if (!payrollData) return;
+
+    displayData.payroll_data.forEach(mover => {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(37, 99, 235);
+      doc.rect(0, 0, pageWidth, 30, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PAYROLL REPORT', pageWidth / 2, 18, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Period: ${new Date(payrollData.period.start_date).toLocaleDateString()} - ${new Date(payrollData.period.end_date).toLocaleDateString()}`, pageWidth / 2, 25, { align: 'center' });
+
+      let y = 45;
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Mover: ${mover.mover_name}`, 14, y);
+      y += 10;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Total Earnings: $${mover.total_wage.toFixed(2)}`, 14, y);
+      y += 7;
+      doc.text(`Jobs Completed: ${mover.jobs_completed}`, 14, y);
+      y += 7;
+      doc.text(`Hours Worked: ${mover.total_hours.toFixed(1)}`, 14, y);
+      y += 10;
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Earnings Breakdown:', 14, y);
+      y += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Base Wage (30% of jobs): $${mover.base_wage.toFixed(2)}`, 14, y);
+      y += 6;
+      doc.text(`• Hourly Wage ($25/hr): $${(mover.hourly_wage || 0).toFixed(2)}`, 14, y);
+      y += 6;
+      doc.text(`• Performance Bonus: $${mover.performance_bonus.toFixed(2)}`, 14, y);
+      y += 10;
+
+      if (mover.bookings.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Jobs Completed:', 14, y);
+        y += 7;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+
+        mover.bookings.forEach((booking, idx) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(`${idx + 1}. ${booking.booking_number} - ${new Date(booking.date).toLocaleDateString()} - ${booking.customer}`, 14, y);
+          y += 5;
+        });
+      }
+
+      const footerY = doc.internal.pageSize.getHeight() - 15;
+      doc.setFontSize(8);
+      doc.setTextColor(156, 163, 175);
+      doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, footerY, { align: 'center' });
+
+      const safeName = mover.mover_name.replace(/[^a-z0-9]/gi, '_');
+      doc.save(`Payroll_${safeName}_${startDate}_to_${endDate}.pdf`);
+    });
+  };
+
   const isIndividualView = !!paramStart && !!paramEnd;
   const displayData = payrollData && isIndividualView && currentUserEmail
     ? {
@@ -217,13 +318,29 @@ export default function Payroll() {
                 {loading ? 'Calculating...' : 'Calculate Payroll'}
               </button>
               {payrollData && (
-                <button
-                  onClick={handleExportPDF}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
-                >
-                  <Download size={16} />
-                  Export PDF
-                </button>
+                <>
+                  <button
+                    onClick={handleExportPDF}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                  >
+                    <Download size={16} />
+                    PDF Summary
+                  </button>
+                  <button
+                    onClick={handleExportCSV}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                  >
+                    <FileSpreadsheet size={16} />
+                    CSV
+                  </button>
+                  <button
+                    onClick={handleExportIndividualReports}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                  >
+                    <FileText size={16} />
+                    Individual Reports
+                  </button>
+                </>
               )}
             </div>
           </div>
