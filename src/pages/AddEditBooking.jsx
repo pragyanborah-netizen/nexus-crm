@@ -18,6 +18,14 @@ const TABS = [
 
 const SERVICE_OPTIONS = ["Packaging Supplies", "Packing", "Moving", "Unpacking"];
 
+const TRUCK_RATES = [
+  { label: "5 Tonne Truck",  truckSize: "5T",  movers: 2, rate: 168 },
+  { label: "6 Tonne Truck",  truckSize: "6T",  movers: 2, rate: 178 },
+  { label: "10 Tonne Truck", truckSize: "10T", movers: 2, rate: 208 },
+  { label: "10 Tonne Truck", truckSize: "10T", movers: 3, rate: 278 },
+  { label: "12 Tonne Truck", truckSize: "12T", movers: 3, rate: 288 },
+];
+
 const inputClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500";
 const selectClass = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white";
 const emptyAddress = { address: "", suburb: "", state: "VIC", postcode: "", floor: "", elevator: false };
@@ -694,14 +702,60 @@ Write the email body only (no subject line in the body). Address the customer by
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
-
-
                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
+          </Section>
+
+          <Section title="Truck &amp; Rate Selection">
+            <p className="text-sm text-gray-500 mb-4">Select the truck configuration for this job</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {TRUCK_RATES.map((t) => {
+                const active = form.moving_truck_size === t.label && Number(form.moving_num_people) === t.movers;
+                return (
+                  <button
+                    key={t.label + t.movers}
+                    type="button"
+                    onClick={() => {
+                      set("moving_truck_size", t.label);
+                      set("moving_num_people", t.movers);
+                      set("moving_rate_per_hour", t.rate);
+                      set("truck_size", t.truckSize);
+                      set("num_movers", t.movers);
+                    }}
+                    className={`rounded-lg border-2 p-4 text-left transition-all ${
+                      active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
+                      {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
+                    </div>
+                    <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span></p>
+                    <p className="text-xs text-gray-500">{t.movers} Movers included</p>
+                  </button>
+                );
+              })}
+            </div>
+            {form.moving_truck_size && (
+              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-6">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500">Selected:</span>
+                  <span className="font-semibold text-gray-800">{form.moving_truck_size}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500">Movers:</span>
+                  <span className="font-semibold text-gray-800">{form.moving_num_people}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500">Rate:</span>
+                  <span className="font-semibold text-green-700">${form.moving_rate_per_hour}/hr</span>
+                </div>
+              </div>
+            )}
           </Section>
         </>
       )}
