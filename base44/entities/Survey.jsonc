@@ -1,0 +1,79 @@
+{
+  "name": "Survey",
+  "type": "object",
+  "properties": {
+    "booking_id": {
+      "type": "string",
+      "title": "Booking ID"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number"
+    },
+    "customer_name": {
+      "type": "string",
+      "title": "Customer Name"
+    },
+    "customer_email": {
+      "type": "string",
+      "title": "Customer Email"
+    },
+    "move_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Move Date"
+    },
+    "overall_rating": {
+      "type": "number",
+      "title": "Overall Rating (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "team_rating": {
+      "type": "number",
+      "title": "Team Professionalism (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "care_rating": {
+      "type": "number",
+      "title": "Care of Items (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "punctuality_rating": {
+      "type": "number",
+      "title": "Punctuality (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "value_rating": {
+      "type": "number",
+      "title": "Value for Money (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "comments": {
+      "type": "string",
+      "title": "Comments"
+    },
+    "would_recommend": {
+      "type": "boolean",
+      "title": "Would Recommend"
+    },
+    "survey_sent_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Survey Sent Date"
+    },
+    "survey_submitted_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Survey Submitted Date"
+    }
+  },
+  "required": [
+    "booking_id",
+    "booking_number"
+  ]
+}

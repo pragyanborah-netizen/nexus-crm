@@ -365,6 +365,16 @@
       "type": "boolean",
       "title": "SMS Reminder Sent",
       "default": false
+    },
+    "survey_sent": {
+      "type": "boolean",
+      "title": "Survey Sent",
+      "default": false
+    },
+    "survey_completed": {
+      "type": "boolean",
+      "title": "Survey Completed",
+      "default": false
     }
   },
   "required": [

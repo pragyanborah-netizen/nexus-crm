@@ -18,6 +18,8 @@ import TimeLog from './pages/TimeLog';
 import EmailTemplates from './pages/EmailTemplates';
 import Calendars from './pages/Calendars';
 import InventoryForm from './pages/InventoryForm';
+import SurveyPage from './pages/Survey';
+import FeedbackDashboard from './pages/FeedbackDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -50,6 +52,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/inventory/:bookingId" element={<InventoryForm />} />
+      <Route path="/survey/:survey_id" element={<SurveyPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -67,6 +70,7 @@ const AuthenticatedApp = () => {
         <Route path="/time-log" element={<TimeLog />} />
         <Route path="/email-templates" element={<EmailTemplates />} />
         <Route path="/calendars" element={<Calendars />} />
+        <Route path="/feedback" element={<FeedbackDashboard />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
