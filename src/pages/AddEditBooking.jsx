@@ -728,25 +728,36 @@ Write the email body only (no subject line in the body). Address the customer by
                 const packDow = packDay ? new Date(packDay + "T00:00:00").getDay() : null;
                 const isPackSat = packDow === 6;
                 const isPackSun = packDow === 0;
-                const PACKING_RATES = [
+                const EXTRA_PACKER_RATE = 68;
+                const PACKING_RATES_WEEKDAY = [
                   { label: "2 Packers", movers: 2, rate: 168 },
                   { label: "3 Packers", movers: 3, rate: 236 },
                   { label: "4 Packers", movers: 4, rate: 304 },
                 ];
-                return (
-                  <>
-                    <p className="text-sm text-gray-500 mb-4">Select packing crew size and enter estimated hours</p>
-                    <div className="rounded-xl border-2 border-gray-200 bg-white p-4 mb-4">
+                const PACKING_RATES_SAT = [
+                  { label: "2 Packers", movers: 2, rate: 196 },
+                  { label: "3 Packers", movers: 3, rate: 264 },
+                  { label: "4 Packers", movers: 4, rate: 332 },
+                ];
+
+                const PackRateGrid = ({ rates, sectionLabel, isActive }) => {
+                  const selectedInSection = rates.find(p => Number(form.packing_rate_per_hour) === p.rate);
+                  const basePackers = selectedInSection ? selectedInSection.movers : 0;
+                  const extraPackers = selectedInSection ? Math.max(0, Number(form.packing_num_people) - basePackers) : 0;
+                  const totalPackRate = selectedInSection ? selectedInSection.rate + extraPackers * EXTRA_PACKER_RATE : 0;
+                  return (
+                    <div className={`rounded-xl border-2 p-4 mb-4 ${isActive ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white"}`}>
                       <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-sm font-semibold text-gray-700">📦 Monday – Friday Packing Rates</h3>
-                        {packDow !== null && !isPackSat && !isPackSun && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this job</span>}
+                        <h3 className={`text-sm font-semibold ${isActive ? "text-blue-800" : "text-gray-700"}`}>{sectionLabel}</h3>
+                        {isActive && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this job</span>}
+                        <p className="text-xs text-gray-400 ml-auto">Extra packer: <span className="font-medium text-gray-600">${EXTRA_PACKER_RATE}/hr</span></p>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                        {PACKING_RATES.map((p) => {
-                          const active = Number(form.packing_num_people) === p.movers && Number(form.packing_rate_per_hour) === p.rate;
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {rates.map((p) => {
+                          const active = Number(form.packing_rate_per_hour) === p.rate;
                           return (
                             <button
-                              key={p.label}
+                              key={p.label + p.rate}
                               type="button"
                               onClick={() => {
                                 set("packing_num_people", p.movers);
@@ -764,35 +775,83 @@ Write the email body only (no subject line in the body). Address the customer by
                               <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
                                 ${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
                               </p>
-                              <p className="text-xs text-gray-500">{p.movers} packers included</p>
+                              <p className="text-xs text-gray-500 mb-2">{p.movers} packers included</p>
+                              <div className="border-t border-gray-100 pt-2 space-y-1">
+                                <p className="text-xs text-gray-400 font-medium">+Extra packers (${EXTRA_PACKER_RATE}/hr):</p>
+                                <p className="text-xs text-gray-500">+1 → <span className="font-semibold text-gray-700">${p.rate + EXTRA_PACKER_RATE}/hr</span></p>
+                                <p className="text-xs text-gray-500">+2 → <span className="font-semibold text-gray-700">${p.rate + EXTRA_PACKER_RATE * 2}/hr</span></p>
+                              </div>
                             </button>
                           );
                         })}
                       </div>
-                      {form.packing_rate_per_hour && (
-                        <div className="flex flex-wrap gap-4 items-end mt-2">
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Estimated Hours</label>
-                            <input
-                              type="number" min="0" step="0.5"
-                              className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500"
-                              placeholder="e.g. 3"
-                              value={form.packing_hours || ""}
-                              onChange={(e) => {
-                                set("packing_hours", e.target.value);
-                                set("packing_total", Number(form.packing_rate_per_hour) * Number(e.target.value));
-                              }}
-                            />
-                          </div>
-                          {form.packing_hours && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-                              <p className="text-xs text-blue-500 mb-0.5">Packing Total</p>
-                              <p className="text-xl font-bold text-blue-700">${(Number(form.packing_rate_per_hour) * Number(form.packing_hours)).toFixed(0)}</p>
+                      {selectedInSection && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                          <div className="flex flex-wrap items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Base rate:</span>
+                              <span className="font-semibold text-gray-800">${selectedInSection.rate}/hr ({basePackers} packers)</span>
                             </div>
-                          )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Total rate:</span>
+                              <span className="font-semibold text-green-700 text-base">${totalPackRate}/hr</span>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-sm font-medium text-gray-700 mb-1">Additional Packers <span className="text-xs font-normal text-gray-400">(${EXTRA_PACKER_RATE}/packer/hr)</span></p>
+                            <div className="flex items-center gap-3 mt-2">
+                              <button type="button" onClick={() => { if (Number(form.packing_num_people) > basePackers) set("packing_num_people", Number(form.packing_num_people) - 1); }} disabled={Number(form.packing_num_people) <= basePackers} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold">−</button>
+                              <div className="text-center">
+                                <span className="text-2xl font-bold text-gray-800">{extraPackers}</span>
+                                <p className="text-xs text-gray-400">extra packer{extraPackers !== 1 ? "s" : ""}</p>
+                              </div>
+                              <button type="button" onClick={() => set("packing_num_people", Number(form.packing_num_people) + 1)} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold">+</button>
+                              <div className="ml-4 text-sm text-gray-500">
+                                Total packers: <span className="font-semibold text-gray-800">{form.packing_num_people}</span>
+                                {extraPackers > 0 && <span className="ml-2 text-orange-600">(+${extraPackers * EXTRA_PACKER_RATE}/hr)</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-4 items-end">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Estimated Hours</label>
+                              <input
+                                type="number" min="0" step="0.5"
+                                className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500"
+                                placeholder="e.g. 3"
+                                value={form.packing_hours || ""}
+                                onChange={(e) => {
+                                  set("packing_hours", e.target.value);
+                                  set("packing_total", totalPackRate * Number(e.target.value));
+                                }}
+                              />
+                            </div>
+                            {form.packing_hours && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                                <p className="text-xs text-blue-500 mb-0.5">Packing Total</p>
+                                <p className="text-xl font-bold text-blue-700">${(totalPackRate * Number(form.packing_hours)).toFixed(0)}</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
+                  );
+                };
+
+                return (
+                  <>
+                    <p className="text-sm text-gray-500 mb-4">Select packing crew size and enter estimated hours</p>
+                    <PackRateGrid
+                      rates={PACKING_RATES_WEEKDAY}
+                      sectionLabel="📅 Monday – Friday Packing Rates"
+                      isActive={packDow !== null && !isPackSat && !isPackSun}
+                    />
+                    <PackRateGrid
+                      rates={PACKING_RATES_SAT}
+                      sectionLabel="📅 Saturday Packing Rates"
+                      isActive={isPackSat}
+                    />
                   </>
                 );
               })()}
