@@ -180,9 +180,14 @@ function generateInvoicePdf(form, flatRates = [], packFlatRates = [], movingFlat
 
   if (form.deposit) {
     y += 2;
-    tRow("Deposit Required:", `$${Number(form.deposit).toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text("* Deposit is not subject to GST", totalsX, y);
+    y += 5;
+    tRow("Deposit Required (excl. GST):", `$${Number(form.deposit).toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
     const bal = grandTotal - Number(form.deposit);
-    tRow("Balance Due on Day:", `$${bal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, true);
+    tRow("Balance Due on Day (incl. GST):", `$${bal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, true);
   }
 
   // Payment method
