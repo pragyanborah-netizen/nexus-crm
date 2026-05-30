@@ -50,12 +50,14 @@ const navGroups = [
     items: [
       { label: "Mover Scheduling", icon: Calendar, path: "/scheduling" },
       { label: "Truck Tracking", icon: Truck, path: "/truck-tracking" },
+      { label: "Time Clock", icon: Clock, path: "/time-clock" },
     ]
   },
   {
     group: "Analytics",
     items: [
       { label: "Mover Performance", icon: Trophy, path: "/mover-performance" },
+      { label: "Driver Performance", icon: Award, path: "/driver-performance" },
       { label: "Payroll", icon: DollarSign, path: "/payroll" },
     ]
   },

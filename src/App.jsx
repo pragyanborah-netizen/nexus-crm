@@ -26,6 +26,7 @@ import MoverPerformance from './pages/MoverPerformance';
 import Payroll from './pages/Payroll';
 import Scheduling from './pages/Scheduling';
 import TruckTracking from './pages/TruckTracking';
+import TimeClock from './pages/TimeClock';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -83,6 +84,8 @@ const AuthenticatedApp = () => {
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/scheduling" element={<Scheduling />} />
         <Route path="/truck-tracking" element={<TruckTracking />} />
+        <Route path="/driver-performance" element={<DriverPerformance />} />
+        <Route path="/time-clock" element={<TimeClock />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

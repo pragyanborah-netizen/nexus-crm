@@ -1,0 +1,67 @@
+{
+  "name": "TimeClock",
+  "type": "object",
+  "properties": {
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "employee_email": {
+      "type": "string",
+      "title": "Employee Email"
+    },
+    "shift_type": {
+      "type": "string",
+      "title": "Shift Type",
+      "enum": [
+        "Clock In",
+        "Clock Out",
+        "Break Start",
+        "Break End"
+      ],
+      "default": "Clock In"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Timestamp"
+    },
+    "latitude": {
+      "type": "number",
+      "title": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "title": "Longitude"
+    },
+    "location_name": {
+      "type": "string",
+      "title": "Location Name"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number"
+    },
+    "geofence_verified": {
+      "type": "boolean",
+      "title": "Geofence Verified",
+      "default": false
+    },
+    "distance_from_job": {
+      "type": "number",
+      "title": "Distance from Job (meters)"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "shift_type",
+    "timestamp",
+    "latitude",
+    "longitude"
+  ]
+}

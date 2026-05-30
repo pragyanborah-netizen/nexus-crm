@@ -412,29 +412,30 @@ export default function TruckTracking() {
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Booking Information</h3>
               {(() => {
                 const booking = getBookingDetails(selectedTruck.booking_id);
-                return booking && (
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-gray-500">Customer:</span>
-                    <p className="font-medium">{booking.customer_first_name} {booking.customer_last_name}</p>
+                if (!booking) return null;
+                return (
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-500">Customer:</span>
+                      <p className="font-medium">{booking.customer_first_name} {booking.customer_last_name}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Pickup:</span>
+                      <p className="font-medium">{booking.pickup_suburb || "N/A"}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Delivery:</span>
+                      <p className="font-medium">{booking.delivery_suburb || "N/A"}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Status:</span>
+                      <span className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[booking.status]}`}>
+                        {booking.status}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-500">Pickup:</span>
-                    <p className="font-medium">{booking.pickup_suburb || "N/A"}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Delivery:</span>
-                    <p className="font-medium">{booking.delivery_suburb || "N/A"}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Status:</span>
-                    <span className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[booking.status]}`}>
-                      {booking.status}
-                    </span>
-                  </div>
-                </div>
-              );
-              }}
+                );
+              })()}
             </div>
           )}
         </div>
