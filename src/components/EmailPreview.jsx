@@ -125,15 +125,108 @@ function getEmailContent(form, inventoryLink, flatRates) {
     };
   }
 
-  // Tentative Booking or Booked Job
+  // Tentative Booking
+  if (form.status === "Tentative Booking") {
+    const inventoryHtml = (form.items_to_move || []).length > 0
+      ? form.items_to_move.map(item => `<p style="margin:2px 0;font-size:14px;">• ${item}</p>`).join("")
+      : `<p style="color:#64748b;font-style:italic;">No items listed.</p>`;
+
+    const serviceLines = [];
+    if ((form.selected_services || []).includes("Packing") && form.packing_rate_per_hour) {
+      serviceLines.push({ label: `Packing – ${form.packing_num_people || ""} packers @ $${form.packing_rate_per_hour}/hr`, hours: form.packing_hours, total: form.packing_total, date: form.packing_date, time: form.packing_time });
+    }
+    if ((form.selected_services || []).includes("Moving") && form.moving_rate_per_hour) {
+      serviceLines.push({ label: `Moving – ${form.moving_truck_size || ""} @ $${form.moving_rate_per_hour}/hr`, hours: form.moving_hours, total: form.moving_total, date: form.moving_date || form.move_date, time: form.moving_time || form.move_time });
+    }
+    if ((form.selected_services || []).includes("Unpacking") && form.unpacking_rate_per_hour) {
+      serviceLines.push({ label: `Unpacking – ${form.unpacking_num_people || ""} unpackers @ $${form.unpacking_rate_per_hour}/hr`, hours: form.unpacking_hours, total: form.unpacking_total, date: form.unpacking_date, time: form.unpacking_time });
+    }
+    if ((form.selected_services || []).includes("Packaging Supplies") && form.packaging_supplies_price) {
+      serviceLines.push({ label: "Packaging Supplies – Delivery Charge", total: form.packaging_supplies_price, date: form.packaging_supplies_date, time: form.packaging_supplies_time });
+    }
+
+    const flatTotal = (flatRates || []).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+
+    return {
+      subject: `MOVE ON REMOVALS – Tentative Booking Confirmation`,
+      body: `
+<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#1e293b;">
+  <div style="background:#1d4ed8;padding:20px 28px;">
+    <h1 style="color:white;margin:0;font-size:22px;letter-spacing:1px;">MOVE ON REMOVALS</h1>
+  </div>
+  <div style="padding:28px 32px;border:1px solid #e2e8f0;border-top:none;background:#fff;">
+    <p style="font-size:15px;">Hi <strong>${firstName}</strong>,</p>
+    <p style="font-size:15px;">Thank you for booking with Move On Removals. <strong>This booking is not yet confirmed, awaiting payment of your deposit.</strong> Once paid, you will receive a booking confirmation email that will require you to respond.</p>
+    <p style="font-size:15px;">A deposit invoice has been sent via our Square account and should be paid within <strong>24 hours</strong> to secure your booking. The deposit amount will be deducted from the total bill on the day of your move.</p>
+
+    <p style="font-size:15px;font-weight:600;margin-bottom:8px;">Your booking details are as follows;</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;width:150px;font-size:13.5px;">Move Date</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
+      <tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Pickup</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Delivery</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
+      ${form.customer_mobile ? `<tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Mobile</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.customer_mobile}</td></tr>` : ""}
+      ${form.deposit ? `<tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:bold;font-size:13.5px;">Deposit Required</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;font-weight:bold;color:#1d4ed8;">$${Number(form.deposit).toLocaleString()}</td></tr>` : ""}
+    </table>
+
+    ${inventoryHtml !== `<p style="color:#64748b;font-style:italic;">No items listed.</p>` ? `
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+      <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#334155;">Inventory:</p>
+      ${inventoryHtml}
+    </div>` : ""}
+
+    ${serviceLines.length > 0 ? `
+    <div style="background:#f0f7ff;border-left:4px solid #1d4ed8;border-radius:6px;padding:16px 20px;margin-bottom:20px;">
+      <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.5px;">Services &amp; Pricing</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${serviceLines.map((s, i) => `
+        <tr style="${i % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${s.label}${s.date ? " · " + s.date : ""}${s.time ? " at " + s.time : ""}</td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">${s.hours ? s.hours + " hrs" : ""}</td><td style="padding:6px 8px;font-size:13.5px;font-weight:bold;text-align:right;">${s.total ? "$" + Number(s.total).toLocaleString() : ""}</td></tr>`).join("")}
+        ${(flatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;font-weight:bold;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
+      </table>
+      ${form.price ? `<div style="border-top:2px solid #1d4ed8;margin-top:10px;padding-top:10px;"><p style="margin:0;font-size:16px;font-weight:bold;color:#1d4ed8;text-align:right;">Total Estimate: $${Number(form.price).toLocaleString()}</p></div>` : ""}
+    </div>
+    <p style="font-size:12px;color:#64748b;">All pricing is excluding GST unless otherwise noted.</p>` : ""}
+
+    <p style="font-size:14px;color:#475569;">Your booking has been allocated a time slot based on the details you have provided us.</p>
+    <p style="font-size:14px;color:#475569;">We appreciate that you have advised all your requirements and a thorough list of contents to be moved, dismantled and/or re-assembled. Don't worry, if you think you have missed anything, update us via email regarding the additional items/information prior to your move. Please keep in mind any change to your inventory may require a different truck size and rate. Please note that if on the day of your move there is a significant amount of additional items, which exceed what was advised, we may have to re-schedule your move to another booking time. This is so that we arrive on time for all our valued customers.</p>
+    <p style="font-size:14px;color:#475569;">We do not provide fixed quotations or time estimates as you know your destinations better than us. The better organised you are, the more efficient we can be!</p>
+
+    <div style="margin:20px 0;">
+      <p style="font-size:14px;margin-bottom:10px;font-weight:600;color:#334155;">Important Information:</p>
+      <table style="width:100%;">
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;width:16px;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">Charges are door to door, with no depot fees.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">Move on Removals has Public Liability Insurance and Transit Insurance. Please refer to our terms and conditions at <a href="http://www.moveonremovals.com.au" style="color:#1d4ed8;">www.moveonremovals.com.au</a> for further information. We do not accept liability for any damages to pre-wrapped goods. Our company policy is to ensure all goods are wrapped in transit.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">In the instance that an additional mover is required, each additional mover will be charged at $68 per mover per hour Monday to Friday, $82 per mover per hour on Saturdays and $136 per mover per hour on Sundays. Charges differ on packing teams and should be discussed with our Customer Care Team. Should we need to send them via CarShare to the jobsite, this would be an additional charge to be incurred by the customer.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">If applicable, an additional fee on Monday - Friday of $50+GST per hour per person from 5-9pm and $70+GST per person per hour from 9pm will be charged on top of your agreed to rate; rates on Saturday of $70+GST per person from 5-9pm and $90+GST per hour per person from 9pm. Bookings for the afternoon slot do not have a guaranteed start time, as it may be impacted by any morning bookings. Charges differ on packing teams and should be discussed with our Customer Care Team. Exceptions apply for the night rates from 5pm on the 5T &amp; 6T with time allowances if necessary on booking slot adjustments.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">If you are requiring a ute for your move due to apartment restrictions, there will be a one time flat fee applicable. If we are not able to return the vehicle prior to 5pm due to the move being in progress, a one time fee of $149+GST applies for late return.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">We have a 48-hour rescheduling and cancellation policy. If you provide us 48 hours' notice before the booked start time of the job, no fees will apply. If you reschedule or cancel within 48 hours, we will charge a fee equivalent to the deposit amount. Terms and conditions apply for re-scheduling existing bookings.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">Please note that all TV's, mirrors, glass, antiques and fragile items must be bubble wrapped. We are happy to do this for you on the day for an extra cost of $35+GST per 50m roll. This along with any shrink wrap will be disposed of on site at the drop off location. Should you ask us to not bubble wrap, or you do so yourself, particular items that we believe need to be, these will not be covered in the event of damage.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">A flat rate toll charge of $52 inclusive of GST may apply to minimise traffic time. If you do not agree to pay for these charges, Move On Removals must be advised prior to your move; in which case, alternative non-toll routes will be taken.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">The Move On Removals team does not work past 7pm. If the assets remain on the vehicle overnight due to our staff having to stop by 7pm, a night rate fee will be charged in the amount of $199+GST per night in which the assets remain on the vehicle.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">If you, our customer, will not be in attendance throughout the duration of the job, please advise us prior to your move.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">When loading goods into a storage unit, your items generally need to be stacked in order to utilise the whole space. Whilst our team takes every care to ensure your goods are carefully stacked, some furniture can be easily damaged; blankets are the best and most efficient way to protect them from damage. Storage blankets can be purchased from us on the day of your move.</td></tr>
+        <tr><td style="vertical-align:top;padding:5px 8px 5px 0;font-size:14px;">•</td><td style="font-size:13px;color:#475569;padding:5px 0;">All invoices will be finalised prior to the completion of each day via card or cash only.</td></tr>
+      </table>
+    </div>
+
+    <p style="font-size:14px;color:#475569;">In the meantime, if you have any further questions regarding your move please do not hesitate to contact us.</p>
+    <p style="font-size:14px;color:#475569;">Wishing you all the best for your move.</p>
+    <p style="margin-top:24px;font-size:14px;">Kind regards,<br/><strong>Move On Removals Team</strong><br/><a href="mailto:moveme@moveonremovals.com.au" style="color:#1d4ed8;">moveme@moveonremovals.com.au</a></p>
+  </div>
+  <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
+    <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
+  </div>
+</div>`
+    };
+  }
+
+  // Booked Job
   const inventoryHtml = (form.items_to_move || []).length > 0
     ? form.items_to_move.map(item => `<p style="margin:2px 0;font-size:14px;">1 x ${item}</p>`).join("")
     : `<p style="color:#64748b;font-style:italic;">No items listed.</p>`;
   const flatTotal = (flatRates || []).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-  const isTentative = form.status === "Tentative Booking";
 
   return {
-    subject: `MOVE ON REMOVALS – ${isTentative ? "Tentative Booking Confirmation" : "Booking Confirmation"}`,
+    subject: `MOVE ON REMOVALS – Booking Confirmation`,
     body: `
 <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1e293b;">
   <div style="background:#1d4ed8;padding:20px 24px;">
@@ -141,14 +234,13 @@ function getEmailContent(form, inventoryLink, flatRates) {
   </div>
   <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
     <p>Hi ${firstName},</p>
-    ${isTentative
-      ? "<p>Thank you for your interest! We have a <strong>tentative booking</strong> held for you. Please confirm at your earliest convenience to secure your spot.</p>"
-      : "<p>Thank you for booking with Move On Removals.</p><p><strong>This job is now secured, acceptance of which constitutes the acknowledgement and acceptance of our Terms and Conditions and the booking details below.</strong></p>"}
+    <p>Thank you for booking with Move On Removals.</p>
+    <p><strong>This job is now secured, acceptance of which constitutes the acknowledgement and acceptance of our Terms and Conditions and the booking details below.</strong></p>
     <p><em>Please confirm the list of contents below reflects what you are moving, to ensure we are sending the most suitable truck for your needs.</em></p>
     <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
       <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;width:140px;">Move Date</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
-      <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Pickup</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${addressBlock}</td></tr>
-      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${deliveryBlock}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Pickup</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${[form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
       ${form.truck_size ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Truck</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.truck_size}</td></tr>` : ""}
       ${form.num_movers ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Movers</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.num_movers} movers</td></tr>` : ""}
       ${form.moving_hours ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Moving (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.moving_hours} hrs</td></tr>` : ""}
