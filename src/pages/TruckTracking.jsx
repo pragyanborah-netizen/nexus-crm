@@ -101,10 +101,10 @@ export default function TruckTracking() {
   };
 
   const centerMap = selectedTruck 
-    ? [selectedTruck.latitude, selectedTruck.longitude] as [number, number]
+    ? [selectedTruck.latitude, selectedTruck.longitude]
     : activeTrucks.length > 0
-      ? [activeTrucks[0].latitude, activeTrucks[0].longitude] as [number, number]
-      : [-37.8136, 144.9631] as [number, number]; // Melbourne CBD
+      ? [activeTrucks[0].latitude, activeTrucks[0].longitude]
+      : [-37.8136, 144.9631]; // Melbourne CBD
 
   return (
     <div className="space-y-6">
@@ -410,7 +410,9 @@ export default function TruckTracking() {
           {selectedTruck.booking_number && (
             <div className="mt-4 pt-4 border-t">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Booking Information</h3>
-              {booking && (
+              {(() => {
+                const booking = getBookingDetails(selectedTruck.booking_id);
+                return booking && (
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-gray-500">Customer:</span>
@@ -431,7 +433,8 @@ export default function TruckTracking() {
                     </span>
                   </div>
                 </div>
-              )}
+              );
+              }}
             </div>
           )}
         </div>
