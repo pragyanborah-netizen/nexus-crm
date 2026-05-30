@@ -360,6 +360,11 @@
     "internal_notes": {
       "type": "string",
       "title": "Internal Notes"
+    },
+    "sms_reminder_sent": {
+      "type": "boolean",
+      "title": "SMS Reminder Sent",
+      "default": false
     }
   },
   "required": [
