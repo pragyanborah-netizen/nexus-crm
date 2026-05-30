@@ -3,7 +3,8 @@ import { useState } from "react";
 import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
-  ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar
+  ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar,
+  Trophy
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -42,6 +43,12 @@ const navGroups = [
       { label: "Inventory List", icon: Package, path: "/inventory" },
       { label: "Supply List", icon: ShoppingCart, path: "/supplies" },
       { label: "Bulk SMS Tool", icon: MessageSquare, path: "/bulk-sms" },
+    ]
+  },
+  {
+    group: "Analytics",
+    items: [
+      { label: "Mover Performance", icon: Trophy, path: "/mover-performance" },
     ]
   },
 ];

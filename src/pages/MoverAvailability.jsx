@@ -458,7 +458,7 @@ export default function MoverAvailability() {
             )}
           </div>
         </div>
-      ) : (
+      ) : view === "earnings" ? (
         <div className="space-y-4">
           {/* Earnings Header */}
           <div className="bg-white rounded-lg shadow p-4">
