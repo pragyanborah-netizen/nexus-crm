@@ -110,6 +110,48 @@ function recommendTruck(items) {
   return { size: "Extra Large (14t)", movers: 3, baseHours: 6, rate: 250 };
 }
 
+function ServiceFlatRates({ rates, setRates }) {
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-gray-700">Flat Rate Charges</p>
+        <button
+          type="button"
+          onClick={() => setRates([...rates, { description: "", amount: "" }])}
+          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50"
+        >
+          <Plus size={13} /> Add Flat Rate
+        </button>
+      </div>
+      {rates.length === 0 && (
+        <p className="text-xs text-gray-400 italic">No flat rate charges for this service.</p>
+      )}
+      {rates.length > 0 && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-[1fr_130px_36px] gap-2 text-xs text-gray-500 font-medium px-1">
+            <span>Description</span><span>Amount ($)</span><span></span>
+          </div>
+          {rates.map((row, idx) => (
+            <div key={idx} className="grid grid-cols-[1fr_130px_36px] gap-2 items-center">
+              <input type="text" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Stair carry, Fuel levy" value={row.description}
+                onChange={(e) => { const r = [...rates]; r[idx].description = e.target.value; setRates(r); }} />
+              <input type="number" min="0" step="0.01" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-right" placeholder="0.00" value={row.amount}
+                onChange={(e) => { const r = [...rates]; r[idx].amount = e.target.value; setRates(r); }} />
+              <button type="button" onClick={() => setRates(rates.filter((_, i) => i !== idx))}
+                className="flex items-center justify-center w-9 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200">
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+          <div className="flex justify-end pt-1">
+            <p className="text-sm font-semibold text-gray-700">Total: ${rates.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0).toFixed(2)}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AddEditBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -153,6 +195,9 @@ export default function AddEditBooking() {
   const [customRates, setCustomRates] = useState([]);
   const [customPackRates, setCustomPackRates] = useState([]);
   const [customUnpackRates, setCustomUnpackRates] = useState([]);
+  const [packFlatRates, setPackFlatRates] = useState([]);
+  const [unpackFlatRates, setUnpackFlatRates] = useState([]);
+  const [movingFlatRates, setMovingFlatRates] = useState([]);
 
   useEffect(() => {
     if (existing) {
@@ -167,6 +212,9 @@ export default function AddEditBooking() {
         setExtraStops(existing.additional_stops.map((s) => ({ address: s, suburb: "", state: "VIC", postcode: "", floor: "", elevator: false })));
       }
       if (existing.flat_rate_charges) { try { setFlatRates(JSON.parse(existing.flat_rate_charges)); } catch(e) {} }
+      if (existing.packing_rates_config) { try { const pc = JSON.parse(existing.packing_rates_config); if (pc.flatRates) setPackFlatRates(pc.flatRates); } catch(e) {} }
+      if (existing.unpacking_rates_config) { try { const uc = JSON.parse(existing.unpacking_rates_config); if (uc.flatRates) setUnpackFlatRates(uc.flatRates); } catch(e) {} }
+      if (existing.moving_rates_config) { try { const mc = JSON.parse(existing.moving_rates_config); if (mc.flatRates) setMovingFlatRates(mc.flatRates); } catch(e) {} }
     }
   }, [existing]);
 
@@ -185,9 +233,9 @@ export default function AddEditBooking() {
   const handleSave = () => {
     const data = {
       ...form,
-      moving_rates_config: JSON.stringify(form.moving_rates_config || {}),
-      packing_rates_config: JSON.stringify(form.packing_rates_config || {}),
-      unpacking_rates_config: JSON.stringify(form.unpacking_rates_config || {}),
+      moving_rates_config: JSON.stringify({ ...(form.moving_rates_config || {}), flatRates: movingFlatRates }),
+      packing_rates_config: JSON.stringify({ ...(form.packing_rates_config || {}), flatRates: packFlatRates }),
+      unpacking_rates_config: JSON.stringify({ ...(form.unpacking_rates_config || {}), flatRates: unpackFlatRates }),
       additional_stops: extraStops.filter((s) => s.address || s.suburb).map((s) => [s.address, s.suburb, s.state].filter(Boolean).join(", ")),
       flat_rate_charges: JSON.stringify(flatRates),
     };
@@ -894,6 +942,7 @@ Write the email body only (no subject line in the body). Address the customer by
                   </>
                 );
               })()}
+              <ServiceFlatRates rates={packFlatRates} setRates={setPackFlatRates} />
             </Section>
           )}
 
@@ -1042,6 +1091,7 @@ Write the email body only (no subject line in the body). Address the customer by
                   </>
                 );
               })()}
+              <ServiceFlatRates rates={unpackFlatRates} setRates={setUnpackFlatRates} />
             </Section>
           )}
 
@@ -1269,7 +1319,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 </>
               );
             })()}
-
+              <ServiceFlatRates rates={movingFlatRates} setRates={setMovingFlatRates} />
           </Section>}
         </>
       )}
