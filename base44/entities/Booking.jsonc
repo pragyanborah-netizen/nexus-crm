@@ -13,6 +13,7 @@
         "Enquiry",
         "Quoted",
         "Tentative Booking",
+        "Confirmed",
         "Booked Job",
         "Completed",
         "Cancelled",

@@ -1561,6 +1561,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 { value: "Enquiry", color: "bg-sky-500" },
                 { value: "Quoted", color: "bg-purple-500" },
                 { value: "Tentative Booking", color: "bg-yellow-500" },
+                { value: "Confirmed", color: "bg-emerald-500" },
                 { value: "Booked Job", color: "bg-green-600" },
                 { value: "Completed", color: "bg-gray-500" },
                 { value: "Cancelled", color: "bg-red-500" },

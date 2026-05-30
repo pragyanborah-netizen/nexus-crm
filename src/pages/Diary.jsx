@@ -7,6 +7,7 @@ const statusColors = {
   Enquiry: "bg-sky-100 text-sky-700 border-sky-200",
   Quoted: "bg-purple-100 text-purple-700 border-purple-200",
   "Tentative Booking": "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Confirmed: "bg-emerald-100 text-emerald-700 border-emerald-200",
   "Booked Job": "bg-green-100 text-green-700 border-green-200",
   Completed: "bg-gray-100 text-gray-600 border-gray-200",
   Cancelled: "bg-red-100 text-red-700 border-red-200",
