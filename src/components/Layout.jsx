@@ -65,7 +65,7 @@ const navGroups = [
     items: [
       { label: "Agent & Mover Portal", icon: UserCheck, path: "/agent-portal" },
       { label: "Customer Portal", icon: Users, path: "/customer" },
-      { label: "Gmail Enquiry Processor", icon: Mail, path: "/gmail-processor" },
+      { label: "Notification Monitoring", icon: Bell, path: "/notification-monitoring" },
     ]
   },
 ];
