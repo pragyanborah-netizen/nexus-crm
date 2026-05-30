@@ -272,16 +272,16 @@ export default function AddEditBooking() {
   </div>
   <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
     <p>Hi ${form.customer_first_name},</p>
-    <p>Thank you for reaching out to Move On Australia!</p>
-    <p>We tried to contact you recently but were unable to get through. We'd love to help you with your upcoming move and provide you with an accurate quote.</p>
-    <p>To help us prepare the best quote for you, please click the button below to fill in a list of items you'll need moved:</p>
+    <p>Thank you for your enquiry and for considering Move On Removals.</p>
+    <p>To help us provide an accurate quote and recommend the right truck size for your move, please complete our Inventory Checklist using the link below and return it when convenient:</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${link}" style="background:#1d4ed8;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;">📋 Add My Inventory</a>
+      <a href="${link}" style="background:#1d4ed8;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;">📋 Complete Inventory Checklist</a>
     </div>
     <p style="font-size:13px;color:#64748b;">Or copy this link: <a href="${link}" style="color:#1d4ed8;">${link}</a></p>
-    <p>Once we receive your inventory, we'll prepare a detailed quote and reach out shortly.</p>
-    <p>Please feel free to call us back at your earliest convenience, or reply to this email with any questions.</p>
-    <p style="margin-top:24px;">Kind regards,<br/><strong>Move On Removals Team</strong><br/>moveme@moveonremovals.com.au</p>
+    <p>We also offer professional packing and unpacking services, so please let us know if you'd like more information about these options.</p>
+    <p>If you have any questions, simply reply to this email or give us a call.</p>
+    <p>We look forward to assisting with your move.</p>
+    <p style="margin-top:24px;">Kind regards,<br/><strong>Move On Removals</strong><br/>moveme@moveonremovals.com.au</p>
   </div>
   <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
     <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
