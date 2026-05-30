@@ -553,6 +553,10 @@ Write the email body only (no subject line in the body). Address the customer by
       <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${deliveryBlock}</td></tr>
       ${form.truck_size ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Truck</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.truck_size}</td></tr>` : ""}
       ${form.num_movers ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Movers</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.num_movers} movers</td></tr>` : ""}
+      ${form.packaging_supplies_hours ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Packaging Supplies (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.packaging_supplies_hours} hrs</td></tr>` : ""}
+      ${form.packing_hours ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Packing (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.packing_hours} hrs</td></tr>` : ""}
+      ${form.moving_hours ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Moving (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.moving_hours} hrs</td></tr>` : ""}
+      ${form.unpacking_hours ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Unpacking (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.unpacking_hours} hrs</td></tr>` : ""}
     </table>
     <p><strong>Inventory:</strong></p>
     ${inventoryHtml}
