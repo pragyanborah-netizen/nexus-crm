@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Plus, Search, Trash2, Edit, Eye } from "lucide-react";
+import { Plus, Search, Trash2, Edit, Eye, FileText, CalendarDays, Truck, Users } from "lucide-react";
 
 const statusColors = {
   Enquiry: "bg-sky-100 text-sky-700",
@@ -45,7 +45,47 @@ export default function Bookings() {
           <h1 className="text-2xl font-bold text-gray-800">Bookings</h1>
         </div>
         <Link to="/bookings/new" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-medium">
-          <Plus size={16} /> Add new Booking
+          <Plus size={16} /> Add New Booking
+        </Link>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <Link to="/bookings/new" className="bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md rounded-lg p-4 transition-all flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+            <Plus size={20} className="text-blue-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">New Booking</p>
+            <p className="text-xs text-gray-500">Create a booking</p>
+          </div>
+        </Link>
+        <Link to="/calendars" className="bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md rounded-lg p-4 transition-all flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+            <CalendarDays size={20} className="text-purple-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">Calendar</p>
+            <p className="text-xs text-gray-500">View schedule</p>
+          </div>
+        </Link>
+        <Link to="/diary" className="bg-white border border-gray-200 hover:border-green-300 hover:shadow-md rounded-lg p-4 transition-all flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+            <FileText size={20} className="text-green-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">Diary</p>
+            <p className="text-xs text-gray-500">Daily schedule</p>
+          </div>
+        </Link>
+        <Link to="/truck-tracking" className="bg-white border border-gray-200 hover:border-orange-300 hover:shadow-md rounded-lg p-4 transition-all flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+            <Truck size={20} className="text-orange-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">Truck Tracking</p>
+            <p className="text-xs text-gray-500">Live fleet view</p>
+          </div>
         </Link>
       </div>
 
@@ -114,9 +154,9 @@ export default function Bookings() {
                     <td className="px-4 py-3">{b.price ? `$${Number(b.price).toLocaleString()}` : "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Link to={`/bookings/${b.id}`} className="text-gray-400 hover:text-blue-600"><Eye size={16} /></Link>
-                        <Link to={`/bookings/${b.id}/edit`} className="text-gray-400 hover:text-green-600"><Edit size={16} /></Link>
-                        <button onClick={() => { if (confirm("Delete this booking?")) deleteBooking.mutate(b.id); }} className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
+                        <Link to={`/bookings/${b.id}`} title="View" className="text-gray-400 hover:text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Eye size={16} /></Link>
+                        <Link to={`/bookings/${b.id}/edit`} title="Edit" className="text-gray-400 hover:text-green-600 p-1 hover:bg-green-50 rounded transition-colors"><Edit size={16} /></Link>
+                        <button onClick={() => { if (confirm("Delete this booking?")) deleteBooking.mutate(b.id); }} title="Delete" className="text-gray-400 hover:text-red-600 p-1 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
