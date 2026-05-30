@@ -28,6 +28,7 @@ import Scheduling from './pages/Scheduling';
 import TruckTracking from './pages/TruckTracking';
 import DriverPerformance from './pages/DriverPerformance';
 import TimeClock from './pages/TimeClock';
+import ScheduleMonitoring from './pages/ScheduleMonitoring';
 import BookingTimeClock from './pages/BookingTimeClock';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -88,6 +89,7 @@ const AuthenticatedApp = () => {
         <Route path="/truck-tracking" element={<TruckTracking />} />
         <Route path="/driver-performance" element={<DriverPerformance />} />
         <Route path="/time-clock" element={<TimeClock />} />
+        <Route path="/schedule-monitoring" element={<ScheduleMonitoring />} />
         <Route path="/booking/:bookingId/clock" element={<BookingTimeClock />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

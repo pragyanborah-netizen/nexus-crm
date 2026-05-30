@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
   ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar,
-  Trophy, DollarSign, Award as AwardIcon
+  Trophy, DollarSign, Award as AwardIcon, Timer
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -58,6 +58,7 @@ const navGroups = [
     items: [
       { label: "Mover Performance", icon: Trophy, path: "/mover-performance" },
       { label: "Driver Performance", icon: AwardIcon, path: "/driver-performance" },
+      { label: "Schedule Monitoring", icon: Timer, path: "/schedule-monitoring" },
       { label: "Payroll", icon: DollarSign, path: "/payroll" },
     ]
   },
