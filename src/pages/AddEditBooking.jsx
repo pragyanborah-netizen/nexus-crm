@@ -7,6 +7,7 @@ import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Ch
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import ItemsSelector from "../components/ItemsSelector";
+import EmailPreview from "../components/EmailPreview";
 
 const TABS = [
   { id: "customer", label: "Customer", icon: User },
@@ -1710,6 +1711,11 @@ Write the email body only (no subject line in the body). Address the customer by
               <textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Any special instructions or notes to include in the confirmation email..." />
             </Field>
           </Section>
+
+          {/* Email Preview */}
+          {["Enquiry", "Quoted", "Tentative Booking", "Booked Job"].includes(form.status) && (
+            <EmailPreview form={form} inventoryLink={inventoryLink} flatRates={flatRates} />
+          )}
         </>
       )}
 
