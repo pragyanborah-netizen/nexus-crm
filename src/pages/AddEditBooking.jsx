@@ -8,7 +8,7 @@ import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import ItemsSelector from "../components/ItemsSelector";
-import EmailPreview from "../components/EmailPreview";
+import EmailPreview, { getEmailContent } from "../components/EmailPreview";
 
 const TABS = [
   { id: "customer", label: "Customer", icon: User },
@@ -266,33 +266,11 @@ export default function AddEditBooking() {
   const handleSendEnquiryEmail = async () => {
     if (!form.customer_email) { alert("No customer email address on file."); return; }
     setSendingEnquiry(true);
-    const link = inventoryLink || "";
-    const body = `
-<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1e293b;">
-  <div style="background:#1d4ed8;padding:20px 24px;">
-    <h1 style="color:white;margin:0;font-size:20px;">MOVE ON REMOVALS</h1>
-  </div>
-  <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
-    <p>Hi ${form.customer_first_name},</p>
-    <p>Thank you for your enquiry and for considering Move On Removals.</p>
-    <p>To help us provide an accurate quote and recommend the right truck size for your move, please complete our Inventory Checklist using the link below and return it when convenient:</p>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${link}" style="background:#1d4ed8;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;">📋 Complete Inventory Checklist</a>
-    </div>
-    <p style="font-size:13px;color:#64748b;">Or copy this link: <a href="${link}" style="color:#1d4ed8;">${link}</a></p>
-    <p>We also offer professional packing and unpacking services, so please let us know if you'd like more information about these options.</p>
-    <p>If you have any questions, simply reply to this email or give us a call.</p>
-    <p>We look forward to assisting with your move.</p>
-    <p style="margin-top:24px;">Kind regards,<br/><strong>Move On Removals</strong><br/>moveme@moveonremovals.com.au</p>
-  </div>
-  <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
-  </div>
-</div>`;
+    const email = getEmailContent(form, inventoryLink, flatRates, packFlatRates, movingFlatRates, unpackFlatRates);
     await base44.integrations.Core.SendEmail({
       to: form.customer_email,
-      subject: `Move On Removals – We tried to reach you`,
-      body,
+      subject: email.subject,
+      body: email.body,
     });
     setSendingEnquiry(false);
     alert("Enquiry email sent to " + form.customer_email);
@@ -404,6 +382,19 @@ Write the email body only (no subject line in the body). Address the customer by
     alert("Email sent to " + form.customer_email);
   };
 
+  const handleSendEmail = async () => {
+    if (!form.customer_email) { alert("No customer email address on file."); return; }
+    setSendingEmail(true);
+    const email = getEmailContent(form, inventoryLink, flatRates, packFlatRates, movingFlatRates, unpackFlatRates);
+    await base44.integrations.Core.SendEmail({
+      to: form.customer_email,
+      subject: email.subject,
+      body: email.body,
+    });
+    setSendingEmail(false);
+    alert("Email sent to " + form.customer_email);
+  };
+
   const handleGeneratePdf = () => {
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
@@ -411,7 +402,6 @@ Write the email body only (no subject line in the body). Address the customer by
     const col2 = 110;
     let y = 0;
 
-    // Header bar
     doc.setFillColor(29, 78, 216);
     doc.rect(0, 0, pageW, 38, "F");
     doc.setTextColor(255, 255, 255);
@@ -421,13 +411,11 @@ Write the email body only (no subject line in the body). Address the customer by
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text("Removal Quote", margin, 28);
-    // Booking number top right
     if (form.booking_number) {
       doc.text(`#${form.booking_number}`, pageW - margin, 18, { align: "right" });
     }
     y = 50;
 
-    // Status badge
     doc.setFillColor(239, 246, 255);
     doc.roundedRect(margin, y - 6, 50, 10, 2, 2, "F");
     doc.setTextColor(29, 78, 216);
@@ -436,7 +424,6 @@ Write the email body only (no subject line in the body). Address the customer by
     doc.text(form.status || "New", margin + 25, y + 1, { align: "center" });
     y += 12;
 
-    // Customer info
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
@@ -445,16 +432,14 @@ Write the email body only (no subject line in the body). Address the customer by
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 116, 139);
-    if (form.customer_email) doc.text(form.customer_email, margin, y), y += 5;
-    if (form.customer_mobile) doc.text(form.customer_mobile, margin, y), y += 5;
+    if (form.customer_email) { doc.text(form.customer_email, margin, y); y += 5; }
+    if (form.customer_mobile) { doc.text(form.customer_mobile, margin, y); y += 5; }
     y += 4;
 
-    // Divider
     doc.setDrawColor(226, 232, 240);
     doc.line(margin, y, pageW - margin, y);
     y += 8;
 
-    // Move details section
     const sectionTitle = (title) => {
       doc.setFillColor(241, 245, 249);
       doc.rect(margin, y - 5, pageW - margin * 2, 9, "F");
@@ -497,13 +482,11 @@ Write the email body only (no subject line in the body). Address the customer by
     if (form.distance_km) row("Distance:", `${form.distance_km} km`);
     y += 4;
 
-    // Job details
     sectionTitle("Job Details");
     if (form.truck_size) dualRow("Truck:", form.truck_size, "Movers:", form.num_movers ? `${form.num_movers} movers` : "");
     if (form.estimated_hours) dualRow("Est. Hours:", `${form.estimated_hours} hrs`, "Truck Assigned:", form.truck_assigned || "");
     y += 4;
 
-    // Items
     if ((form.items_to_move || []).length > 0) {
       sectionTitle(`Items to Move (${form.items_to_move.length})`);
       const cols = 3;
@@ -521,7 +504,6 @@ Write the email body only (no subject line in the body). Address the customer by
       y += 4;
     }
 
-    // Pricing
     if (form.price || form.packing_total || form.moving_total || form.unpacking_total) {
       if (y > 230) { doc.addPage(); y = 20; }
       sectionTitle("Pricing");
@@ -544,7 +526,6 @@ Write the email body only (no subject line in the body). Address the customer by
       if (form.deposit) row("Deposit Required:", `$${Number(form.deposit).toLocaleString()}`);
     }
 
-    // Notes
     if (form.notes) {
       if (y > 240) { doc.addPage(); y = 20; }
       sectionTitle("Notes");
@@ -556,7 +537,6 @@ Write the email body only (no subject line in the body). Address the customer by
       y += lines.length * 5 + 4;
     }
 
-    // Footer
     const footerY = doc.internal.pageSize.getHeight() - 14;
     doc.setFillColor(241, 245, 249);
     doc.rect(0, footerY - 4, pageW, 20, "F");
@@ -567,60 +547,6 @@ Write the email body only (no subject line in the body). Address the customer by
 
     const filename = `Quote_${form.customer_last_name || "Customer"}_${form.move_date || "TBC"}.pdf`;
     doc.save(filename);
-  };
-
-  const handleSendEmail = async () => {
-    if (!form.customer_email) { alert("No customer email address on file."); return; }
-    setSendingEmail(true);
-
-    const inventoryHtml = (form.items_to_move || []).length > 0
-      ? form.items_to_move.map(item => `<p style="margin:2px 0;font-size:14px;">1 x ${item}</p>`).join("")
-      : `<p style="color:#64748b;font-style:italic;">No items listed.</p>`;
-
-    const addressBlock = [form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC";
-    const deliveryBlock = [form.delivery_address, form.delivery_suburb, form.delivery_state, form.delivery_postcode].filter(Boolean).join(", ") || "TBC";
-
-    const flatTotal = flatRates.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-
-    const body = `
-<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1e293b;">
-  <div style="background:#1d4ed8;padding:20px 24px;">
-    <h1 style="color:white;margin:0;font-size:20px;">MOVE ON REMOVALS</h1>
-  </div>
-  <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
-    <p>Hi ${form.customer_first_name},</p>
-    <p>Thank you for booking with Move On Removals.</p>
-    <p><strong>This job is now secured, acceptance of which constitutes the acknowledgement and acceptance of our Terms and Conditions and the booking details below. If you do not agree to our Terms and Conditions, please contact Move On Removals via email immediately.</strong></p>
-    <p><em>Please also confirm the list of contents below reflects what you are moving, to ensure we are sending the most suitable truck for your needs. In the event of your list being not accurate, we reserve the right to leave the premises and rebook your move, at your cost. Items not listed that would be covered by insurance are not.</em></p>
-    <p>Your booking details are as follows;</p>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;width:140px;">Move Date</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
-      <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Pickup</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${addressBlock}</td></tr>
-      <tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Delivery</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${deliveryBlock}</td></tr>
-      ${form.truck_size ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Truck</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.truck_size}</td></tr>` : ""}
-      ${form.num_movers ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Movers</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.num_movers} movers</td></tr>` : ""}
-      ${form.packing_hours ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Packing (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.packing_hours} hrs</td></tr>` : ""}
-      ${form.moving_hours ? `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Moving (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.moving_hours} hrs</td></tr>` : ""}
-      ${form.unpacking_hours ? `<tr style="background:#f8fafc;"><td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:bold;">Unpacking (est.)</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${form.unpacking_hours} hrs</td></tr>` : ""}
-    </table>
-    <p><strong>Inventory:</strong></p>
-    ${inventoryHtml}
-    ${flatRates.length > 0 ? `<p style="margin-top:16px;"><strong>Additional Charges:</strong></p>${flatRates.map(r => `<p style="margin:2px 0;font-size:14px;">${r.description}: $${Number(r.amount || 0).toLocaleString()}</p>`).join("")}<p style="font-size:14px;">Total additional: $${flatTotal.toFixed(2)}</p>` : ""}
-    ${form.notes ? `<p style="margin-top:16px;background:#f8fafc;padding:12px;border-left:4px solid #3b82f6;">${form.notes}</p>` : ""}
-    <p style="margin-top:24px;">Kind regards,<br/><strong>Move On Removals Team</strong><br/>moveme@moveonremovals.com.au</p>
-  </div>
-  <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals</p>
-  </div>
-</div>`;
-
-    await base44.integrations.Core.SendEmail({
-      to: form.customer_email,
-      subject: `MOVE ON REMOVALS \u2013 Booking Confirmation`,
-      body,
-    });
-    setSendingEmail(false);
-    alert("Booking confirmation sent to " + form.customer_email);
   };
 
   return (
@@ -750,7 +676,6 @@ Write the email body only (no subject line in the body). Address the customer by
                 <option>Residential</option><option>Commercial</option><option>Office</option>
               </select>
             </Field>
-
             <Field label="Booking Number">
               <input className={inputClass} value={form.booking_number} onChange={(e) => set("booking_number", e.target.value)} placeholder="Auto-generated if blank" />
             </Field>
@@ -897,12 +822,8 @@ Write the email body only (no subject line in the body). Address the customer by
                 const isPackSat = packDow === 6;
                 const isPackSun = packDow === 0;
                 const EXTRA_PACKER_RATE = 68;
-                const PACKING_RATES_WEEKDAY = [
-                  { label: "2 Packers", movers: 2, rate: 168 },
-                ];
-                const PACKING_RATES_SAT = [
-                  { label: "2 Packers", movers: 2, rate: 196 },
-                ];
+                const PACKING_RATES_WEEKDAY = [{ label: "2 Packers", movers: 2, rate: 168 }];
+                const PACKING_RATES_SAT = [{ label: "2 Packers", movers: 2, rate: 196 }];
 
                 const PackRateGrid = ({ rates, sectionLabel, isActive }) => {
                   const selectedInSection = rates.find(p => Number(form.packing_rate_per_hour) === p.rate);
@@ -920,25 +841,15 @@ Write the email body only (no subject line in the body). Address the customer by
                         {rates.map((p) => {
                           const active = Number(form.packing_rate_per_hour) === p.rate;
                           return (
-                            <button
-                              key={p.label + p.rate}
-                              type="button"
-                              onClick={() => {
-                                set("packing_num_people", p.movers);
-                                set("packing_rate_per_hour", p.rate);
-                                if (form.packing_hours) set("packing_total", p.rate * Number(form.packing_hours));
-                              }}
-                              className={`rounded-lg border-2 p-4 text-left transition-all ${
-                                active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
-                              }`}
+                            <button key={p.label + p.rate} type="button"
+                              onClick={() => { set("packing_num_people", p.movers); set("packing_rate_per_hour", p.rate); if (form.packing_hours) set("packing_total", p.rate * Number(form.packing_hours)); }}
+                              className={`rounded-lg border-2 p-4 text-left transition-all ${active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{p.label}</span>
                                 {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
                               </div>
-                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
-                                ${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
-                              </p>
+                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span></p>
                               <p className="text-xs text-gray-500 mb-2">{p.movers} packers included</p>
                               <div className="border-t border-gray-100 pt-2 space-y-1">
                                 <p className="text-xs text-gray-400 font-medium">+Extra packers (${EXTRA_PACKER_RATE}/hr):</p>
@@ -979,15 +890,10 @@ Write the email body only (no subject line in the body). Address the customer by
                           <div className="flex flex-wrap gap-4 items-end">
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Estimated Hours</label>
-                              <input
-                                type="number" min="0" step="0.5"
+                              <input type="number" min="0" step="0.5"
                                 className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500"
-                                placeholder="e.g. 3"
-                                value={form.packing_hours || ""}
-                                onChange={(e) => {
-                                  set("packing_hours", e.target.value);
-                                  set("packing_total", totalPackRate * Number(e.target.value));
-                                }}
+                                placeholder="e.g. 3" value={form.packing_hours || ""}
+                                onChange={(e) => { set("packing_hours", e.target.value); set("packing_total", totalPackRate * Number(e.target.value)); }}
                               />
                             </div>
                             {form.packing_hours && (
@@ -1006,17 +912,8 @@ Write the email body only (no subject line in the body). Address the customer by
                 return (
                   <>
                     <p className="text-sm text-gray-500 mb-4">Select packing crew size and enter estimated hours</p>
-                    <PackRateGrid
-                      rates={PACKING_RATES_WEEKDAY}
-                      sectionLabel="📅 Monday – Friday Packing Rates"
-                      isActive={packDow !== null && !isPackSat && !isPackSun}
-                    />
-                    <PackRateGrid
-                      rates={PACKING_RATES_SAT}
-                      sectionLabel="📅 Saturday Packing Rates"
-                      isActive={isPackSat}
-                    />
-                    {/* Custom / Other Packing Rates */}
+                    <PackRateGrid rates={PACKING_RATES_WEEKDAY} sectionLabel="📅 Monday – Friday Packing Rates" isActive={packDow !== null && !isPackSat && !isPackSun} />
+                    <PackRateGrid rates={PACKING_RATES_SAT} sectionLabel="📅 Saturday Packing Rates" isActive={isPackSat} />
                     <div className="rounded-xl border-2 border-dashed border-gray-300 p-4 mb-4 bg-white">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-semibold text-gray-700">➕ Custom / Other Rates</h3>
@@ -1024,31 +921,21 @@ Write the email body only (no subject line in the body). Address the customer by
                           <Plus size={13} /> Add Custom Rate
                         </button>
                       </div>
-                      {customPackRates.length === 0 && <p className="text-sm text-gray-400 italic">No custom rates added. Click "Add Custom Rate" to create one.</p>}
+                      {customPackRates.length === 0 && <p className="text-sm text-gray-400 italic">No custom rates added.</p>}
                       {customPackRates.length > 0 && (
                         <div className="space-y-3">
                           {customPackRates.map((cr, idx) => {
-                            const isSelected = Number(form.packing_rate_per_hour) === Number(cr.rate) && Number(form.packing_num_people) === Number(cr.people) && cr.label && form.packing_num_people == cr.people;
-                            const extraPpl = isSelected ? Math.max(0, Number(form.packing_num_people) - Number(cr.people)) : 0;
+                            const isSelected = Number(form.packing_rate_per_hour) === Number(cr.rate) && Number(form.packing_num_people) === Number(cr.people) && cr.label;
                             return (
                               <div key={idx} className={`rounded-lg border-2 p-3 transition-all ${isSelected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                                  <div><label className="block text-xs text-gray-500 mb-1">Label</label>
-                                    <input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 3 Packers" value={cr.label} onChange={(e) => { const r = [...customPackRates]; r[idx].label = e.target.value; setCustomPackRates(r); }} /></div>
-                                  <div><label className="block text-xs text-gray-500 mb-1">People included</label>
-                                    <input type="number" min="1" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.people} onChange={(e) => { const r = [...customPackRates]; r[idx].people = e.target.value; setCustomPackRates(r); }} /></div>
-                                  <div><label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label>
-                                    <input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 220" value={cr.rate} onChange={(e) => { const r = [...customPackRates]; r[idx].rate = e.target.value; setCustomPackRates(r); }} /></div>
-                                  <div><label className="block text-xs text-gray-500 mb-1">Extra person ($/hr)</label>
-                                    <input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.extraRate} onChange={(e) => { const r = [...customPackRates]; r[idx].extraRate = e.target.value; setCustomPackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Label</label><input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 3 Packers" value={cr.label} onChange={(e) => { const r = [...customPackRates]; r[idx].label = e.target.value; setCustomPackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">People included</label><input type="number" min="1" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.people} onChange={(e) => { const r = [...customPackRates]; r[idx].people = e.target.value; setCustomPackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label><input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 220" value={cr.rate} onChange={(e) => { const r = [...customPackRates]; r[idx].rate = e.target.value; setCustomPackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Extra ($/hr)</label><input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.extraRate} onChange={(e) => { const r = [...customPackRates]; r[idx].extraRate = e.target.value; setCustomPackRates(r); }} /></div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {cr.rate && (
-                                    <button type="button" onClick={() => { set("packing_num_people", Number(cr.people)); set("packing_rate_per_hour", Number(cr.rate)); if (form.packing_hours) set("packing_total", Number(cr.rate) * Number(form.packing_hours)); }}
-                                      className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-                                      {isSelected ? "✓ Selected" : "Select"}
-                                    </button>
-                                  )}
+                                  {cr.rate && (<button type="button" onClick={() => { set("packing_num_people", Number(cr.people)); set("packing_rate_per_hour", Number(cr.rate)); if (form.packing_hours) set("packing_total", Number(cr.rate) * Number(form.packing_hours)); }} className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>{isSelected ? "✓ Selected" : "Select"}</button>)}
                                   <button type="button" onClick={() => setCustomPackRates(customPackRates.filter((_, i) => i !== idx))} className="ml-auto text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                                 </div>
                               </div>
@@ -1068,8 +955,6 @@ Write the email body only (no subject line in the body). Address the customer by
             <Section title="Unpacking Rate">
               {(() => {
                 const EXTRA_UNPACKER_RATE = 68;
-                const unpackDay = form.unpacking_date || form.move_date;
-                const unpackDow = unpackDay ? new Date(unpackDay + "T00:00:00").getDay() : null;
                 const selectedRate = Number(form.unpacking_rate_per_hour) === 168 ? { label: "2 Unpackers", movers: 2, rate: 168 } : null;
                 const baseUnpackers = selectedRate ? selectedRate.movers : 0;
                 const extraUnpackers = selectedRate ? Math.max(0, Number(form.unpacking_num_people) - baseUnpackers) : 0;
@@ -1077,7 +962,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 return (
                   <>
                     <p className="text-sm text-gray-500 mb-4">Select unpacking crew size and enter estimated hours</p>
-                    <div className={`rounded-xl border-2 p-4 mb-4 border-gray-200 bg-white`}>
+                    <div className="rounded-xl border-2 p-4 mb-4 border-gray-200 bg-white">
                       <div className="flex items-center gap-2 mb-3">
                         <h3 className="text-sm font-semibold text-gray-700">📅 Monday – Friday Unpacking Rates</h3>
                         <p className="text-xs text-gray-400 ml-auto">Extra unpacker: <span className="font-medium text-gray-600">${EXTRA_UNPACKER_RATE}/hr</span></p>
@@ -1086,25 +971,15 @@ Write the email body only (no subject line in the body). Address the customer by
                         {[{ label: "2 Unpackers", movers: 2, rate: 168 }].map((p) => {
                           const active = Number(form.unpacking_rate_per_hour) === p.rate;
                           return (
-                            <button
-                              key={p.label}
-                              type="button"
-                              onClick={() => {
-                                set("unpacking_num_people", p.movers);
-                                set("unpacking_rate_per_hour", p.rate);
-                                if (form.unpacking_hours) set("unpacking_total", p.rate * Number(form.unpacking_hours));
-                              }}
-                              className={`rounded-lg border-2 p-4 text-left transition-all ${
-                                active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
-                              }`}
+                            <button key={p.label} type="button"
+                              onClick={() => { set("unpacking_num_people", p.movers); set("unpacking_rate_per_hour", p.rate); if (form.unpacking_hours) set("unpacking_total", p.rate * Number(form.unpacking_hours)); }}
+                              className={`rounded-lg border-2 p-4 text-left transition-all ${active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{p.label}</span>
                                 {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
                               </div>
-                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
-                                ${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
-                              </p>
+                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>${p.rate}<span className="text-sm font-normal text-gray-400">/hr</span></p>
                               <p className="text-xs text-gray-500 mb-2">{p.movers} unpackers included</p>
                               <div className="border-t border-gray-100 pt-2 space-y-1">
                                 <p className="text-xs text-gray-400 font-medium">+Extra unpackers (${EXTRA_UNPACKER_RATE}/hr):</p>
@@ -1118,14 +993,8 @@ Write the email body only (no subject line in the body). Address the customer by
                       {selectedRate && (
                         <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
                           <div className="flex flex-wrap items-center gap-6 text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-500">Base rate:</span>
-                              <span className="font-semibold text-gray-800">${selectedRate.rate}/hr ({baseUnpackers} unpackers)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-500">Total rate:</span>
-                              <span className="font-semibold text-green-700 text-base">${totalUnpackRate}/hr</span>
-                            </div>
+                            <div className="flex items-center gap-2"><span className="text-gray-500">Base rate:</span><span className="font-semibold text-gray-800">${selectedRate.rate}/hr ({baseUnpackers} unpackers)</span></div>
+                            <div className="flex items-center gap-2"><span className="text-gray-500">Total rate:</span><span className="font-semibold text-green-700 text-base">${totalUnpackRate}/hr</span></div>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-sm font-medium text-gray-700 mb-1">Additional Unpackers <span className="text-xs font-normal text-gray-400">(${EXTRA_UNPACKER_RATE}/unpacker/hr)</span></p>
@@ -1136,24 +1005,14 @@ Write the email body only (no subject line in the body). Address the customer by
                                 <p className="text-xs text-gray-400">extra unpacker{extraUnpackers !== 1 ? "s" : ""}</p>
                               </div>
                               <button type="button" onClick={() => set("unpacking_num_people", Number(form.unpacking_num_people) + 1)} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold">+</button>
-                              <div className="ml-4 text-sm text-gray-500">
-                                Total unpackers: <span className="font-semibold text-gray-800">{form.unpacking_num_people}</span>
-                                {extraUnpackers > 0 && <span className="ml-2 text-orange-600">(+${extraUnpackers * EXTRA_UNPACKER_RATE}/hr)</span>}
-                              </div>
+                              <div className="ml-4 text-sm text-gray-500">Total unpackers: <span className="font-semibold text-gray-800">{form.unpacking_num_people}</span>{extraUnpackers > 0 && <span className="ml-2 text-orange-600">(+${extraUnpackers * EXTRA_UNPACKER_RATE}/hr)</span>}</div>
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-4 items-end">
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Estimated Hours</label>
-                              <input
-                                type="number" min="0" step="0.5"
-                                className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500"
-                                placeholder="e.g. 3"
-                                value={form.unpacking_hours || ""}
-                                onChange={(e) => {
-                                  set("unpacking_hours", e.target.value);
-                                  set("unpacking_total", totalUnpackRate * Number(e.target.value));
-                                }}
+                              <input type="number" min="0" step="0.5" className="border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500" placeholder="e.g. 3" value={form.unpacking_hours || ""}
+                                onChange={(e) => { set("unpacking_hours", e.target.value); set("unpacking_total", totalUnpackRate * Number(e.target.value)); }}
                               />
                             </div>
                             {form.unpacking_hours && (
@@ -1166,7 +1025,6 @@ Write the email body only (no subject line in the body). Address the customer by
                         </div>
                       )}
                     </div>
-                    {/* Custom / Other Unpacking Rates */}
                     <div className="rounded-xl border-2 border-dashed border-gray-300 p-4 mb-4 bg-white">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-semibold text-gray-700">➕ Custom / Other Rates</h3>
@@ -1174,7 +1032,7 @@ Write the email body only (no subject line in the body). Address the customer by
                           <Plus size={13} /> Add Custom Rate
                         </button>
                       </div>
-                      {customUnpackRates.length === 0 && <p className="text-sm text-gray-400 italic">No custom rates added. Click "Add Custom Rate" to create one.</p>}
+                      {customUnpackRates.length === 0 && <p className="text-sm text-gray-400 italic">No custom rates added.</p>}
                       {customUnpackRates.length > 0 && (
                         <div className="space-y-3">
                           {customUnpackRates.map((cr, idx) => {
@@ -1182,22 +1040,13 @@ Write the email body only (no subject line in the body). Address the customer by
                             return (
                               <div key={idx} className={`rounded-lg border-2 p-3 transition-all ${isSelected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                                  <div><label className="block text-xs text-gray-500 mb-1">Label</label>
-                                    <input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 3 Unpackers" value={cr.label} onChange={(e) => { const r = [...customUnpackRates]; r[idx].label = e.target.value; setCustomUnpackRates(r); }} /></div>
-                                  <div><label className="block text-xs text-gray-500 mb-1">People included</label>
-                                    <input type="number" min="1" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.people} onChange={(e) => { const r = [...customUnpackRates]; r[idx].people = e.target.value; setCustomUnpackRates(r); }} /></div>
-                                  <div><label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label>
-                                    <input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 200" value={cr.rate} onChange={(e) => { const r = [...customUnpackRates]; r[idx].rate = e.target.value; setCustomUnpackRates(r); }} /></div>
-                                  <div><label className="block text-xs text-gray-500 mb-1">Extra person ($/hr)</label>
-                                    <input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.extraRate} onChange={(e) => { const r = [...customUnpackRates]; r[idx].extraRate = e.target.value; setCustomUnpackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Label</label><input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 3 Unpackers" value={cr.label} onChange={(e) => { const r = [...customUnpackRates]; r[idx].label = e.target.value; setCustomUnpackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">People included</label><input type="number" min="1" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.people} onChange={(e) => { const r = [...customUnpackRates]; r[idx].people = e.target.value; setCustomUnpackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label><input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 200" value={cr.rate} onChange={(e) => { const r = [...customUnpackRates]; r[idx].rate = e.target.value; setCustomUnpackRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Extra ($/hr)</label><input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.extraRate} onChange={(e) => { const r = [...customUnpackRates]; r[idx].extraRate = e.target.value; setCustomUnpackRates(r); }} /></div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {cr.rate && (
-                                    <button type="button" onClick={() => { set("unpacking_num_people", Number(cr.people)); set("unpacking_rate_per_hour", Number(cr.rate)); if (form.unpacking_hours) set("unpacking_total", Number(cr.rate) * Number(form.unpacking_hours)); }}
-                                      className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-                                      {isSelected ? "✓ Selected" : "Select"}
-                                    </button>
-                                  )}
+                                  {cr.rate && (<button type="button" onClick={() => { set("unpacking_num_people", Number(cr.people)); set("unpacking_rate_per_hour", Number(cr.rate)); if (form.unpacking_hours) set("unpacking_total", Number(cr.rate) * Number(form.unpacking_hours)); }} className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>{isSelected ? "✓ Selected" : "Select"}</button>)}
                                   <button type="button" onClick={() => setCustomUnpackRates(customUnpackRates.filter((_, i) => i !== idx))} className="ml-auto text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                                 </div>
                               </div>
@@ -1213,232 +1062,122 @@ Write the email body only (no subject line in the body). Address the customer by
             </Section>
           )}
 
-          {(form.selected_services || []).includes("Moving") && <Section title="Truck &amp; Rate Selection">
-            {(() => {
-              const moveDay = form.moving_date || form.move_date;
-              const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
-              const isSaturday = dayOfWeek === 6;
-              const isSunday = dayOfWeek === 0;
-              const extraRate = isSunday ? 136 : isSaturday ? 82 : 68;
-              const dayLabel = isSunday ? "Sun" : isSaturday ? "Sat" : "M–F";
+          {(form.selected_services || []).includes("Moving") && (
+            <Section title="Truck & Rate Selection">
+              {(() => {
+                const moveDay = form.moving_date || form.move_date;
+                const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
 
-              const RateGrid = ({ rates, sectionExtraRate, sectionLabel, isActive }) => {
-                const selectedInSection = rates.find(
-                  t => t.label === form.moving_truck_size && t.rate === Number(form.moving_rate_per_hour)
-                );
-                const baseMovers = selectedInSection ? selectedInSection.movers : 0;
-                const extraMovers = selectedInSection ? Math.max(0, Number(form.moving_num_people) - baseMovers) : 0;
-                const totalRate = selectedInSection ? selectedInSection.rate + extraMovers * sectionExtraRate : 0;
-
-                return (
-                  <div className={`rounded-xl border-2 p-4 mb-4 ${ isActive ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white" }`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className={`text-sm font-semibold ${ isActive ? "text-blue-800" : "text-gray-700" }`}>{sectionLabel}</h3>
-                      {isActive && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this move</span>}
-                      <p className="text-xs text-gray-400 ml-auto">Extra mover: <span className="font-medium text-gray-600">${sectionExtraRate}/hr</span></p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                      {rates.map((t) => {
-                        const active = form.moving_truck_size === t.label && Number(form.moving_rate_per_hour) === t.rate;
-                        const with1Extra = t.rate + sectionExtraRate;
-                        const with2Extra = t.rate + sectionExtraRate * 2;
-                        return (
-                          <button
-                            key={t.label + t.movers + t.rate}
-                            type="button"
-                            onClick={() => {
-                              set("moving_truck_size", t.label);
-                              set("moving_num_people", t.movers);
-                              set("moving_rate_per_hour", t.rate);
-                              set("truck_size", t.truckSize);
-                              set("num_movers", t.movers);
-                            }}
-                            className={`rounded-lg border-2 p-4 text-left transition-all ${
-                              active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
-                              {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
-                            </div>
-                            <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
-                              ${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
-                            </p>
-                            <p className="text-xs text-gray-500 mb-2">{t.movers} mover{t.movers !== 1 ? "s" : ""} included</p>
-                            <div className="border-t border-gray-100 pt-2 space-y-1">
-                              <p className="text-xs text-gray-400 font-medium">+Extra movers (${sectionExtraRate}/hr):</p>
-                              <p className="text-xs text-gray-500">+1 mover → <span className="font-semibold text-gray-700">${with1Extra}/hr</span></p>
-                              <p className="text-xs text-gray-500">+2 movers → <span className="font-semibold text-gray-700">${with2Extra}/hr</span></p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {selectedInSection && (
-                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                        <div className="flex flex-wrap items-center gap-6 text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-500">Base rate:</span>
-                            <span className="font-semibold text-gray-800">${selectedInSection.rate}/hr ({baseMovers} movers)</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-500">Total rate:</span>
-                            <span className="font-semibold text-green-700 text-base">${totalRate}/hr</span>
-                          </div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-sm font-medium text-gray-700 mb-1">Additional Movers <span className="text-xs font-normal text-gray-400">(${sectionExtraRate}/mover/hr)</span></p>
-                          <div className="flex items-center gap-3 mt-2">
-                            <button
-                              type="button"
-                              onClick={() => { if (Number(form.moving_num_people) > baseMovers) set("moving_num_people", Number(form.moving_num_people) - 1); }}
-                              disabled={Number(form.moving_num_people) <= baseMovers}
-                              className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold"
-                            >−</button>
-                            <div className="text-center">
-                              <span className="text-2xl font-bold text-gray-800">{extraMovers}</span>
-                              <p className="text-xs text-gray-400">extra mover{extraMovers !== 1 ? "s" : ""}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)}
-                              className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold"
-                            >+</button>
-                            <div className="ml-4 text-sm text-gray-500">
-                              Total movers: <span className="font-semibold text-gray-800">{form.moving_num_people}</span>
-                              {extraMovers > 0 && <span className="ml-2 text-orange-600">(+${extraMovers * sectionExtraRate}/hr)</span>}
-                            </div>
-                          </div>
-                        </div>
+                const RateGrid = ({ rates, sectionExtraRate, sectionLabel, isActive }) => {
+                  const selectedInSection = rates.find(t => t.label === form.moving_truck_size && t.rate === Number(form.moving_rate_per_hour));
+                  const baseMovers = selectedInSection ? selectedInSection.movers : 0;
+                  const extraMovers = selectedInSection ? Math.max(0, Number(form.moving_num_people) - baseMovers) : 0;
+                  const totalRate = selectedInSection ? selectedInSection.rate + extraMovers * sectionExtraRate : 0;
+                  return (
+                    <div className={`rounded-xl border-2 p-4 mb-4 ${isActive ? "border-blue-400 bg-blue-50/30" : "border-gray-200 bg-white"}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className={`text-sm font-semibold ${isActive ? "text-blue-800" : "text-gray-700"}`}>{sectionLabel}</h3>
+                        {isActive && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Applies to this move</span>}
+                        <p className="text-xs text-gray-400 ml-auto">Extra mover: <span className="font-medium text-gray-600">${sectionExtraRate}/hr</span></p>
                       </div>
-                    )}
-                  </div>
-                );
-              };
-
-              return (
-                <>
-                  <p className="text-sm text-gray-500 mb-4">Select the truck configuration for this job</p>
-                  <RateGrid
-                    rates={TRUCK_RATES}
-                    sectionExtraRate={68}
-                    sectionLabel="📅 Monday – Friday Rates"
-                    isActive={dayOfWeek !== null && !isSaturday && !isSunday}
-                  />
-                  <RateGrid
-                    rates={SAT_TRUCK_RATES}
-                    sectionExtraRate={82}
-                    sectionLabel="📅 Saturday Rates"
-                    isActive={isSaturday}
-                  />
-
-                  {/* Custom Rates Section */}
-                  <div className="rounded-xl border-2 border-dashed border-gray-300 p-4 mb-4 bg-white">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-700">➕ Custom / Other Rates</h3>
-                      <button
-                        type="button"
-                        onClick={() => setCustomRates([...customRates, { label: "", truckSize: "", movers: 2, rate: "", extraRate: 68 }])}
-                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50"
-                      >
-                        <Plus size={13} /> Add Custom Rate
-                      </button>
-                    </div>
-                    {customRates.length === 0 && (
-                      <p className="text-sm text-gray-400 italic">No custom rates added. Click "Add Custom Rate" to create one.</p>
-                    )}
-                    {customRates.length > 0 && (
-                      <div className="space-y-3">
-                        {customRates.map((cr, idx) => {
-                          const isSelected = form.moving_truck_size === (cr.label || `Custom ${idx+1}`) && Number(form.moving_rate_per_hour) === Number(cr.rate);
-                          const extraMoversCount = isSelected ? Math.max(0, Number(form.moving_num_people) - Number(cr.movers)) : 0;
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {rates.map((t) => {
+                          const active = form.moving_truck_size === t.label && Number(form.moving_rate_per_hour) === t.rate;
                           return (
-                            <div key={idx} className={`rounded-lg border-2 p-3 transition-all ${isSelected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                                <div>
-                                  <label className="block text-xs text-gray-500 mb-1">Label</label>
-                                  <input
-                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                                    placeholder="e.g. 8T Truck"
-                                    value={cr.label}
-                                    onChange={(e) => { const r = [...customRates]; r[idx].label = e.target.value; setCustomRates(r); }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-500 mb-1">Movers included</label>
-                                  <input
-                                    type="number" min="1"
-                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                                    value={cr.movers}
-                                    onChange={(e) => { const r = [...customRates]; r[idx].movers = e.target.value; setCustomRates(r); }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label>
-                                  <input
-                                    type="number" min="0"
-                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                                    placeholder="e.g. 220"
-                                    value={cr.rate}
-                                    onChange={(e) => { const r = [...customRates]; r[idx].rate = e.target.value; setCustomRates(r); }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-500 mb-1">Extra mover ($/hr)</label>
-                                  <input
-                                    type="number" min="0"
-                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                                    value={cr.extraRate}
-                                    onChange={(e) => { const r = [...customRates]; r[idx].extraRate = e.target.value; setCustomRates(r); }}
-                                  />
-                                </div>
+                            <button key={t.label + t.movers + t.rate} type="button"
+                              onClick={() => { set("moving_truck_size", t.label); set("moving_num_people", t.movers); set("moving_rate_per_hour", t.rate); set("truck_size", t.truckSize); set("num_movers", t.movers); }}
+                              className={`rounded-lg border-2 p-4 text-left transition-all ${active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
+                                {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
                               </div>
-                              <div className="flex items-center gap-2">
-                                {cr.rate && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      set("moving_truck_size", cr.label || `Custom ${idx+1}`);
-                                      set("moving_num_people", Number(cr.movers));
-                                      set("moving_rate_per_hour", Number(cr.rate));
-                                      set("truck_size", cr.label || `Custom ${idx+1}`);
-                                      set("num_movers", Number(cr.movers));
-                                    }}
-                                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                                      isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    {isSelected ? "✓ Selected" : "Select"}
-                                  </button>
-                                )}
-                                {isSelected && (
-                                  <div className="flex items-center gap-2 ml-2">
-                                    <span className="text-xs text-gray-500">Extra movers:</span>
-                                    <button type="button" onClick={() => { if (Number(form.moving_num_people) > Number(cr.movers)) set("moving_num_people", Number(form.moving_num_people) - 1); }} disabled={Number(form.moving_num_people) <= Number(cr.movers)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 font-bold">−</button>
-                                    <span className="font-bold text-gray-800 w-5 text-center">{extraMoversCount}</span>
-                                    <button type="button" onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 font-bold">+</button>
-                                    {extraMoversCount > 0 && <span className="text-xs text-orange-600 ml-1">(+${extraMoversCount * Number(cr.extraRate)}/hr)</span>}
-                                  </div>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => setCustomRates(customRates.filter((_, i) => i !== idx))}
-                                  className="ml-auto text-red-400 hover:text-red-600"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                              <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span></p>
+                              <p className="text-xs text-gray-500 mb-2">{t.movers} mover{t.movers !== 1 ? "s" : ""} included</p>
+                              <div className="border-t border-gray-100 pt-2 space-y-1">
+                                <p className="text-xs text-gray-400 font-medium">+Extra movers (${sectionExtraRate}/hr):</p>
+                                <p className="text-xs text-gray-500">+1 mover → <span className="font-semibold text-gray-700">${t.rate + sectionExtraRate}/hr</span></p>
+                                <p className="text-xs text-gray-500">+2 movers → <span className="font-semibold text-gray-700">${t.rate + sectionExtraRate * 2}/hr</span></p>
                               </div>
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
+                      {selectedInSection && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                          <div className="flex flex-wrap items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2"><span className="text-gray-500">Base rate:</span><span className="font-semibold text-gray-800">${selectedInSection.rate}/hr ({baseMovers} movers)</span></div>
+                            <div className="flex items-center gap-2"><span className="text-gray-500">Total rate:</span><span className="font-semibold text-green-700 text-base">${totalRate}/hr</span></div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-sm font-medium text-gray-700 mb-1">Additional Movers <span className="text-xs font-normal text-gray-400">(${sectionExtraRate}/mover/hr)</span></p>
+                            <div className="flex items-center gap-3 mt-2">
+                              <button type="button" onClick={() => { if (Number(form.moving_num_people) > baseMovers) set("moving_num_people", Number(form.moving_num_people) - 1); }} disabled={Number(form.moving_num_people) <= baseMovers} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold">−</button>
+                              <div className="text-center">
+                                <span className="text-2xl font-bold text-gray-800">{extraMovers}</span>
+                                <p className="text-xs text-gray-400">extra mover{extraMovers !== 1 ? "s" : ""}</p>
+                              </div>
+                              <button type="button" onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)} className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold">+</button>
+                              <div className="ml-4 text-sm text-gray-500">Total movers: <span className="font-semibold text-gray-800">{form.moving_num_people}</span>{extraMovers > 0 && <span className="ml-2 text-orange-600">(+${extraMovers * sectionExtraRate}/hr)</span>}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    <p className="text-sm text-gray-500 mb-4">Select the truck configuration for this job</p>
+                    <RateGrid rates={TRUCK_RATES} sectionExtraRate={68} sectionLabel="📅 Monday – Friday Rates" isActive={dayOfWeek !== null && !isSaturday && !isSunday} />
+                    <RateGrid rates={SAT_TRUCK_RATES} sectionExtraRate={82} sectionLabel="📅 Saturday Rates" isActive={isSaturday} />
+                    <div className="rounded-xl border-2 border-dashed border-gray-300 p-4 mb-4 bg-white">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-gray-700">➕ Custom / Other Rates</h3>
+                        <button type="button" onClick={() => setCustomRates([...customRates, { label: "", truckSize: "", movers: 2, rate: "", extraRate: 68 }])} className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50"><Plus size={13} /> Add Custom Rate</button>
+                      </div>
+                      {customRates.length === 0 && <p className="text-sm text-gray-400 italic">No custom rates added.</p>}
+                      {customRates.length > 0 && (
+                        <div className="space-y-3">
+                          {customRates.map((cr, idx) => {
+                            const isSelected = form.moving_truck_size === (cr.label || `Custom ${idx+1}`) && Number(form.moving_rate_per_hour) === Number(cr.rate);
+                            const extraMoversCount = isSelected ? Math.max(0, Number(form.moving_num_people) - Number(cr.movers)) : 0;
+                            return (
+                              <div key={idx} className={`rounded-lg border-2 p-3 transition-all ${isSelected ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                                  <div><label className="block text-xs text-gray-500 mb-1">Label</label><input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 8T Truck" value={cr.label} onChange={(e) => { const r = [...customRates]; r[idx].label = e.target.value; setCustomRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Movers included</label><input type="number" min="1" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.movers} onChange={(e) => { const r = [...customRates]; r[idx].movers = e.target.value; setCustomRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Rate ($/hr)</label><input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" placeholder="e.g. 220" value={cr.rate} onChange={(e) => { const r = [...customRates]; r[idx].rate = e.target.value; setCustomRates(r); }} /></div>
+                                  <div><label className="block text-xs text-gray-500 mb-1">Extra mover ($/hr)</label><input type="number" min="0" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white" value={cr.extraRate} onChange={(e) => { const r = [...customRates]; r[idx].extraRate = e.target.value; setCustomRates(r); }} /></div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {cr.rate && (<button type="button" onClick={() => { set("moving_truck_size", cr.label || `Custom ${idx+1}`); set("moving_num_people", Number(cr.movers)); set("moving_rate_per_hour", Number(cr.rate)); set("truck_size", cr.label || `Custom ${idx+1}`); set("num_movers", Number(cr.movers)); }} className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${isSelected ? "bg-blue-600 text-white" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>{isSelected ? "✓ Selected" : "Select"}</button>)}
+                                  {isSelected && (
+                                    <div className="flex items-center gap-2 ml-2">
+                                      <span className="text-xs text-gray-500">Extra movers:</span>
+                                      <button type="button" onClick={() => { if (Number(form.moving_num_people) > Number(cr.movers)) set("moving_num_people", Number(form.moving_num_people) - 1); }} disabled={Number(form.moving_num_people) <= Number(cr.movers)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 font-bold">−</button>
+                                      <span className="font-bold text-gray-800 w-5 text-center">{extraMoversCount}</span>
+                                      <button type="button" onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 font-bold">+</button>
+                                      {extraMoversCount > 0 && <span className="text-xs text-orange-600 ml-1">(+${extraMoversCount * Number(cr.extraRate)}/hr)</span>}
+                                    </div>
+                                  )}
+                                  <button type="button" onClick={() => setCustomRates(customRates.filter((_, i) => i !== idx))} className="ml-auto text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
               <ServiceFlatRates rates={movingFlatRates} setRates={setMovingFlatRates} />
-          </Section>}
+            </Section>
+          )}
         </>
       )}
 
@@ -1469,10 +1208,7 @@ Write the email body only (no subject line in the body). Address the customer by
                 </label>
               </Field>
             </div>
-            <PropertyAccess
-              value={form.pickup_property_access || []}
-              onChange={(v) => set("pickup_property_access", v)}
-            />
+            <PropertyAccess value={form.pickup_property_access || []} onChange={(v) => set("pickup_property_access", v)} />
           </Section>
 
           {extraStops.map((stop, idx) => (
@@ -1484,15 +1220,9 @@ Write the email body only (no subject line in the body). Address the customer by
                 </button>
               </div>
               <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Street Address" full>
-                  <input className={inputClass} value={stop.address} onChange={(e) => { const s = [...extraStops]; s[idx].address = e.target.value; setExtraStops(s); }} placeholder="Street address" />
-                </Field>
-                <Field label="Suburb">
-                  <input className={inputClass} value={stop.suburb} onChange={(e) => { const s = [...extraStops]; s[idx].suburb = e.target.value; setExtraStops(s); }} placeholder="Suburb" />
-                </Field>
-                <Field label="State">
-                  <input className={inputClass} value={stop.state} onChange={(e) => { const s = [...extraStops]; s[idx].state = e.target.value; setExtraStops(s); }} placeholder="State" />
-                </Field>
+                <Field label="Street Address" full><input className={inputClass} value={stop.address} onChange={(e) => { const s = [...extraStops]; s[idx].address = e.target.value; setExtraStops(s); }} placeholder="Street address" /></Field>
+                <Field label="Suburb"><input className={inputClass} value={stop.suburb} onChange={(e) => { const s = [...extraStops]; s[idx].suburb = e.target.value; setExtraStops(s); }} placeholder="Suburb" /></Field>
+                <Field label="State"><input className={inputClass} value={stop.state} onChange={(e) => { const s = [...extraStops]; s[idx].state = e.target.value; setExtraStops(s); }} placeholder="State" /></Field>
               </div>
             </div>
           ))}
@@ -1526,12 +1256,8 @@ Write the email body only (no subject line in the body). Address the customer by
                 </label>
               </Field>
             </div>
-            <PropertyAccess
-              value={form.delivery_property_access || []}
-              onChange={(v) => set("delivery_property_access", v)}
-            />
+            <PropertyAccess value={form.delivery_property_access || []} onChange={(v) => set("delivery_property_access", v)} />
           </Section>
-
         </>
       )}
 
@@ -1542,9 +1268,7 @@ Write the email body only (no subject line in the body). Address the customer by
             <p className="text-sm text-gray-500 mb-3">Search and add all items being moved. You can also type a custom item and press Enter.</p>
             <ItemsSelector value={form.items_to_move || []} onChange={(v) => set("items_to_move", v)} />
             {(form.items_to_move || []).length > 0 && (
-              <p className="text-xs text-gray-400 mt-3">
-                {form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added
-              </p>
+              <p className="text-xs text-gray-400 mt-3">{form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added</p>
             )}
           </Section>
           <Section title="Notes">
@@ -1590,11 +1314,7 @@ Write the email body only (no subject line in the body). Address the customer by
           {(() => {
             const services = form.selected_services || [];
             const lines = [];
-
-            if (services.includes("Packaging Supplies") && form.packaging_supplies_price) {
-              lines.push({ label: "Packaging Supplies – Delivery Charge", amount: Number(form.packaging_supplies_price) });
-            }
-
+            if (services.includes("Packaging Supplies") && form.packaging_supplies_price) lines.push({ label: "Packaging Supplies – Delivery Charge", amount: Number(form.packaging_supplies_price) });
             if (services.includes("Packing")) {
               const packRate = Number(form.packing_rate_per_hour) || 0;
               const packHrs = Number(form.packing_hours) || 0;
@@ -1602,7 +1322,6 @@ Write the email body only (no subject line in the body). Address the customer by
               if (packAmt) lines.push({ label: `Packing – ${packHrs} hrs @ $${packRate}/hr`, amount: packAmt });
               packFlatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: `Packing – ${r.description}`, amount: Number(r.amount) }); });
             }
-
             if (services.includes("Moving")) {
               const moveRate = Number(form.moving_rate_per_hour) || 0;
               const moveHrs = Number(form.moving_hours) || 0;
@@ -1610,7 +1329,6 @@ Write the email body only (no subject line in the body). Address the customer by
               if (moveAmt) lines.push({ label: `Moving – ${moveHrs} hrs @ $${moveRate}/hr${form.moving_truck_size ? ` (${form.moving_truck_size})` : ""}`, amount: moveAmt });
               movingFlatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: `Moving – ${r.description}`, amount: Number(r.amount) }); });
             }
-
             if (services.includes("Unpacking")) {
               const unpackRate = Number(form.unpacking_rate_per_hour) || 0;
               const unpackHrs = Number(form.unpacking_hours) || 0;
@@ -1618,13 +1336,9 @@ Write the email body only (no subject line in the body). Address the customer by
               if (unpackAmt) lines.push({ label: `Unpacking – ${unpackHrs} hrs @ $${unpackRate}/hr`, amount: unpackAmt });
               unpackFlatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: `Unpacking – ${r.description}`, amount: Number(r.amount) }); });
             }
-
             flatRates.forEach(r => { if (r.description && r.amount) lines.push({ label: r.description, amount: Number(r.amount) }); });
-
             const grandTotal = lines.reduce((s, l) => s + l.amount, 0);
-
             if (lines.length === 0) return null;
-
             return (
               <Section title="Quote Breakdown">
                 <div className="space-y-2">
@@ -1639,11 +1353,7 @@ Write the email body only (no subject line in the body). Address the customer by
                     <span className="text-2xl font-bold text-blue-700">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
-                      onClick={() => set("price", grandTotal)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-2"
-                    >
+                    <button type="button" onClick={() => set("price", grandTotal)} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-2">
                       <Check size={14} /> Apply to Quote
                     </button>
                   </div>
@@ -1671,17 +1381,11 @@ Write the email body only (no subject line in the body). Address the customer by
 
           <Section title="Flat Rate Charges">
             <div className="flex justify-end mb-3">
-              <button
-                type="button"
-                onClick={() => setFlatRates([...flatRates, { description: "", amount: "" }])}
-                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50"
-              >
+              <button type="button" onClick={() => setFlatRates([...flatRates, { description: "", amount: "" }])} className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50">
                 <Plus size={13} /> Add Charge
               </button>
             </div>
-            {flatRates.length === 0 && (
-              <p className="text-sm text-gray-400 italic">No flat rate charges added yet.</p>
-            )}
+            {flatRates.length === 0 && <p className="text-sm text-gray-400 italic">No flat rate charges added yet.</p>}
             {flatRates.length > 0 && (
               <div className="space-y-2">
                 <div className="grid grid-cols-[1fr_140px_36px] gap-2 text-xs text-gray-500 font-medium px-1">
@@ -1689,20 +1393,13 @@ Write the email body only (no subject line in the body). Address the customer by
                 </div>
                 {flatRates.map((row, idx) => (
                   <div key={idx} className="grid grid-cols-[1fr_140px_36px] gap-2 items-center">
-                    <input type="text" className={inputClass} placeholder="e.g. Stair carry, Fuel levy" value={row.description}
-                      onChange={(e) => { const r = [...flatRates]; r[idx].description = e.target.value; setFlatRates(r); }} />
-                    <input type="number" min="0" step="0.01" className={inputClass + " text-right"} placeholder="0.00" value={row.amount}
-                      onChange={(e) => { const r = [...flatRates]; r[idx].amount = e.target.value; setFlatRates(r); }} />
-                    <button type="button" onClick={() => setFlatRates(flatRates.filter((_, i) => i !== idx))}
-                      className="flex items-center justify-center w-9 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200">
-                      <Trash2 size={14} />
-                    </button>
+                    <input type="text" className={inputClass} placeholder="e.g. Stair carry, Fuel levy" value={row.description} onChange={(e) => { const r = [...flatRates]; r[idx].description = e.target.value; setFlatRates(r); }} />
+                    <input type="number" min="0" step="0.01" className={inputClass + " text-right"} placeholder="0.00" value={row.amount} onChange={(e) => { const r = [...flatRates]; r[idx].amount = e.target.value; setFlatRates(r); }} />
+                    <button type="button" onClick={() => setFlatRates(flatRates.filter((_, i) => i !== idx))} className="flex items-center justify-center w-9 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200"><Trash2 size={14} /></button>
                   </div>
                 ))}
                 <div className="flex justify-end pt-1">
-                  <p className="text-sm font-semibold text-gray-700">
-                    Total: ${flatRates.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toFixed(2)}
-                  </p>
+                  <p className="text-sm font-semibold text-gray-700">Total: ${flatRates.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toFixed(2)}</p>
                 </div>
               </div>
             )}
@@ -1716,7 +1413,7 @@ Write the email body only (no subject line in the body). Address the customer by
 
           {/* Email Preview */}
           {["Enquiry", "Quoted", "Tentative Booking", "Booked Job"].includes(form.status) && (
-            <EmailPreview form={form} inventoryLink={inventoryLink} flatRates={flatRates} />
+            <EmailPreview form={form} inventoryLink={inventoryLink} flatRates={flatRates} packFlatRates={packFlatRates} movingFlatRates={movingFlatRates} unpackFlatRates={unpackFlatRates} />
           )}
         </>
       )}
@@ -1738,25 +1435,10 @@ Write the email body only (no subject line in the body). Address the customer by
             <div className="overflow-y-auto flex-1 p-5 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">What should the AI reply about?</label>
-                <textarea
-                  className={inputClass}
-                  rows={3}
-                  value={aiEmailPrompt}
-                  onChange={(e) => setAiEmailPrompt(e.target.value)}
-                  placeholder="e.g. Confirm the booking for Friday, mention we'll call the day before, ask if they need packing materials..."
-                />
+                <textarea className={inputClass} rows={3} value={aiEmailPrompt} onChange={(e) => setAiEmailPrompt(e.target.value)} placeholder="e.g. Confirm the booking for Friday, mention we'll call the day before, ask if they need packing materials..." />
               </div>
-              <button
-                type="button"
-                onClick={handleGenerateAiEmail}
-                disabled={generatingEmail}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50"
-              >
-                {generatingEmail ? (
-                  <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating...</>
-                ) : (
-                  <>✨ Generate Draft</>
-                )}
+              <button type="button" onClick={handleGenerateAiEmail} disabled={generatingEmail} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50">
+                {generatingEmail ? (<><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating...</>) : (<>✨ Generate Draft</>)}
               </button>
               {aiEmailDraft && (
                 <>
@@ -1766,12 +1448,7 @@ Write the email body only (no subject line in the body). Address the customer by
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email Body (editable)</label>
-                    <textarea
-                      className={inputClass}
-                      rows={12}
-                      value={aiEmailDraft}
-                      onChange={(e) => setAiEmailDraft(e.target.value)}
-                    />
+                    <textarea className={inputClass} rows={12} value={aiEmailDraft} onChange={(e) => setAiEmailDraft(e.target.value)} />
                   </div>
                 </>
               )}
@@ -1779,11 +1456,7 @@ Write the email body only (no subject line in the body). Address the customer by
             {aiEmailDraft && (
               <div className="px-5 py-4 border-t flex justify-end gap-2">
                 <button onClick={() => setShowAiEmailModal(false)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-                <button
-                  onClick={handleSendAiEmail}
-                  disabled={sendingAiEmail}
-                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 flex items-center gap-2"
-                >
+                <button onClick={handleSendAiEmail} disabled={sendingAiEmail} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 flex items-center gap-2">
                   <Mail size={14} /> {sendingAiEmail ? "Sending..." : "Send Email"}
                 </button>
               </div>
