@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Mail } from "lucide-react";
 
-function getEmailContent(form, inventoryLink, flatRates) {
+function getEmailContent(form, inventoryLink, flatRates, packFlatRates = [], movingFlatRates = [], unpackFlatRates = []) {
   const firstName = form.customer_first_name || "there";
   const link = inventoryLink || "";
   const addressBlock = [form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC";
@@ -179,6 +179,9 @@ function getEmailContent(form, inventoryLink, flatRates) {
         ${serviceLines.map((s, i) => `
         <tr style="${i % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${s.label}${s.date ? " · " + s.date : ""}${s.time ? " at " + s.time : ""}</td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">${s.hours ? s.hours + " hrs" : ""}</td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">${s.total ? "$" + Number(s.total).toLocaleString() : ""}</td></tr>`).join("")}
         ${(flatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
+        ${(packFlatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + (flatRates || []).length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">Packing – ${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
+        ${(movingFlatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + (flatRates || []).length + (packFlatRates || []).length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">Moving – ${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
+        ${(unpackFlatRates || []).filter(r => r.description && r.amount).map((r, i) => `<tr style="${(serviceLines.length + (flatRates || []).length + (packFlatRates || []).length + (movingFlatRates || []).length + i) % 2 === 0 ? "background:#e8f4ff;" : ""}"><td style="padding:6px 8px;font-size:13.5px;">Unpacking – ${r.description}</td><td></td><td style="padding:6px 8px;font-size:13.5px;text-align:right;">$${Number(r.amount).toLocaleString()}</td></tr>`).join("")}
       </table>
       ${form.price ? `<div style="border-top:2px solid #1d4ed8;margin-top:10px;padding-top:10px;"><p style="margin:0;font-size:16px;color:#1d4ed8;text-align:right;">Total Estimate: $${Number(form.price).toLocaleString()}</p></div>` : ""}
     </div>
@@ -258,9 +261,9 @@ function getEmailContent(form, inventoryLink, flatRates) {
   };
 }
 
-export default function EmailPreview({ form, inventoryLink, flatRates }) {
+export default function EmailPreview({ form, inventoryLink, flatRates, packFlatRates = [], movingFlatRates = [], unpackFlatRates = [] }) {
   const [open, setOpen] = useState(true);
-  const email = getEmailContent(form, inventoryLink, flatRates);
+  const email = getEmailContent(form, inventoryLink, flatRates, packFlatRates, movingFlatRates, unpackFlatRates);
 
   const statusLabel = {
     "Enquiry": "Enquiry Email",
