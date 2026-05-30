@@ -771,6 +771,40 @@ Write the email body only (no subject line in the body). Address the customer by
             </div>
           </Section>
 
+          {(form.selected_services || []).includes("Packaging Supplies") && (
+            <Section title="Delivery Charge">
+              <p className="text-sm text-gray-500 mb-4">Enter the delivery charge for packaging supplies</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Delivery Charge ($)">
+                  <input
+                    className={inputClass}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 50"
+                    value={form.packaging_supplies_price || ""}
+                    onChange={(e) => set("packaging_supplies_price", e.target.value)}
+                  />
+                </Field>
+                <Field label="Notes">
+                  <input
+                    className={inputClass}
+                    type="text"
+                    placeholder="e.g. Metro delivery, Same-day"
+                    value={form.packaging_supplies_notes || ""}
+                    onChange={(e) => set("packaging_supplies_notes", e.target.value)}
+                  />
+                </Field>
+              </div>
+              {form.packaging_supplies_price && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 inline-block">
+                  <p className="text-xs text-blue-500 mb-0.5">Delivery Charge</p>
+                  <p className="text-xl font-bold text-blue-700">${Number(form.packaging_supplies_price).toFixed(2)}</p>
+                </div>
+              )}
+            </Section>
+          )}
+
           {(form.selected_services || []).includes("Packing") && (
             <Section title="Packing Rate">
               {(() => {
