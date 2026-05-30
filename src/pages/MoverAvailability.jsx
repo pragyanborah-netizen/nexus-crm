@@ -21,6 +21,11 @@ export default function MoverAvailability() {
   const [selectedDates, setSelectedDates] = useState([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestReason, setRequestReason] = useState("");
+  
+  // Calculate minimum selectable date (48 hours from now)
+  const minSelectableDate = new Date();
+  minSelectableDate.setHours(minSelectableDate.getHours() + 48);
+  const minSelectableDateStr = minSelectableDate.toISOString().split("T")[0];
   const [view, setView] = useState("calendar"); // "calendar" or "requests"
 
   const { data: availability = [] } = useQuery({
@@ -67,6 +72,10 @@ export default function MoverAvailability() {
 
   const isDateUnavailable = (day) => {
     const checkDate = new Date(year, month, day);
+    const today = new Date().toISOString().split("T")[0];
+    const dateStr = checkDate.toISOString().split("T")[0];
+    // Disable dates within 48 hours
+    if (dateStr < minSelectableDateStr) return true;
     return availability.some(req => {
       const start = new Date(req.start_date);
       const end = new Date(req.end_date);
@@ -163,35 +172,44 @@ export default function MoverAvailability() {
             ))}
             
             {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const unavailable = isDateUnavailable(day);
-              const selected = isDateSelected(day);
-              
-              return (
-                <div
-                  key={day}
-                  onClick={() => toggleDate(day)}
-                  className={`h-24 border rounded p-2 cursor-pointer transition-all hover:shadow-md ${
-                    selected
-                      ? "bg-blue-100 border-blue-500"
-                      : unavailable
-                      ? "bg-red-50 border-red-300"
-                      : "bg-white border-gray-200"
-                  }`}
-                >
-                  <div className="text-sm font-semibold mb-1">{day}</div>
-                  {unavailable && (
-                    <div className="text-xs text-red-600 flex items-center gap-1">
-                      <AlertCircle size={10} /> Unavailable
-                    </div>
-                  )}
-                  {selected && (
-                    <div className="text-xs text-blue-600 flex items-center gap-1">
-                      <Check size={10} /> Selected
-                    </div>
-                  )}
+            const day = i + 1;
+            const unavailable = isDateUnavailable(day);
+            const selected = isDateSelected(day);
+            const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+            const within48Hours = dateStr < minSelectableDateStr;
+
+            return (
+            <div
+              key={day}
+              onClick={() => !within48Hours && !unavailable && toggleDate(day)}
+              className={`h-24 border rounded p-2 transition-all ${
+                selected
+                  ? "bg-blue-100 border-blue-500"
+                  : unavailable
+                  ? "bg-red-50 border-red-300"
+                  : within48Hours
+                  ? "bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed"
+                  : "bg-white border-gray-200 cursor-pointer hover:shadow-md"
+              }`}
+            >
+              <div className="text-sm font-semibold mb-1">{day}</div>
+              {unavailable && (
+                <div className="text-xs text-red-600 flex items-center gap-1">
+                  <AlertCircle size={10} /> Unavailable
                 </div>
-              );
+              )}
+              {within48Hours && !unavailable && (
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <Clock size={10} /> Within 48hrs
+                </div>
+              )}
+              {selected && (
+                <div className="text-xs text-blue-600 flex items-center gap-1">
+                  <Check size={10} /> Selected
+                </div>
+              )}
+            </div>
+            );
             })}
           </div>
 
@@ -208,6 +226,10 @@ export default function MoverAvailability() {
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-red-50 border border-red-300 rounded" />
               <span className="text-sm text-gray-600">Unavailable (Approved)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded opacity-50" />
+              <span className="text-sm text-gray-600">Unavailable (Within 48hrs)</span>
             </div>
           </div>
         </div>
