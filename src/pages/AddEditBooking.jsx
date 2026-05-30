@@ -251,6 +251,11 @@ export default function AddEditBooking() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["bookings"] }); navigate("/bookings"); },
   });
 
+  const saveDraftMutation = useMutation({
+    mutationFn: (data) => isEdit ? base44.entities.Booking.update(id, data) : base44.entities.Booking.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["bookings"] }); },
+  });
+
   const handleSave = () => {
     const data = {
       ...form,
@@ -261,6 +266,18 @@ export default function AddEditBooking() {
       flat_rate_charges: JSON.stringify(flatRates),
     };
     saveMutation.mutate(data);
+  };
+
+  const handleSaveDraft = () => {
+    const data = {
+      ...form,
+      moving_rates_config: JSON.stringify({ ...(form.moving_rates_config || {}), flatRates: movingFlatRates }),
+      packing_rates_config: JSON.stringify({ ...(form.packing_rates_config || {}), flatRates: packFlatRates }),
+      unpacking_rates_config: JSON.stringify({ ...(form.unpacking_rates_config || {}), flatRates: unpackFlatRates }),
+      additional_stops: extraStops.filter((s) => s.address || s.suburb).map((s) => [s.address, s.suburb, s.state].filter(Boolean).join(", ")),
+      flat_rate_charges: JSON.stringify(flatRates),
+    };
+    saveDraftMutation.mutate(data);
   };
 
   const rec = recommendTruck(form.items_to_move || []);
@@ -706,6 +723,14 @@ Write the email body only (no subject line in the body). Address the customer by
             className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
           >
             <FileText size={16} /> PDF Quote
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={saveDraftMutation.isPending}
+            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+          >
+            <Save size={16} /> {saveDraftMutation.isPending ? "Saving..." : "Save Draft"}
           </button>
           <button
             type="button"
