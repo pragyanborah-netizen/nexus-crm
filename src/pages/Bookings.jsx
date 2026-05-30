@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Plus, Search, Trash2, Edit, Eye, FileText, CalendarDays, Truck, Users } from "lucide-react";
+import { Plus, Search, Trash2, Edit, Eye, FileText, CalendarDays, Truck, Users, Clock } from "lucide-react";
 
 const statusColors = {
   Enquiry: "bg-sky-100 text-sky-700",
@@ -156,6 +156,7 @@ export default function Bookings() {
                       <div className="flex items-center gap-2">
                         <Link to={`/bookings/${b.id}`} title="View" className="text-gray-400 hover:text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Eye size={16} /></Link>
                         <Link to={`/bookings/${b.id}/edit`} title="Edit" className="text-gray-400 hover:text-green-600 p-1 hover:bg-green-50 rounded transition-colors"><Edit size={16} /></Link>
+                        <Link to={`/booking/${b.id}/clock`} title="Clock In/Out" className="text-gray-400 hover:text-purple-600 p-1 hover:bg-purple-50 rounded transition-colors"><Clock size={16} /></Link>
                         <button onClick={() => { if (confirm("Delete this booking?")) deleteBooking.mutate(b.id); }} title="Delete" className="text-gray-400 hover:text-red-600 p-1 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                       </div>
                     </td>

@@ -24,81 +24,85 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { shift_type, latitude, longitude, booking_number, notes } = await req.json();
+    const { booking_id, employee_email, employee_name, action, signature, latitude, longitude } = await req.json();
 
-    if (!latitude || !longitude) {
-      return Response.json({ error: 'Location coordinates are required' }, { status: 400 });
+    if (!booking_id || !employee_email || !action) {
+      return Response.json({ error: 'Booking ID, employee email, and action are required' }, { status: 400 });
     }
 
-    let locationName = 'Unknown';
+    if (!signature) {
+      return Response.json({ error: 'Customer signature is required' }, { status: 400 });
+    }
+
+    // Get booking details
+    const booking = await base44.entities.Booking.get(booking_id);
+    if (!booking) {
+      return Response.json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    let locationName = 'Job Site';
     let geofenceVerified = false;
     let distanceFromJob = null;
 
-    // If booking number provided, check geofence
-    if (booking_number) {
-      const bookings = await base44.entities.Booking.list();
-      const booking = bookings.find(b => b.booking_number === booking_number);
+    // Check geofence if coordinates provided
+    if (latitude && longitude) {
+      const pickupLat = booking.pickup_latitude;
+      const pickupLng = booking.pickup_longitude;
+      const deliveryLat = booking.delivery_latitude;
+      const deliveryLng = booking.delivery_longitude;
 
-      if (booking) {
-        // Get pickup or delivery coordinates (using suburb as fallback)
-        const pickupLat = booking.pickup_latitude;
-        const pickupLng = booking.pickup_longitude;
-        const deliveryLat = booking.delivery_latitude;
-        const deliveryLng = booking.delivery_longitude;
-
-        // If we have coordinates, calculate distance
-        if (pickupLat && pickupLng) {
-          const distanceToPickup = calculateDistance(latitude, longitude, pickupLat, pickupLng);
-          distanceFromJob = distanceToPickup;
-          
-          // Geofence radius: 100 meters
-          if (distanceToPickup <= 100) {
-            geofenceVerified = true;
-            locationName = `Near Pickup: ${booking.pickup_address || booking.pickup_suburb || 'Unknown'}`;
-          } else {
-            locationName = `Outside geofence (${Math.round(distanceToPickup)}m from pickup)`;
-          }
-        } else if (booking.pickup_suburb) {
-          locationName = `Near ${booking.pickup_suburb}`;
+      if (pickupLat && pickupLng) {
+        const distanceToPickup = calculateDistance(latitude, longitude, pickupLat, pickupLng);
+        distanceFromJob = distanceToPickup;
+        
+        if (distanceToPickup <= 100) {
+          geofenceVerified = true;
+          locationName = `Pickup: ${booking.pickup_address || booking.pickup_suburb || 'Unknown'}`;
+        } else {
+          locationName = `Outside geofence (${Math.round(distanceToPickup)}m from pickup)`;
         }
+      } else if (booking.pickup_suburb) {
+        locationName = `Near ${booking.pickup_suburb}`;
+      }
 
-        if (deliveryLat && deliveryLng) {
-          const distanceToDelivery = calculateDistance(latitude, longitude, deliveryLat, deliveryLng);
-          if (distanceToDelivery < (distanceFromJob || 999999)) {
-            distanceFromJob = distanceToDelivery;
-            if (distanceToDelivery <= 100) {
-              geofenceVerified = true;
-              locationName = `Near Delivery: ${booking.delivery_address || booking.delivery_suburb || 'Unknown'}`;
-            }
+      if (deliveryLat && deliveryLng) {
+        const distanceToDelivery = calculateDistance(latitude, longitude, deliveryLat, deliveryLng);
+        if (distanceToDelivery < (distanceFromJob || 999999)) {
+          distanceFromJob = distanceToDelivery;
+          if (distanceToDelivery <= 100) {
+            geofenceVerified = true;
+            locationName = `Delivery: ${booking.delivery_address || booking.delivery_suburb || 'Unknown'}`;
           }
         }
       }
     }
 
-    // Create time clock record
-    const timeClockData = {
-      employee_name: user.full_name || user.email,
-      employee_email: user.email,
-      shift_type,
-      timestamp: new Date().toISOString(),
-      latitude,
-      longitude,
+    const now = new Date();
+    const timeLogData = {
+      employee_name: employee_name || user.full_name || employee_email,
+      employee_email: employee_email,
+      date: now.toISOString().split('T')[0],
+      start_time: action === 'clock_in' ? now.toTimeString().split(' ')[0].slice(0, 5) : undefined,
+      end_time: action === 'clock_out' ? now.toTimeString().split(' ')[0].slice(0, 5) : undefined,
+      booking_number: booking.booking_number || booking_id,
+      notes: `${action === 'clock_in' ? 'Clock In' : 'Clock Out'} - Signature captured. ${geofenceVerified ? 'Location verified.' : ''}`,
+      signature: signature,
+      action_type: action,
       location_name: locationName,
-      booking_number: booking_number || null,
       geofence_verified: geofenceVerified,
-      distance_from_job: distanceFromJob,
-      notes: notes || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
     };
 
-    const record = await base44.entities.TimeClock.create(timeClockData);
+    // Create or update time log
+    const timeLog = await base44.entities.TimeLog.create(timeLogData);
 
     return Response.json({
       success: true,
-      record_id: record.id,
+      record_id: timeLog.id,
       geofence_verified: geofenceVerified,
       location_name: locationName,
-      distance_from_job: distanceFromJob,
-      message: `${shift_type} recorded successfully${geofenceVerified ? ' - Location verified ✓' : ' - Outside geofence ⚠'}`
+      message: `${action === 'clock_in' ? 'Clock in' : 'Clock out'} recorded successfully${geofenceVerified ? ' - Location verified ✓' : ''}`
     });
 
   } catch (error) {
