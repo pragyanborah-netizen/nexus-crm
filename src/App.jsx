@@ -30,6 +30,9 @@ import DriverPerformance from './pages/DriverPerformance';
 import TimeClock from './pages/TimeClock';
 import ScheduleMonitoring from './pages/ScheduleMonitoring';
 import BookingTimeClock from './pages/BookingTimeClock';
+import CustomerPortal from './pages/CustomerPortal';
+import CustomerTracking from './pages/CustomerTracking';
+import CustomerInvoice from './pages/CustomerInvoice';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -91,6 +94,9 @@ const AuthenticatedApp = () => {
         <Route path="/time-clock" element={<TimeClock />} />
         <Route path="/schedule-monitoring" element={<ScheduleMonitoring />} />
         <Route path="/booking/:bookingId/clock" element={<BookingTimeClock />} />
+        <Route path="/customer" element={<CustomerPortal />} />
+        <Route path="/customer/tracking" element={<CustomerTracking />} />
+        <Route path="/customer/invoice" element={<CustomerInvoice />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
