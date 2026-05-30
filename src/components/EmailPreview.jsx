@@ -153,11 +153,11 @@ function getEmailContent(form, inventoryLink, flatRates) {
     <h1 style="color:white;margin:0;font-size:22px;letter-spacing:1px;">MOVE ON REMOVALS</h1>
   </div>
   <div style="padding:28px 32px;border:1px solid #e2e8f0;border-top:none;background:#fff;">
-    <p style="font-size:15px;">Hi ${firstName},</p>
-    <p style="font-size:15px;">Thank you for booking with Move On Removals. This booking is not yet confirmed, awaiting payment of your deposit. Once paid, you will receive a booking confirmation email that will require you to respond.</p>
-    <p style="font-size:15px;">A deposit invoice has been sent via our Square account and should be paid within 24 hours to secure your booking. The deposit amount will be deducted from the total bill on the day of your move.</p>
+    <p style="font-size:15px;font-family:Arial,sans-serif;">Hi ${firstName},</p>
+    <p style="font-size:15px;font-family:Arial,sans-serif;">Thank you for booking with Move On Removals. This booking is not yet confirmed, awaiting payment of your deposit. Once paid, you will receive a booking confirmation email that will require you to respond.</p>
+    <p style="font-size:15px;font-family:Arial,sans-serif;">A deposit invoice has been sent via our Square account and should be paid within 24 hours to secure your booking. The deposit amount will be deducted from the total bill on the day of your move.</p>
 
-    <p style="font-size:15px;margin-bottom:8px;">Your booking details are as follows;</p>
+    <p style="font-size:15px;font-family:Arial,sans-serif;margin-bottom:8px;">Your booking details are as follows;</p>
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr style="background:#f8fafc;"><td style="padding:7px 10px;border:1px solid #e2e8f0;width:150px;font-size:13.5px;">Move Date</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${form.move_date || "TBC"}${form.move_time ? " at " + form.move_time : ""}</td></tr>
       <tr><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">Pickup</td><td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13.5px;">${[form.pickup_address, form.pickup_suburb, form.pickup_state, form.pickup_postcode].filter(Boolean).join(", ") || "TBC"}</td></tr>
