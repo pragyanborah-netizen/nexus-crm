@@ -740,22 +740,62 @@ Write the email body only (no subject line in the body). Address the customer by
                 );
               })}
             </div>
-            {form.moving_truck_size && (
-              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-6">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">Selected:</span>
-                  <span className="font-semibold text-gray-800">{form.moving_truck_size}</span>
+            {form.moving_truck_size && (() => {
+              const baseTruck = TRUCK_RATES.find(t => t.label === form.moving_truck_size && t.movers === Number(form.moving_num_people));
+              const baseMovers = baseTruck ? baseTruck.movers : Number(form.moving_num_people);
+              const baseRate = baseTruck ? baseTruck.rate : Number(form.moving_rate_per_hour);
+              const extraMovers = Math.max(0, Number(form.moving_num_people) - baseMovers);
+              const moveDay = form.moving_date || form.move_date;
+              const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
+              const extraRate = dayOfWeek === 0 ? 136 : dayOfWeek === 6 ? 82 : 68;
+              const extraLabel = dayOfWeek === 0 ? "Sunday rate" : dayOfWeek === 6 ? "Saturday rate" : "Mon–Fri rate";
+              const totalRate = baseRate + extraMovers * extraRate;
+              return (
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+                  <div className="flex flex-wrap items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">Truck:</span>
+                      <span className="font-semibold text-gray-800">{form.moving_truck_size}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">Base rate:</span>
+                      <span className="font-semibold text-gray-800">${baseRate}/hr ({baseMovers} movers)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">Total rate:</span>
+                      <span className="font-semibold text-green-700 text-base">${totalRate}/hr</span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Additional Movers</p>
+                    <p className="text-xs text-gray-400 mb-3">
+                      ${extraRate}/mover/hr {moveDay ? `(${extraLabel})` : "— set a move date to see day rate"}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { if (Number(form.moving_num_people) > baseMovers) set("moving_num_people", Number(form.moving_num_people) - 1); }}
+                        disabled={Number(form.moving_num_people) <= baseMovers}
+                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold"
+                      >−</button>
+                      <div className="text-center">
+                        <span className="text-2xl font-bold text-gray-800">{extraMovers}</span>
+                        <p className="text-xs text-gray-400">extra mover{extraMovers !== 1 ? "s" : ""}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => set("moving_num_people", Number(form.moving_num_people) + 1)}
+                        className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold"
+                      >+</button>
+                      <div className="ml-4 text-sm text-gray-500">
+                        Total movers: <span className="font-semibold text-gray-800">{form.moving_num_people}</span>
+                        {extraMovers > 0 && <span className="ml-2 text-orange-600">(+${extraMovers * extraRate}/hr)</span>}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">Movers:</span>
-                  <span className="font-semibold text-gray-800">{form.moving_num_people}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">Rate:</span>
-                  <span className="font-semibold text-green-700">${form.moving_rate_per_hour}/hr</span>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </Section>
         </>
       )}
