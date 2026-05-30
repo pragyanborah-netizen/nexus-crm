@@ -22,8 +22,6 @@ const navGroups = [
   {
     group: "Resources",
     items: [
-      { label: "Trucks Management", icon: Truck, path: "/trucks" },
-      { label: "Customer Management", icon: Users, path: "/customers" },
       { label: "Agents Report", icon: BarChart2, path: "/agents-report" },
       { label: "Customer Feedback", icon: Star, path: "/feedback" },
     ]
