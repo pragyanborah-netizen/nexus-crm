@@ -711,35 +711,63 @@ Write the email body only (no subject line in the body). Address the customer by
           </Section>
 
           <Section title="Truck &amp; Rate Selection">
-            <p className="text-sm text-gray-500 mb-4">Select the truck configuration for this job</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {TRUCK_RATES.map((t) => {
-                const active = form.moving_truck_size === t.label && Number(form.moving_num_people) === t.movers;
-                return (
-                  <button
-                    key={t.label + t.movers}
-                    type="button"
-                    onClick={() => {
-                      set("moving_truck_size", t.label);
-                      set("moving_num_people", t.movers);
-                      set("moving_rate_per_hour", t.rate);
-                      set("truck_size", t.truckSize);
-                      set("num_movers", t.movers);
-                    }}
-                    className={`rounded-lg border-2 p-4 text-left transition-all ${
-                      active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
-                      {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
-                    </div>
-                    <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span></p>
-                    <p className="text-xs text-gray-500">{t.movers} Movers included</p>
-                  </button>
-                );
-              })}
-            </div>
+            {(() => {
+              const moveDay = form.moving_date || form.move_date;
+              const dayOfWeek = moveDay ? new Date(moveDay + "T00:00:00").getDay() : null;
+              const extraRate = dayOfWeek === 0 ? 136 : dayOfWeek === 6 ? 82 : 68;
+              const dayLabel = dayOfWeek === 0 ? "Sun" : dayOfWeek === 6 ? "Sat" : "M–F";
+              return (
+                <>
+                  <p className="text-sm text-gray-500 mb-1">Select the truck configuration for this job</p>
+                  <p className="text-xs text-gray-400 mb-4">
+                    Additional movers charged at:
+                    <span className={`ml-1 font-medium ${dayOfWeek !== null && dayOfWeek !== 6 && dayOfWeek !== 0 ? "text-blue-600" : "text-gray-500"}`}>$68/hr Mon–Fri</span>
+                    {" · "}
+                    <span className={`font-medium ${dayOfWeek === 6 ? "text-blue-600" : "text-gray-500"}`}>$82/hr Sat</span>
+                    {" · "}
+                    <span className={`font-medium ${dayOfWeek === 0 ? "text-blue-600" : "text-gray-500"}`}>$136/hr Sun</span>
+                    {dayOfWeek !== null && <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-semibold">{dayLabel} applies</span>}
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {TRUCK_RATES.map((t) => {
+                      const active = form.moving_truck_size === t.label && Number(form.moving_num_people) === t.movers;
+                      const with1Extra = t.rate + extraRate;
+                      const with2Extra = t.rate + extraRate * 2;
+                      return (
+                        <button
+                          key={t.label + t.movers}
+                          type="button"
+                          onClick={() => {
+                            set("moving_truck_size", t.label);
+                            set("moving_num_people", t.movers);
+                            set("moving_rate_per_hour", t.rate);
+                            set("truck_size", t.truckSize);
+                            set("num_movers", t.movers);
+                          }}
+                          className={`rounded-lg border-2 p-4 text-left transition-all ${
+                            active ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-sm font-bold ${active ? "text-blue-800" : "text-gray-800"}`}>{t.label}</span>
+                            {active && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Selected</span>}
+                          </div>
+                          <p className={`text-2xl font-bold mb-1 ${active ? "text-blue-700" : "text-gray-700"}`}>
+                            ${t.rate}<span className="text-sm font-normal text-gray-400">/hr</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mb-2">{t.movers} movers included</p>
+                          <div className="border-t border-gray-100 pt-2 space-y-1">
+                            <p className="text-xs text-gray-400 font-medium">+Extra movers ({dayOfWeek !== null ? dayLabel : "M–F"} ${extraRate}/hr):</p>
+                            <p className="text-xs text-gray-500">+1 mover → <span className="font-semibold text-gray-700">${with1Extra}/hr</span></p>
+                            <p className="text-xs text-gray-500">+2 movers → <span className="font-semibold text-gray-700">${with2Extra}/hr</span></p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
             {form.moving_truck_size && (() => {
               const baseTruck = TRUCK_RATES.find(t => t.label === form.moving_truck_size && t.movers === Number(form.moving_num_people));
               const baseMovers = baseTruck ? baseTruck.movers : Number(form.moving_num_people);
