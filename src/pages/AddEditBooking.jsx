@@ -775,37 +775,6 @@ Write the email body only (no subject line in the body). Address the customer by
             </Field>
           </div>
 
-          {/* Pipeline Status */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Booking Stage</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: "Enquiry", color: "bg-sky-500" },
-                { value: "Quoted", color: "bg-purple-500" },
-                { value: "Tentative Booking", color: "bg-yellow-500" },
-                { value: "Booked Job", color: "bg-green-600" },
-                { value: "Completed", color: "bg-gray-500" },
-                { value: "Cancelled", color: "bg-red-500" },
-                { value: "No Show", color: "bg-orange-500" },
-              ].map(({ value, color }) => {
-                const active = form.status === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => set("status", value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
-                      active
-                        ? `${color} text-white border-transparent shadow`
-                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-                    }`}
-                  >
-                    {value}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </Section>
       )}
 
@@ -1566,6 +1535,38 @@ Write the email body only (no subject line in the body). Address the customer by
               </p>
             )}
           </Section>
+
+          {/* Booking Stage */}
+          <Section title="Booking Stage">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: "Enquiry", color: "bg-sky-500" },
+                { value: "Quoted", color: "bg-purple-500" },
+                { value: "Tentative Booking", color: "bg-yellow-500" },
+                { value: "Booked Job", color: "bg-green-600" },
+                { value: "Completed", color: "bg-gray-500" },
+                { value: "Cancelled", color: "bg-red-500" },
+                { value: "No Show", color: "bg-orange-500" },
+              ].map(({ value, color }) => {
+                const active = form.status === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => set("status", value)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
+                      active
+                        ? `${color} text-white border-transparent shadow`
+                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                    }`}
+                  >
+                    {value}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
           <Section title="Notes">
             <div className="grid grid-cols-1 gap-4">
               <Field label="Additional Notes for Contents">
