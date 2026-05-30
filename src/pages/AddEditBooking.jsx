@@ -11,7 +11,7 @@ import ItemsSelector from "../components/ItemsSelector";
 const TABS = [
   { id: "customer", label: "Customer", icon: User },
   { id: "addresses", label: "Addresses", icon: MapPin },
-  { id: "services", label: "Services", icon: Wrench },
+  { id: "services", label: "Services & Pricing", icon: Wrench },
   { id: "content", label: "Content", icon: Package },
   { id: "summary", label: "Summary & Pricing", icon: Truck },
 ];
