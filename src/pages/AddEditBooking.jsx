@@ -1671,62 +1671,6 @@ Write the email body only (no subject line in the body). Address the customer by
             );
           })()}
 
-          <Section title="Pricing">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Estimated Total ($)">
-                <input className={inputClass} type="number" min="0" step="0.01" value={form.price || ""} onChange={(e) => set("price", e.target.value)} placeholder="e.g. 1200" />
-              </Field>
-              <Field label="Deposit Required ($)">
-                <input className={inputClass} type="number" min="0" step="0.01" value={form.deposit || ""} onChange={(e) => set("deposit", e.target.value)} placeholder="e.g. 200" />
-              </Field>
-              <Field label="Payment Method">
-                <select className={selectClass} value={form.payment_method || ""} onChange={(e) => set("payment_method", e.target.value)}>
-                  <option value="">Select...</option>
-                  <option>Cash</option><option>Card</option><option>Bank Transfer</option><option>Invoice</option>
-                </select>
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="Flat Rate Charges">
-            <div className="flex justify-end mb-3">
-              <button
-                type="button"
-                onClick={() => setFlatRates([...flatRates, { description: "", amount: "" }])}
-                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 hover:bg-blue-50"
-              >
-                <Plus size={13} /> Add Charge
-              </button>
-            </div>
-            {flatRates.length === 0 && (
-              <p className="text-sm text-gray-400 italic">No flat rate charges added yet.</p>
-            )}
-            {flatRates.length > 0 && (
-              <div className="space-y-2">
-                <div className="grid grid-cols-[1fr_140px_36px] gap-2 text-xs text-gray-500 font-medium px-1">
-                  <span>Description</span><span>Amount ($)</span><span></span>
-                </div>
-                {flatRates.map((row, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_140px_36px] gap-2 items-center">
-                    <input type="text" className={inputClass} placeholder="e.g. Stair carry, Fuel levy" value={row.description}
-                      onChange={(e) => { const r = [...flatRates]; r[idx].description = e.target.value; setFlatRates(r); }} />
-                    <input type="number" min="0" step="0.01" className={inputClass + " text-right"} placeholder="0.00" value={row.amount}
-                      onChange={(e) => { const r = [...flatRates]; r[idx].amount = e.target.value; setFlatRates(r); }} />
-                    <button type="button" onClick={() => setFlatRates(flatRates.filter((_, i) => i !== idx))}
-                      className="flex items-center justify-center w-9 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-                <div className="flex justify-end pt-1">
-                  <p className="text-sm font-semibold text-gray-700">
-                    Total: ${flatRates.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            )}
-          </Section>
-
           <Section title="Notes">
             <Field label="Notes for Customer">
               <textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Any special instructions or notes to include in the confirmation email..." />
