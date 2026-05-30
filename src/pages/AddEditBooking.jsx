@@ -6,6 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
+import InvoiceGenerator from "../components/InvoiceGenerator";
 import ItemsSelector from "../components/ItemsSelector";
 import EmailPreview from "../components/EmailPreview";
 
@@ -679,6 +680,7 @@ Write the email body only (no subject line in the body). Address the customer by
               </button>
             </>
           )}
+          <InvoiceGenerator form={form} flatRates={flatRates} packFlatRates={packFlatRates} movingFlatRates={movingFlatRates} unpackFlatRates={unpackFlatRates} />
           <button
             type="button"
             onClick={handleGeneratePdf}
