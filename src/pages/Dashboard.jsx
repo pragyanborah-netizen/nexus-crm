@@ -78,7 +78,7 @@ export default function Dashboard() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-white rounded-lg shadow px-4 pt-3 mb-4">
-        {[{id: "bookings", label: "Recent Bookings"}, {id: "agents", label: "Agent Report"}].map(t => (
+        {[{id: "bookings", label: "Recent Bookings"}, {id: "agents", label: "Agent Report (Booked Jobs)"}].map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${
               activeTab === t.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
