@@ -891,11 +891,11 @@ Write the email body only (no subject line in the body). Address the customer by
                     </button>
                     {active && (
                       <div className="px-3 pb-3">
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="grid grid-cols-2 gap-3 mb-2">
                           <div>
-                            <label className="block text-xs text-blue-600 mb-1">Date</label>
+                            <label className="block text-sm font-medium text-blue-700 mb-1.5">Date</label>
                             <input
-                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              className="w-full border-2 border-blue-300 rounded-lg px-3 py-2.5 text-base font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white cursor-pointer"
                               type="date"
                               value={form[dateKey] || ""}
                               onChange={(e) => set(dateKey, e.target.value)}
@@ -903,9 +903,9 @@ Write the email body only (no subject line in the body). Address the customer by
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-blue-600 mb-1">Time</label>
+                            <label className="block text-sm font-medium text-blue-700 mb-1.5">Time</label>
                             <input
-                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              className="w-full border-2 border-blue-300 rounded-lg px-3 py-2.5 text-base font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white cursor-pointer"
                               type="time"
                               value={form[timeKey] || ""}
                               onChange={(e) => set(timeKey, e.target.value)}
@@ -915,9 +915,9 @@ Write the email body only (no subject line in the body). Address the customer by
                         </div>
                         {svc !== "Packaging Supplies" && (
                           <div>
-                            <label className="block text-xs text-blue-600 mb-1">Estimated Hours</label>
+                            <label className="block text-sm font-medium text-blue-700 mb-1.5">Estimated Hours</label>
                             <select
-                              className="w-full border border-blue-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                              className="w-full border-2 border-blue-300 rounded-lg px-3 py-2.5 text-base font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white cursor-pointer"
                               value={form[hoursKey] || ""}
                               onChange={(e) => set(hoursKey, e.target.value)}
                               onClick={(e) => e.stopPropagation()}
