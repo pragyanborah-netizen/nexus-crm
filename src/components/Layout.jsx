@@ -37,6 +37,7 @@ const navGroups = [
     items: [
       { label: "Employees", icon: Users, path: "/employees" },
       { label: "Expense Management", icon: DollarSign, path: "/expenses" },
+      { label: "AI Roster Engine", icon: Trophy, path: "/roster-engine" },
     ]
   },
   {
