@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, Bell, Sparkles } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, Bell, Sparkles, CreditCard } from "lucide-react";
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import InvoiceGenerator from "../components/InvoiceGenerator";
@@ -387,6 +387,31 @@ Provide a realistic Australian removalist quote. Factor in: item volume and weig
   const [generatingEmail, setGeneratingEmail] = useState(false);
   const [sendingAiEmail, setSendingAiEmail] = useState(false);
   const [sendingMilestone, setSendingMilestone] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentType, setPaymentType] = useState("deposit");
+  const [sendingPayment, setSendingPayment] = useState(false);
+  const [paymentResult, setPaymentResult] = useState(null);
+
+  const handleSendPaymentLink = async () => {
+    if (!paymentAmount || Number(paymentAmount) <= 0) { alert("Please enter a valid amount."); return; }
+    setSendingPayment(true);
+    setPaymentResult(null);
+    const result = await base44.functions.invoke("createSquarePaymentLink", {
+      booking_id: id,
+      amount: Number(paymentAmount),
+      title: `Move On Removals – ${paymentType === "deposit" ? "Deposit" : "Balance"} – ${form.booking_number || ""}`,
+      customer_email: form.customer_email,
+      customer_name: `${form.customer_first_name} ${form.customer_last_name}`.trim(),
+      booking_number: form.booking_number,
+    });
+    setSendingPayment(false);
+    if (result?.data?.payment_link) {
+      setPaymentResult(result.data.payment_link);
+    } else {
+      alert("Error: " + (result?.data?.error || "Could not create payment link"));
+    }
+  };
 
   const handleGenerateAiEmail = async () => {
     setGeneratingEmail(true);
@@ -714,6 +739,15 @@ Write the email body only (no subject line in the body). Address the customer by
               className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
             >
               <Package size={16} /> {copiedLink ? "Copied!" : "Copy Inventory Link"}
+            </button>
+          )}
+          {isEdit && form.customer_email && (
+            <button
+              type="button"
+              onClick={() => { setPaymentAmount(form.deposit ? String(form.deposit) : form.price ? String(form.price) : ""); setPaymentType("deposit"); setPaymentResult(null); setShowPaymentModal(true); }}
+              className="bg-white border border-green-400 hover:bg-green-50 text-green-700 px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
+            >
+              <CreditCard size={16} /> Square Payment
             </button>
           )}
           {form.customer_email && (
@@ -1783,6 +1817,63 @@ Write the email body only (no subject line in the body). Address the customer by
             </Section>
           )}
         </>
+      )}
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <div>
+                <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2"><CreditCard size={18} className="text-green-600" /> Send Square Payment Link</h2>
+                <p className="text-sm text-gray-500">To: {form.customer_email}</p>
+              </div>
+              <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {paymentResult ? (
+                <div className="space-y-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-green-800 font-semibold text-sm mb-1">✅ Payment link created & emailed!</p>
+                    <p className="text-xs text-green-700 break-all">{paymentResult}</p>
+                  </div>
+                  <a href={paymentResult} target="_blank" rel="noopener noreferrer"
+                    className="block text-center bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-semibold">
+                    Open Payment Link
+                  </a>
+                  <button onClick={() => setShowPaymentModal(false)} className="w-full border border-gray-300 hover:bg-gray-50 py-2.5 rounded-lg text-sm font-medium text-gray-700">Close</button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Type</label>
+                    <div className="flex gap-2">
+                      {[["deposit", "Deposit"], ["balance", "Balance"], ["full", "Full Amount"]].map(([val, label]) => (
+                        <button key={val} type="button" onClick={() => { setPaymentType(val); if (val === "deposit" && form.deposit) setPaymentAmount(String(form.deposit)); else if (val === "balance" && form.balance_due) setPaymentAmount(String(form.balance_due)); else if (val === "full" && form.price) setPaymentAmount(String(form.price)); }}
+                          className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${ paymentType === val ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 text-gray-600 hover:border-gray-300" }`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Amount (AUD) *</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">$</span>
+                      <input type="number" min="0" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2.5 text-sm focus:outline-none focus:border-green-500" placeholder="0.00" />
+                    </div>
+                    {form.deposit && <p className="text-xs text-gray-400 mt-1">Deposit on file: ${form.deposit} · Balance: ${form.balance_due || '—'} · Total: ${form.price || '—'}</p>}
+                  </div>
+                  <button onClick={handleSendPaymentLink} disabled={sendingPayment || !paymentAmount}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-bold text-sm">
+                    {sendingPayment ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating link...</> : <><CreditCard size={16} /> Create & Email Payment Link</>}
+                  </button>
+                  <p className="text-xs text-gray-400 text-center">A Square payment link will be created and emailed to the customer.</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {showDiary && (
