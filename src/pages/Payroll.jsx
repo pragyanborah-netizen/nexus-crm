@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, FileText, FileSpreadsheet, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, FileText, FileSpreadsheet, Plus, Trash2, ChevronDown, ChevronUp, Bell } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { format, startOfWeek, endOfWeek, startOfMonth, subWeeks, subDays } from "date-fns";
 
@@ -51,6 +51,22 @@ export default function Payroll() {
   const [payrollData, setPayrollData] = useState(null);
   const [adjustments, setAdjustments] = useState([]); // [{employee_name, description, amount}]
   const [expandedEmployee, setExpandedEmployee] = useState(null);
+  const [notifying, setNotifying] = useState(false);
+
+  const notifyEmployees = async () => {
+    if (!payrollData) return;
+    setNotifying(true);
+    const res = await base44.functions.invoke("notifyPayslipsReady", {
+      payroll_data: payrollData.payroll_data,
+      start_date: startDate,
+      end_date: endDate,
+      period_label: `${startDate} to ${endDate}`,
+    });
+    setNotifying(false);
+    const d = res.data;
+    const skippedMsg = d.skipped?.length > 0 ? `\n${d.skipped.length} skipped (no email): ${d.skipped.map(s => s.name).join(", ")}` : "";
+    alert(`✓ Sent payslip notifications to ${d.sent} employee(s).${skippedMsg}`);
+  };
 
   const { data: employees = [] } = useQuery({
     queryKey: ["employees"],
@@ -350,6 +366,10 @@ export default function Payroll() {
             </button>
             <button onClick={() => payrollData.payroll_data.forEach(m => exportPayslip(m))} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
               <FileText size={15} /> All Payslips
+            </button>
+            <button onClick={notifyEmployees} disabled={notifying}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              <Bell size={15} /> {notifying ? "Sending..." : "Notify Employees"}
             </button>
           </div>
 
