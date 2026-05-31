@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Plus, Pencil, Trash2, X, Save, Users, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Save, Users, Search, Play, Square } from "lucide-react";
 
 const ROLES = ["Mover", "Driver", "Packer", "Supervisor", "Admin"];
 const EMP_TYPES = ["Full-time", "Part-time", "Casual"];
@@ -27,7 +27,6 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-6 space-y-5">
-          {/* Personal */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Personal Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -50,7 +49,6 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
             </div>
           </div>
 
-          {/* Employment */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Employment</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -85,7 +83,6 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
             </div>
           </div>
 
-          {/* Banking */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Bank Details (for payroll)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -104,7 +101,6 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
             </div>
           </div>
 
-          {/* Notes */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1">Notes</label>
             <textarea className={inputClass} rows={2} value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Any additional notes..." />
@@ -125,12 +121,66 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
   );
 }
 
+function ElapsedTimer({ startTime }) {
+  const [elapsed, setElapsed] = useState("");
+  useEffect(() => {
+    const tick = () => {
+      const diff = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+      setElapsed(`${h > 0 ? h + "h " : ""}${m}m ${String(s).padStart(2, "0")}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [startTime]);
+  return <span className="font-mono text-xs text-green-700 font-bold">{elapsed}</span>;
+}
+
 export default function Employees() {
   const queryClient = useQueryClient();
+  const [activeTimers, setActiveTimers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("emp_timers") || "{}"); } catch { return {}; }
+  });
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [modalEmployee, setModalEmployee] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  const saveTimers = (t) => {
+    setActiveTimers(t);
+    localStorage.setItem("emp_timers", JSON.stringify(t));
+  };
+
+  const handleStart = (emp) => {
+    const updated = { ...activeTimers, [emp.id]: { startTime: new Date().toISOString(), name: `${emp.first_name} ${emp.last_name}` } };
+    saveTimers(updated);
+  };
+
+  const handleFinish = async (emp) => {
+    const timer = activeTimers[emp.id];
+    if (!timer) return;
+    const start = new Date(timer.startTime);
+    const end = new Date();
+    const hoursWorked = Math.round(((end - start) / 3600000) * 100) / 100;
+    const startStr = start.toTimeString().slice(0, 5);
+    const endStr = end.toTimeString().slice(0, 5);
+    const dateStr = start.toISOString().split("T")[0];
+    await base44.entities.TimeLog.create({
+      employee_name: `${emp.first_name} ${emp.last_name}`,
+      date: dateStr,
+      start_time: startStr,
+      end_time: endStr,
+      hours_worked: hoursWorked,
+      notes: "Clocked via Employee page",
+    });
+    const updated = { ...activeTimers };
+    delete updated[emp.id];
+    saveTimers(updated);
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
+    alert(`\u2713 Logged ${hoursWorked.toFixed(2)} hrs for ${emp.first_name} ${emp.last_name} (${startStr} \u2013 ${endStr})`);
+  };
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["employees"],
@@ -173,7 +223,6 @@ export default function Employees() {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 mb-5 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -194,7 +243,6 @@ export default function Employees() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="py-16 text-center text-gray-400">Loading...</div>
@@ -215,6 +263,7 @@ export default function Employees() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Pay Rate</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Contact</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Time Clock</th>
                 <th className="text-right px-5 py-3 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
@@ -245,6 +294,25 @@ export default function Employees() {
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${emp.active !== false ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                       {emp.active !== false ? "Active" : "Inactive"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {activeTimers[emp.id] ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                          <ElapsedTimer startTime={activeTimers[emp.id].startTime} />
+                        </div>
+                        <button onClick={() => handleFinish(emp)}
+                          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold">
+                          <Square size={11} /> Finish
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => handleStart(emp)}
+                        className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold">
+                        <Play size={11} /> Start
+                      </button>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
