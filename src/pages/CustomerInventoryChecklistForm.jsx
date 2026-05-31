@@ -45,6 +45,7 @@ const PACKAGING = [
   { id: "mattress_single", name: "Mattress Protector — Single", price: 14.00, desc: "" },
   { id: "mattress_dq", name: "Mattress Protector — Double/Queen", price: 18.00, desc: "" },
   { id: "mattress_king", name: "Mattress Protector — King", price: 20.00, desc: "" },
+  { id: "blankets", name: "Blankets", price: 25.00, desc: "Heavy-duty furniture blankets for protecting large items" },
   { id: "packaging_tape", name: "Packaging Tape", price: 5.00, desc: "Secure box bottoms and tops" },
   { id: "bubble_wrap", name: "Bubble Wrap Heavy Duty (50m × 375mm)", price: 40.00, desc: "Glass, mirrors, antiques, fragile goods" },
   { id: "fragile_tape", name: "\"Fragile\" Tape", price: 6.00, desc: "Close tops of boxes with fragile items" },
