@@ -40,6 +40,8 @@ import DriverPortal from './pages/DriverPortal';
 import PackagingOrder from './pages/PackagingOrder';
 import PackagingOrders from './pages/PackagingOrders';
 import CustomerQuote from './pages/CustomerQuote';
+import CustomerInventoryChecklistForm from './pages/CustomerInventoryChecklistForm';
+import CustomerInventoryChecklists from './pages/CustomerInventoryChecklists';
 import AdminTruckMap from './pages/AdminTruckMap';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -75,6 +77,7 @@ const AuthenticatedApp = () => {
       <Route path="/inventory/:bookingId" element={<InventoryForm />} />
       <Route path="/packaging-order" element={<PackagingOrder />} />
       <Route path="/get-a-quote" element={<CustomerQuote />} />
+      <Route path="/inventory-checklist" element={<CustomerInventoryChecklistForm />} />
       <Route path="/survey/:survey_id" element={<SurveyPage />} />
       <Route path="/mover-availability" element={<MoverAvailability />} />
       <Route path="/login" element={<Login />} />
@@ -112,6 +115,7 @@ const AuthenticatedApp = () => {
         <Route path="/bookings/:id/quote" element={<QuoteEngine />} />
         <Route path="/driver-portal" element={<DriverPortal />} />
         <Route path="/packaging-orders" element={<PackagingOrders />} />
+        <Route path="/inventory-checklists" element={<CustomerInventoryChecklists />} />
         <Route path="/live-truck-map" element={<AdminTruckMap />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

@@ -1,0 +1,100 @@
+{
+  "name": "CustomerInventoryChecklist",
+  "type": "object",
+  "properties": {
+    "booking_id": {
+      "type": "string",
+      "title": "Booking ID"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number"
+    },
+    "customer_name": {
+      "type": "string",
+      "title": "Customer Name"
+    },
+    "customer_email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "customer_phone": {
+      "type": "string",
+      "title": "Phone"
+    },
+    "move_from": {
+      "type": "string",
+      "title": "Moving From Address"
+    },
+    "move_to": {
+      "type": "string",
+      "title": "Moving To Address"
+    },
+    "move_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Preferred Move Date"
+    },
+    "rooms": {
+      "type": "array",
+      "title": "Rooms & Items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "custom_items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "packaging_supplies": {
+      "type": "array",
+      "title": "Packaging Supplies Requested",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "qty": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "services_needed": {
+      "type": "array",
+      "title": "Services Needed",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "title": "Additional Notes"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Submitted",
+        "Reviewed",
+        "Quoted"
+      ],
+      "default": "Submitted"
+    }
+  },
+  "required": [
+    "customer_name",
+    "customer_email"
+  ]
+}

@@ -40,6 +40,7 @@ const navGroups = [
       { label: "Supply List", icon: ShoppingCart, path: "/supplies" },
       { label: "Bulk SMS Tool", icon: MessageSquare, path: "/bulk-sms" },
       { label: "Packaging Orders", icon: ShoppingCart, path: "/packaging-orders" },
+      { label: "Inventory Checklists", icon: Package, path: "/inventory-checklists" },
     ]
   },
   {
