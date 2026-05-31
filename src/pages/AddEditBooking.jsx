@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, Bell } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, Bell, Sparkles } from "lucide-react";
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
 import InvoiceGenerator from "../components/InvoiceGenerator";
@@ -699,6 +699,14 @@ Write the email body only (no subject line in the body). Address the customer by
           >
             <CalendarDays size={16} /> Diary
           </button>
+          {isEdit && (
+            <Link
+              to={`/bookings/${id}/quote`}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-medium"
+            >
+              <Sparkles size={16} /> AI Quote
+            </Link>
+          )}
           {isEdit && inventoryLink && (
             <button
               type="button"

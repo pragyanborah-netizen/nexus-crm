@@ -66,6 +66,7 @@ const navGroups = [
       { label: "Agent & Mover Portal", icon: UserCheck, path: "/agent-portal" },
       { label: "Customer Portal", icon: Users, path: "/customer" },
       { label: "Notification Monitoring", icon: Bell, path: "/notification-monitoring" },
+      { label: "AI Quote Engine", icon: DollarSign, path: "/bookings" },
     ]
   },
 ];
