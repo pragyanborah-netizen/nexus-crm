@@ -117,7 +117,8 @@ export default function JockeyHoursCalculator() {
     const policyLines = [
       `• Paid from: ${calcData.policy_summary.paid_from}`,
       `• Paid until: ${calcData.policy_summary.paid_until}`,
-      `• Unpaid travel: ${calcData.policy_summary.unpaid_travel}`,
+      `• Meeting option: ${calcData.policy_summary.meeting_option}`,
+      `• Depot travel: ${calcData.policy_summary.depot_travel}`,
       `• Extended travel: ${calcData.policy_summary.extended_travel}`,
     ];
     policyLines.forEach(line => {
@@ -143,7 +144,8 @@ export default function JockeyHoursCalculator() {
         
         doc.setFont("helvetica", "normal");
         doc.setTextColor(51, 65, 85);
-        doc.text(`Clock In: ${shift.clock_in} · Clock Out: ${shift.clock_out}`, 20, y);
+        const meetingBadge = shift.met_at_customer ? " [Met at customer]" : " [Traveled from depot]";
+        doc.text(`Clock In: ${shift.clock_in} · Clock Out: ${shift.clock_out}${meetingBadge}`, 20, y);
         y += 5;
         doc.text(`On-site: ${shift.on_site_hours} hrs · Paid: ${shift.paid_hours} hrs · Unpaid Travel: ${shift.unpaid_travel_hours} hrs`, 20, y);
         y += 5;
@@ -174,7 +176,7 @@ export default function JockeyHoursCalculator() {
       {/* Selection */}
       <div className="bg-white rounded-xl shadow p-6 space-y-4">
         <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-          <Calendar size={17} className="text-blue-600" /> Select Period & Employee
+          <Calendar size={17} className="text-blue-600" /> Select Period and Employee
         </h2>
 
         <div className="flex flex-wrap gap-2">
@@ -259,12 +261,12 @@ export default function JockeyHoursCalculator() {
                     <span><strong>Paid until:</strong> {calcData.policy_summary.paid_until}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                    <span><strong>Unpaid travel:</strong> {calcData.policy_summary.unpaid_travel}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+                    <span><strong>Meeting option:</strong> {calcData.policy_summary.meeting_option}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                    <span><strong>Extended travel:</strong> {calcData.policy_summary.extended_travel}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                    <span><strong>Depot travel:</strong> {calcData.policy_summary.depot_travel}</span>
                   </div>
                 </div>
               </div>
@@ -287,9 +289,16 @@ export default function JockeyHoursCalculator() {
                     <p className="font-bold text-gray-800">Booking #{shift.booking_number}</p>
                     <p className="text-sm text-gray-500">{new Date(shift.date).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</p>
                   </div>
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-                    Paid: {shift.paid_hours} hrs
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                      Paid: {shift.paid_hours} hrs
+                    </span>
+                    {shift.met_at_customer && (
+                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <CheckCircle size={10} /> Met at customer
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -335,7 +344,7 @@ export default function JockeyHoursCalculator() {
         <div className="text-center py-16 text-gray-400">
           <Clock size={52} className="mx-auto mb-4 opacity-20" />
           <p className="font-medium text-gray-600">Select an employee and period to calculate paid hours</p>
-          <p className="text-sm mt-1">Policy: Paid from customer sign-on to sign-off · Travel ≤30 min unpaid</p>
+          <p className="text-sm mt-1">Policy: Paid from customer sign-on to sign-off · Meet at customer = no unpaid travel</p>
         </div>
       )}
     </div>
