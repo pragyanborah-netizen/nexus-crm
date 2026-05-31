@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map, ClipboardList } from "lucide-react";
 import DriverRouteMap from "../components/DriverRouteMap";
 import DriverInventoryChecklist from "../components/DriverInventoryChecklist";
+import SignaturePad from "../components/SignaturePad";
 
 const STATUS_FLOW = [
   { key: "En Route to Pickup", label: "En Route to Pickup", emoji: "🚛", color: "bg-blue-500", light: "bg-blue-50 border-blue-200 text-blue-800" },
@@ -32,6 +33,8 @@ export default function DriverPortal() {
   const [activeJobId, setActiveJobId] = useState(null);
   const [updating, setUpdating] = useState(null);
   const [checklistBooking, setChecklistBooking] = useState(null);
+  const [signatureBooking, setSignatureBooking] = useState(null);
+  const [savingSignature, setSavingSignature] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -104,6 +107,19 @@ export default function DriverPortal() {
         { enableHighAccuracy: true, timeout: 10000 }
       );
     });
+  };
+
+  const handleSignatureSave = async (dataUrl) => {
+    const booking = signatureBooking;
+    setSignatureBooking(null);
+    setSavingSignature(true);
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], `signature_${booking.id}.png`, { type: "image/png" });
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.entities.Booking.update(booking.id, { signature_url: file_url });
+    setSavingSignature(false);
+    await handleStatusUpdate(booking, "Completed");
   };
 
   const handleStatusUpdate = async (booking, newStatus) => {
@@ -366,7 +382,14 @@ export default function DriverPortal() {
               <div className="px-4 pb-4 pt-2">
                 {nextStatus || !currentStatus ? (
                   <button
-                    onClick={() => handleStatusUpdate(booking, nextStatus?.key || "En Route to Pickup")}
+                    onClick={() => {
+                      const target = nextStatus?.key || "En Route to Pickup";
+                      if (target === "Completed") {
+                        setSignatureBooking(booking);
+                      } else {
+                        handleStatusUpdate(booking, target);
+                      }
+                    }}
                     disabled={isActive}
                     className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
                       nextStatus
@@ -410,6 +433,22 @@ export default function DriverPortal() {
           truckName={truckName}
           onClose={() => setChecklistBooking(null)}
         />
+      )}
+
+      {signatureBooking && (
+        <SignaturePad
+          customerName={`${signatureBooking.customer_first_name} ${signatureBooking.customer_last_name}`}
+          bookingNumber={signatureBooking.booking_number || signatureBooking.id.slice(0, 8).toUpperCase()}
+          onSave={handleSignatureSave}
+          onCancel={() => setSignatureBooking(null)}
+        />
+      )}
+
+      {savingSignature && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center gap-3">
+          <Loader2 size={36} className="animate-spin text-blue-400" />
+          <p className="text-white text-sm font-medium">Saving signature...</p>
+        </div>
       )}
     </div>
   );
