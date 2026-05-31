@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { BookOpen, Users, TrendingUp, Plus } from "lucide-react";
+import { BookOpen, Users, TrendingUp, Plus, Package, ShoppingCart } from "lucide-react";
 
 const statusColors = {
   New: "bg-blue-100 text-blue-700",
@@ -26,6 +26,14 @@ export default function Dashboard() {
     queryKey: ["trucks"],
     queryFn: () => base44.entities.Truck.list(),
   });
+  const { data: packagingOrders = [] } = useQuery({
+    queryKey: ["packaging-orders"],
+    queryFn: () => base44.entities.PackagingOrder.list("-created_date", 100),
+  });
+  const { data: agents = [] } = useQuery({
+    queryKey: ["agents"],
+    queryFn: () => base44.entities.Agent.list(),
+  });
 
   const [activeTab, setActiveTab] = useState("bookings");
 
@@ -34,11 +42,10 @@ export default function Dashboard() {
   const enquiries = bookings.filter((b) => b.status === "Enquiry");
   const recentBookings = bookings.slice(0, 8);
 
-  // Agent report
-  const { data: agents = [] } = useQuery({
-    queryKey: ["agents"],
-    queryFn: () => base44.entities.Agent.list(),
-  });
+  const pendingOrders = packagingOrders.filter(o => o.status === "Pending").length;
+  const packagingRevenue = packagingOrders
+    .filter(o => o.status !== "Cancelled")
+    .reduce((s, o) => s + (o.total || 0), 0);
 
   const agentStats = agents.map((agent) => {
     const agentBookings = bookings.filter(
@@ -69,11 +76,13 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         <StatCard icon={BookOpen} label="Today's Bookings" value={todayBookings.length} color="bg-blue-600" />
         <StatCard icon={BookOpen} label="Enquiries" value={enquiries.length} color="bg-orange-500" />
         <StatCard icon={Users} label="Total Customers" value={customers.length} color="bg-green-600" />
         <StatCard icon={TrendingUp} label="Total Agents" value={agents.length} color="bg-purple-600" />
+        <StatCard icon={ShoppingCart} label="Pending Pkg Orders" value={pendingOrders} color="bg-orange-600" link="/packaging-orders" />
+        <StatCard icon={Package} label="Packaging Revenue" value={`$${packagingRevenue.toFixed(0)}`} color="bg-teal-600" link="/packaging-orders" />
       </div>
 
       {/* Tabs */}
@@ -178,9 +187,9 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <div className="bg-white rounded-lg shadow p-4 flex items-center gap-4">
+function StatCard({ icon: Icon, label, value, color, link }) {
+  const content = (
+    <div className="bg-white rounded-lg shadow p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
       <div className={`${color} p-3 rounded-lg`}>
         <Icon size={20} className="text-white" />
       </div>
@@ -190,4 +199,5 @@ function StatCard({ icon: Icon, label, value, color }) {
       </div>
     </div>
   );
+  return link ? <Link to={link}>{content}</Link> : content;
 }
