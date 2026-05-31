@@ -38,6 +38,7 @@ import NotificationMonitoring from './pages/NotificationMonitoring';
 import QuoteEngine from './pages/QuoteEngine';
 import DriverPortal from './pages/DriverPortal';
 import PackagingOrder from './pages/PackagingOrder';
+import CustomerQuote from './pages/CustomerQuote';
 import AdminTruckMap from './pages/AdminTruckMap';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/inventory/:bookingId" element={<InventoryForm />} />
       <Route path="/packaging-order" element={<PackagingOrder />} />
+      <Route path="/get-a-quote" element={<CustomerQuote />} />
       <Route path="/survey/:survey_id" element={<SurveyPage />} />
       <Route path="/mover-availability" element={<MoverAvailability />} />
       <Route path="/login" element={<Login />} />
