@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map, ClipboardList } from "lucide-react";
+import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map, ClipboardList, FileText, X } from "lucide-react";
 import DriverRouteMap from "../components/DriverRouteMap";
 import DriverInventoryChecklist from "../components/DriverInventoryChecklist";
 import SignaturePad from "../components/SignaturePad";
 import DriverEarningsTab from "../components/DriverEarningsTab";
 import PaymentPolicy from "../components/DriverPaymentPolicy";
+import JobSheetModal from "../components/JobSheetModal";
 
 const STATUS_FLOW = [
   { key: "En Route to Pickup", label: "En Route to Pickup", emoji: "🚛", color: "bg-blue-500", light: "bg-blue-50 border-blue-200 text-blue-800" },
@@ -38,6 +39,7 @@ export default function DriverPortal() {
   const [signatureBooking, setSignatureBooking] = useState(null);
   const [savingSignature, setSavingSignature] = useState(false);
   const [activeTab, setActiveTab] = useState("jobs");
+  const [jobSheetBooking, setJobSheetBooking] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -395,13 +397,19 @@ export default function DriverPortal() {
                     </div>
                   </div>
 
-                  {/* Inventory checklist button */}
-                  <div className="px-4 pb-2">
+                  {/* Job Sheet + Inventory buttons */}
+                  <div className="px-4 pb-2 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setJobSheetBooking(booking)}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-blue-700 hover:bg-blue-600 text-white border border-blue-600 transition-all"
+                    >
+                      <FileText size={15} /> Job Sheet
+                    </button>
                     <button
                       onClick={() => setChecklistBooking(booking)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 transition-all"
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 transition-all"
                     >
-                      <ClipboardList size={15} /> Pre-Move Inventory Check
+                      <ClipboardList size={15} /> Inventory
                       {booking.items_to_move?.length > 0 && (
                         <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{booking.items_to_move.length}</span>
                       )}
@@ -474,6 +482,13 @@ export default function DriverPortal() {
           bookingNumber={signatureBooking.booking_number || signatureBooking.id.slice(0, 8).toUpperCase()}
           onSave={handleSignatureSave}
           onCancel={() => setSignatureBooking(null)}
+        />
+      )}
+
+      {jobSheetBooking && (
+        <JobSheetModal
+          booking={jobSheetBooking}
+          onClose={() => setJobSheetBooking(null)}
         />
       )}
 
