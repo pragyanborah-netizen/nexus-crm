@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
 import {
   CalendarDays, Sparkles, AlertTriangle, Users, CheckCircle,
-  ChevronDown, ChevronUp, Loader2, Info, Clock, Briefcase
+  ChevronDown, ChevronUp, Loader2, Info, Clock, Briefcase, Mail, MessageSquare
 } from "lucide-react";
 
 const today = new Date();
@@ -112,6 +112,8 @@ export default function RosterEngine() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState("all");
+  const [sendingConfirmations, setSendingConfirmations] = useState(false);
+  const [confirmationsSent, setConfirmationsSent] = useState(false);
 
   const weekStart = useCustom ? customStart : selectedWeek.start;
   const weekEnd = useCustom ? customEnd : selectedWeek.end;
@@ -149,6 +151,34 @@ export default function RosterEngine() {
     } else {
       setRoster(res.data?.roster);
     }
+  };
+
+  const handleSendConfirmations = async () => {
+    if (!roster?.assignments) return;
+    setSendingConfirmations(true);
+    try {
+      const res = await base44.functions.invoke("sendRosterConfirmations", {
+        assignments: roster.assignments.flatMap(a => 
+          a.employees?.map(emp => ({
+            employee_name: emp.name,
+            employee_email: activeEmployees.find(e => `${e.first_name} ${e.last_name}` === emp.name)?.email,
+            shift_type: a.shift_type,
+            shift_date: a.date,
+            booking_id: a.booking_id,
+            booking_number: a.booking_number
+          })) || []
+        ),
+        roster_period: { start: weekStart, end: weekEnd }
+      });
+      const d = res.data;
+      const skippedMsg = d.skipped?.length > 0 ? `\n${d.skipped.length} skipped (no email): ${d.skipped.map(s => s.name).join(", ")}` : "";
+      const failedMsg = d.failed?.length > 0 ? `\n${d.failed.length} failed: ${d.failed.map(f => `${f.name}: ${f.error}`).join(", ")}` : "";
+      alert(`✓ Sent roster confirmations to ${d.sent} employee(s).${skippedMsg}${failedMsg}`);
+      setConfirmationsSent(true);
+    } catch (e) {
+      alert("Error sending confirmations: " + e.message);
+    }
+    setSendingConfirmations(false);
   };
 
   const uniqueDates = roster
@@ -389,6 +419,19 @@ export default function RosterEngine() {
               className="flex items-center gap-2 border border-purple-300 text-purple-700 hover:bg-purple-50 px-4 py-2 rounded-lg text-sm font-medium"
             >
               <Sparkles size={14} /> Regenerate
+            </button>
+            <button
+              onClick={handleSendConfirmations}
+              disabled={sendingConfirmations || confirmationsSent}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {sendingConfirmations ? (
+                <><Loader2 size={14} className="animate-spin" /> Sending...</>
+              ) : confirmationsSent ? (
+                <><CheckCircle size={14} /> Sent</>
+              ) : (
+                <><Mail size={14} /> Send Confirmations</>
+              )}
             </button>
             <button
               onClick={() => {

@@ -46,6 +46,7 @@ import AdminTruckMap from './pages/AdminTruckMap';
 import Employees from './pages/Employees';
 import Expenses from './pages/Expenses';
 import RosterEngine from './pages/RosterEngine';
+import RosterResponse from './pages/RosterResponse';
 import AssetTracking from './pages/AssetTracking';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
       <Route path="/inventory-checklist" element={<CustomerInventoryChecklistForm />} />
       <Route path="/survey/:survey_id" element={<SurveyPage />} />
       <Route path="/mover-availability" element={<MoverAvailability />} />
+      <Route path="/roster/response" element={<RosterResponse />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
