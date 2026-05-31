@@ -1,0 +1,65 @@
+{
+  "name": "DriverInventoryCheck",
+  "type": "object",
+  "properties": {
+    "booking_id": {
+      "type": "string",
+      "title": "Booking ID"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number"
+    },
+    "truck_name": {
+      "type": "string",
+      "title": "Truck Name"
+    },
+    "items": {
+      "type": "array",
+      "title": "Checked Items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "Damaged",
+              "Missing"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "photo_url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Draft",
+        "Submitted"
+      ],
+      "default": "Draft"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Submitted At"
+    },
+    "driver_notes": {
+      "type": "string",
+      "title": "Driver Notes"
+    }
+  },
+  "required": [
+    "booking_id"
+  ]
+}

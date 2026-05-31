@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map } from "lucide-react";
+import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map, ClipboardList } from "lucide-react";
 import DriverRouteMap from "../components/DriverRouteMap";
+import DriverInventoryChecklist from "../components/DriverInventoryChecklist";
 
 const STATUS_FLOW = [
   { key: "En Route to Pickup", label: "En Route to Pickup", emoji: "🚛", color: "bg-blue-500", light: "bg-blue-50 border-blue-200 text-blue-800" },
@@ -30,6 +31,7 @@ export default function DriverPortal() {
   const [lastLocTime, setLastLocTime] = useState(null);
   const [activeJobId, setActiveJobId] = useState(null);
   const [updating, setUpdating] = useState(null);
+  const [checklistBooking, setChecklistBooking] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -347,6 +349,19 @@ export default function DriverPortal() {
                 </div>
               </div>
 
+              {/* Inventory checklist button */}
+              <div className="px-4 pb-2">
+                <button
+                  onClick={() => setChecklistBooking(booking)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 transition-all"
+                >
+                  <ClipboardList size={15} /> Pre-Move Inventory Check
+                  {booking.items_to_move?.length > 0 && (
+                    <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{booking.items_to_move.length}</span>
+                  )}
+                </button>
+              </div>
+
               {/* Status action button */}
               <div className="px-4 pb-4 pt-2">
                 {nextStatus || !currentStatus ? (
@@ -388,6 +403,14 @@ export default function DriverPortal() {
       <div className="pb-8 text-center">
         <p className="text-gray-700 text-xs">Move On Australia · Driver Portal</p>
       </div>
+
+      {checklistBooking && (
+        <DriverInventoryChecklist
+          booking={checklistBooking}
+          truckName={truckName}
+          onClose={() => setChecklistBooking(null)}
+        />
+      )}
     </div>
   );
 }
