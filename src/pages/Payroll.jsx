@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, FileText, FileSpreadsheet, Plus, Trash2, ChevronDown, ChevronUp, Bell } from "lucide-react";
+import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, FileText, FileSpreadsheet, Plus, Trash2, ChevronDown, ChevronUp, Bell, Briefcase, Receipt } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { format, startOfWeek, endOfWeek, startOfMonth, subWeeks, subDays } from "date-fns";
 
@@ -237,12 +237,13 @@ export default function Payroll() {
 
   const exportCSV = () => {
     if (!payrollData) return;
-    const header = ["Employee", "Role", "Pay Rate", "Hours", "Jobs", "Hourly Wages", "Job Share", "Performance Bonus", "Adjustments", "Total"];
+    const header = ["Employee", "Role", "Pay Rate", "Hours", "Jobs", "Hourly Wages", "Job Share", "Perf Bonus", "Adjustments", "Expenses", "Total"];
     const rows = payrollData.payroll_data.map(m => [
       m.mover_name, m.role || "", m.pay_rate ? `$${m.pay_rate}` : "n/a",
       m.total_hours.toFixed(1), m.jobs_completed,
       m.hourly_wage.toFixed(2), m.base_wage.toFixed(2),
-      m.performance_bonus.toFixed(2), m.adjustments_total.toFixed(2), m.total_wage.toFixed(2),
+      m.performance_bonus.toFixed(2), m.adjustments_total.toFixed(2),
+      m.expense_reimbursements.toFixed(2), m.total_wage.toFixed(2),
     ]);
     const csv = [header.join(","), ...rows.map(r => r.join(","))].join("\n");
     const a = document.createElement("a");
@@ -354,6 +355,7 @@ export default function Payroll() {
             <StatCard icon={Clock} label="Total Hours" value={payrollData.summary.total_hours.toFixed(1)} sublabel="From time logs" color="bg-purple-600" />
             <StatCard icon={Users} label="Jobs Completed" value={payrollData.summary.total_jobs} sublabel="In period" color="bg-green-600" />
             <StatCard icon={TrendingUp} label="Bonuses & Adj." value={`$${(payrollData.summary.total_bonuses + payrollData.summary.total_adjustments).toFixed(2)}`} sublabel="Performance + manual" color="bg-yellow-500" />
+            <StatCard icon={Receipt} label="Expense Reimbursements" value={`$${payrollData.summary.total_expenses.toFixed(2)}`} sublabel="Approved expenses" color="bg-teal-600" />
           </div>
 
           {/* Export bar */}
@@ -441,6 +443,20 @@ export default function Payroll() {
                           </p>
                           <p className="text-xs text-gray-400">{mover.adjustment_items?.length || 0} item{(mover.adjustment_items?.length || 0) !== 1 ? "s" : ""}</p>
                         </div>
+                        {mover.expense_reimbursements > 0 && (
+                          <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 mb-1">Expense Reimbursements</p>
+                            <p className="text-lg font-bold text-teal-700">+${mover.expense_reimbursements.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">{mover.expense_items?.length || 0} expense{(mover.expense_items?.length || 0) !== 1 ? "s" : ""}</p>
+                          </div>
+                        )}
+                        {mover.roster_wage > 0 && (
+                          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 mb-1">Roster Shift Earnings</p>
+                            <p className="text-lg font-bold text-indigo-700">${mover.roster_wage.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">{mover.roster_hours.toFixed(1)} hrs from {mover.roster_shifts?.length || 0} confirmed shift{(mover.roster_shifts?.length || 0) !== 1 ? "s" : ""}</p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Adjustment items */}
@@ -522,8 +538,35 @@ export default function Payroll() {
                         </div>
                       )}
 
-                      {mover.total_hours === 0 && mover.jobs_completed === 0 && (
-                        <p className="text-sm text-gray-400 italic">No time logs or completed jobs found in this period.</p>
+                      {/* Expense reimbursements */}
+                      {mover.expense_items?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Expense Reimbursements</p>
+                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Category</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Description</th>
+                                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {mover.expense_items.map((exp, i) => (
+                                  <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-3 py-2 text-gray-700">{exp.category}</td>
+                                    <td className="px-3 py-2 text-gray-600">{exp.description}</td>
+                                    <td className="px-3 py-2 text-right font-semibold text-teal-700">${exp.amount.toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {mover.total_hours === 0 && mover.jobs_completed === 0 && !mover.expense_items?.length && (
+                        <p className="text-sm text-gray-400 italic">No time logs, completed jobs, or expenses found in this period.</p>
                       )}
                     </div>
                   )}

@@ -17,11 +17,12 @@ Deno.serve(async (req) => {
     endDt.setHours(23, 59, 59, 999);
 
     // Fetch all data in parallel
-    const [employees, allBookings, allTimeLogs, allSurveys] = await Promise.all([
+    const [employees, allBookings, allTimeLogs, allSurveys, allExpenses] = await Promise.all([
       base44.entities.Employee.list(),
       base44.entities.Booking.list(),
       base44.entities.TimeLog.list(),
       base44.entities.Survey.list(),
+      base44.entities.Expense.list(),
     ]);
 
     // Build employee lookup by full name (case-insensitive)
@@ -49,6 +50,11 @@ Deno.serve(async (req) => {
       return d >= startDt && d <= endDt;
     });
 
+    const expenses = allExpenses.filter(e => {
+      const d = new Date(e.date);
+      return d >= startDt && d <= endDt && e.status === 'Approved';
+    });
+
     // Init payroll per employee from Employee records
     const payrollData = {};
 
@@ -68,6 +74,11 @@ Deno.serve(async (req) => {
         performance_bonus: 0,
         adjustments_total: 0,
         adjustment_items: [],
+        expense_reimbursements: 0,
+        expense_items: [],
+        roster_shifts: [],
+        roster_hours: 0,
+        roster_wage: 0,
         total_wage: 0,
         bookings: [],
         time_log_entries: [],
@@ -150,9 +161,23 @@ Deno.serve(async (req) => {
       });
     });
 
+    // Apply approved expense reimbursements
+    expenses.forEach(exp => {
+      const name = exp.employee_name;
+      if (!name || !payrollData[name]) return;
+      const amount = Number(exp.amount) || 0;
+      payrollData[name].expense_reimbursements += amount;
+      payrollData[name].expense_items.push({
+        category: exp.category,
+        description: exp.description,
+        amount,
+        booking_ref: exp.booking_number || '',
+      });
+    });
+
     // Final totals
     Object.values(payrollData).forEach(p => {
-      p.total_wage = p.base_wage + p.hourly_wage + p.performance_bonus + p.adjustments_total;
+      p.total_wage = p.base_wage + p.hourly_wage + p.performance_bonus + p.adjustments_total + p.expense_reimbursements + p.roster_wage;
     });
 
     const payrollArray = Object.values(payrollData).sort((a, b) => b.total_wage - a.total_wage);
@@ -165,6 +190,8 @@ Deno.serve(async (req) => {
       total_hourly_wages: payrollArray.reduce((s, p) => s + p.hourly_wage, 0),
       total_bonuses: payrollArray.reduce((s, p) => s + p.performance_bonus, 0),
       total_adjustments: payrollArray.reduce((s, p) => s + p.adjustments_total, 0),
+      total_expenses: payrollArray.reduce((s, p) => s + p.expense_reimbursements, 0),
+      total_roster_wages: payrollArray.reduce((s, p) => s + p.roster_wage, 0),
       mover_count: payrollArray.length,
     };
 
