@@ -33,6 +33,12 @@ const navGroups = [
     ]
   },
   {
+    group: "Employees",
+    items: [
+      { label: "Employees", icon: Users, path: "/employees" },
+    ]
+  },
+  {
     group: "Administration",
     items: [
       { label: "Email Templates", icon: Mail, path: "/email-templates" },

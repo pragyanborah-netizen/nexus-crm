@@ -1,0 +1,82 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string",
+      "title": "First Name"
+    },
+    "last_name": {
+      "type": "string",
+      "title": "Last Name"
+    },
+    "email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "mobile": {
+      "type": "string",
+      "title": "Mobile"
+    },
+    "role": {
+      "type": "string",
+      "title": "Role",
+      "enum": [
+        "Mover",
+        "Driver",
+        "Packer",
+        "Supervisor",
+        "Admin"
+      ],
+      "default": "Mover"
+    },
+    "employment_type": {
+      "type": "string",
+      "title": "Employment Type",
+      "enum": [
+        "Full-time",
+        "Part-time",
+        "Casual"
+      ],
+      "default": "Casual"
+    },
+    "pay_rate": {
+      "type": "number",
+      "title": "Pay Rate ($/hr)"
+    },
+    "bank_account_name": {
+      "type": "string",
+      "title": "Bank Account Name"
+    },
+    "bank_bsb": {
+      "type": "string",
+      "title": "BSB"
+    },
+    "bank_account_number": {
+      "type": "string",
+      "title": "Account Number"
+    },
+    "tax_file_number": {
+      "type": "string",
+      "title": "Tax File Number"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+    },
+    "active": {
+      "type": "boolean",
+      "title": "Active",
+      "default": true
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name"
+  ]
+}
