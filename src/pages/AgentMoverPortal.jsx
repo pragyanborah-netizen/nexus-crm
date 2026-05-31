@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
-import { Truck, MapPin, Check, Bell, Clock, User, Phone, Mail, Calendar } from "lucide-react";
+import { Truck, MapPin, Check, Bell, Clock, User, Phone, Mail, Calendar, Package, AlertTriangle, XCircle, Image } from "lucide-react";
 
 const StatusBadge = ({ status }) => {
   const colors = {
@@ -20,8 +20,23 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const ConditionIcon = ({ condition }) => {
+  if (condition === "Damaged") return <AlertTriangle size={12} className="text-orange-500" />;
+  if (condition === "Missing") return <XCircle size={12} className="text-red-500" />;
+  return <Check size={12} className="text-green-500" />;
+};
+
 const BookingCard = ({ booking, truckLocation }) => {
   const [sendingMilestone, setSendingMilestone] = useState(null);
+  const [showInventory, setShowInventory] = useState(false);
+
+  const { data: inventoryCheck } = useQuery({
+    queryKey: ["inv-check", booking.id],
+    queryFn: async () => {
+      const results = await base44.entities.DriverInventoryCheck.filter({ booking_id: booking.id });
+      return results[0] || null;
+    },
+  });
 
   const handleSendMilestone = async (milestone) => {
     setSendingMilestone(milestone);
@@ -170,6 +185,52 @@ const BookingCard = ({ booking, truckLocation }) => {
             </p>
           )}
         </div>
+
+        {(inventoryCheck?.items?.length > 0 || booking.items_to_move?.length > 0) && (
+          <div className="border-t pt-4">
+            <button
+              onClick={() => setShowInventory(v => !v)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Package size={15} className="text-blue-600" />
+                Inventory
+                {inventoryCheck && (
+                  <span className="text-xs font-normal text-gray-400">· {inventoryCheck.status}</span>
+                )}
+              </p>
+              <span className="text-xs text-blue-600">{showInventory ? "Hide" : "Show"}</span>
+            </button>
+
+            {showInventory && (
+              <div className="mt-3 space-y-2">
+                {(inventoryCheck?.items || booking.items_to_move?.map(name => ({ name, condition: "OK" })) || []).map((item, idx) => (
+                  <div key={idx} className={`flex items-start gap-2 p-2 rounded-lg text-sm ${
+                    item.condition === "Damaged" ? "bg-orange-50" :
+                    item.condition === "Missing" ? "bg-red-50" : "bg-gray-50"
+                  }`}>
+                    <ConditionIcon condition={item.condition || "OK"} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-gray-800 font-medium text-xs">{item.name}</p>
+                      {item.notes && <p className="text-xs text-gray-500 mt-0.5">{item.notes}</p>}
+                    </div>
+                    {item.photo_url && (
+                      <a href={item.photo_url} target="_blank" rel="noopener noreferrer"
+                        className="flex-shrink-0 w-10 h-10 rounded overflow-hidden border border-gray-200">
+                        <img src={item.photo_url} alt="damage" className="w-full h-full object-cover" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+                {inventoryCheck?.driver_notes && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800">
+                    <span className="font-semibold">Driver notes:</span> {inventoryCheck.driver_notes}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="border-t pt-4 grid grid-cols-2 gap-3">
           <div>
