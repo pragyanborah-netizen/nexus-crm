@@ -37,6 +37,7 @@ import AgentMoverPortal from './pages/AgentMoverPortal';
 import NotificationMonitoring from './pages/NotificationMonitoring';
 import QuoteEngine from './pages/QuoteEngine';
 import DriverPortal from './pages/DriverPortal';
+import AdminTruckMap from './pages/AdminTruckMap';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -105,6 +106,7 @@ const AuthenticatedApp = () => {
         <Route path="/notification-monitoring" element={<NotificationMonitoring />} />
         <Route path="/bookings/:id/quote" element={<QuoteEngine />} />
         <Route path="/driver-portal" element={<DriverPortal />} />
+        <Route path="/live-truck-map" element={<AdminTruckMap />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

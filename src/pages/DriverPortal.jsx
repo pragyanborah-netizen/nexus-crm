@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle } from "lucide-react";
+import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map } from "lucide-react";
+import DriverRouteMap from "../components/DriverRouteMap";
 
 const STATUS_FLOW = [
   { key: "En Route to Pickup", label: "En Route to Pickup", emoji: "🚛", color: "bg-blue-500", light: "bg-blue-50 border-blue-200 text-blue-800" },
@@ -209,6 +210,16 @@ export default function DriverPortal() {
           </div>
         )}
       </div>
+
+      {/* Route Map */}
+      {myBookings.length > 0 && (
+        <div className="px-4 py-4 bg-gray-800 border-b border-gray-700">
+          <h2 className="text-sm font-bold text-gray-300 flex items-center gap-2 mb-3">
+            <Map size={15} /> Today's Route
+          </h2>
+          <DriverRouteMap bookings={myBookings} />
+        </div>
+      )}
 
       {/* Jobs */}
       <div className="px-4 py-4 space-y-4">

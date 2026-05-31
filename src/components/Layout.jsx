@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
   ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar,
-  Trophy, DollarSign, Award as AwardIcon, Timer, Bell
+  Trophy, DollarSign, Award as AwardIcon, Timer, Bell, MapPin
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -68,6 +68,7 @@ const navGroups = [
       { label: "Notification Monitoring", icon: Bell, path: "/notification-monitoring" },
       { label: "AI Quote Engine", icon: DollarSign, path: "/bookings" },
       { label: "Driver Portal", icon: Truck, path: "/driver-portal" },
+      { label: "Live Truck Map", icon: MapPin, path: "/live-truck-map" },
     ]
   },
 ];
