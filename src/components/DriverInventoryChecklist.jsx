@@ -3,6 +3,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { X, Camera, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Loader2, Send, ClipboardList, Package } from "lucide-react";
 
+const PACKAGING_ITEMS = [
+  "Tea Chest Box",
+  "Book and Wine Box",
+  "Port-A-Robe",
+  "Packing Paper (125 sheets)",
+  "Mattress Protector - Single",
+  "Mattress Protector - Double/Queen",
+  "Mattress Protector - King",
+  "Packaging Tape",
+  "Bubble Wrap (50m roll)",
+  "Fragile Tape",
+];
+
 const CONDITIONS = [
   { key: "OK", label: "OK", icon: CheckCircle, color: "bg-green-600 text-white border-green-600", inactive: "bg-gray-700 text-gray-400 border-gray-600" },
   { key: "Damaged", label: "Damaged", icon: AlertTriangle, color: "bg-orange-500 text-white border-orange-500", inactive: "bg-gray-700 text-gray-400 border-gray-600" },
@@ -22,7 +35,15 @@ export default function DriverInventoryChecklist({ booking, truckName, onClose }
     },
   });
 
-  const items = booking.items_to_move || [];
+  const hasPackaging = (booking.selected_services || []).some(s =>
+    s.toLowerCase().includes("pack") || s.toLowerCase().includes("unpack")
+  );
+  const bookingItems = booking.items_to_move || [];
+  const items = hasPackaging && bookingItems.length === 0
+    ? PACKAGING_ITEMS
+    : hasPackaging
+    ? [...bookingItems, ...PACKAGING_ITEMS.filter(p => !bookingItems.includes(p))]
+    : bookingItems;
 
   // Local state: map of item index → { condition, notes, photoUrl, uploading }
   const [itemStates, setItemStates] = useState(() => {
