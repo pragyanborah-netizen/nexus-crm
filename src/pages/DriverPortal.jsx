@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { MapPin, Navigation, CheckCircle, Truck, Clock, Phone, Package, ChevronRight, Loader2, RefreshCw, Home, AlertCircle, Map, ClipboardList } from "lucide-react";
 import DriverRouteMap from "../components/DriverRouteMap";
 import DriverInventoryChecklist from "../components/DriverInventoryChecklist";
 import SignaturePad from "../components/SignaturePad";
+import DriverEarningsTab from "../components/DriverEarningsTab";
 
 const STATUS_FLOW = [
   { key: "En Route to Pickup", label: "En Route to Pickup", emoji: "🚛", color: "bg-blue-500", light: "bg-blue-50 border-blue-200 text-blue-800" },
@@ -35,6 +36,7 @@ export default function DriverPortal() {
   const [checklistBooking, setChecklistBooking] = useState(null);
   const [signatureBooking, setSignatureBooking] = useState(null);
   const [savingSignature, setSavingSignature] = useState(false);
+  const [activeTab, setActiveTab] = useState("jobs");
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -52,7 +54,6 @@ export default function DriverPortal() {
     refetchInterval: 30000,
   });
 
-  // Filter bookings for this truck
   const myBookings = bookings.filter(b =>
     truckName && (
       b.truck_assigned?.toLowerCase().includes(truckName.toLowerCase()) ||
@@ -61,7 +62,6 @@ export default function DriverPortal() {
     )
   );
 
-  // Current truck location record
   const myTruckLoc = truckLocs[0];
   const activeStatus = myTruckLoc?.status || "Idle";
 
@@ -126,7 +126,6 @@ export default function DriverPortal() {
     setUpdating(booking.id);
     setActiveJobId(booking.id);
     await sendLocationUpdate(newStatus, booking.id);
-    // Also update booking status notification if applicable
     if (newStatus === "En Route to Delivery") {
       await base44.functions.invoke("triggerMilestoneNotification", {
         booking_id: booking.id,
@@ -143,7 +142,6 @@ export default function DriverPortal() {
     refetch();
   };
 
-  // Setup screen
   if (!setupDone) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center p-4">
@@ -208,225 +206,256 @@ export default function DriverPortal() {
         }`}>
           <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
           {activeStatus}
-          {lastLocTime && <span className="text-white/60 ml-1">· Updated {lastLocTime.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>}
+          {lastLocTime && <span className="text-white/60 ml-1">{"· Updated " + lastLocTime.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>}
         </div>
       </div>
 
-      {/* GPS Ping Button */}
-      <div className="px-4 py-4 bg-gray-800 border-b border-gray-700">
-        <button onClick={() => sendLocationUpdate(activeStatus, activeJobId)}
-          disabled={locating}
-          className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 py-4 rounded-2xl font-bold text-base disabled:opacity-50 transition-all shadow-lg shadow-blue-900/50">
-          {locating
-            ? <><Loader2 size={20} className="animate-spin" /> Getting location...</>
-            : <><Navigation size={20} /> Ping My Location to Office</>}
-        </button>
-        {locError && (
-          <div className="flex items-center gap-2 mt-2 bg-red-900/40 border border-red-700 rounded-xl px-3 py-2">
-            <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-            <p className="text-xs text-red-300">{locError}</p>
-          </div>
-        )}
+      {/* Tab bar */}
+      <div className="flex bg-gray-800 border-b border-gray-700">
+        {[
+          { id: "jobs", label: "Jobs" },
+          { id: "earnings", label: "Earnings" },
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+              activeTab === t.id
+                ? "text-blue-400 border-b-2 border-blue-400"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Route Map */}
-      {myBookings.length > 0 && (
-        <div className="px-4 py-4 bg-gray-800 border-b border-gray-700">
-          <h2 className="text-sm font-bold text-gray-300 flex items-center gap-2 mb-3">
-            <Map size={15} /> Today's Route
-          </h2>
-          <DriverRouteMap bookings={myBookings} />
+      {/* Earnings Tab */}
+      {activeTab === "earnings" && (
+        <DriverEarningsTab truckName={truckName} />
+      )}
+
+      {/* Jobs Tab */}
+      {activeTab === "jobs" && (
+        <div>
+          {/* GPS Ping Button */}
+          <div className="px-4 py-4 bg-gray-800 border-b border-gray-700">
+            <button onClick={() => sendLocationUpdate(activeStatus, activeJobId)}
+              disabled={locating}
+              className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 py-4 rounded-2xl font-bold text-base disabled:opacity-50 transition-all shadow-lg shadow-blue-900/50">
+              {locating
+                ? <><Loader2 size={20} className="animate-spin" /> Getting location...</>
+                : <><Navigation size={20} /> Ping My Location to Office</>}
+            </button>
+            {locError && (
+              <div className="flex items-center gap-2 mt-2 bg-red-900/40 border border-red-700 rounded-xl px-3 py-2">
+                <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                <p className="text-xs text-red-300">{locError}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Route Map */}
+          {myBookings.length > 0 && (
+            <div className="px-4 py-4 bg-gray-800 border-b border-gray-700">
+              <h2 className="text-sm font-bold text-gray-300 flex items-center gap-2 mb-3">
+                <Map size={15} /> Today's Route
+              </h2>
+              <DriverRouteMap bookings={myBookings} />
+            </div>
+          )}
+
+          {/* Jobs */}
+          <div className="px-4 py-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-base text-white">Today's Jobs</h2>
+              <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                {loadingBookings ? "..." : myBookings.length}
+              </span>
+            </div>
+
+            {loadingBookings && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={28} className="animate-spin text-blue-500" />
+              </div>
+            )}
+
+            {!loadingBookings && myBookings.length === 0 && (
+              <div className="text-center py-12">
+                <CheckCircle size={48} className="text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400 font-medium">No jobs assigned for today</p>
+                <p className="text-gray-600 text-sm mt-1">Pull down to refresh</p>
+              </div>
+            )}
+
+            {myBookings.map((booking, idx) => {
+              const currentStatus = myTruckLoc?.booking_id === booking.id ? myTruckLoc?.status : null;
+              const nextStatus = getNextStatus(currentStatus);
+              const statusStyle = currentStatus ? getStatusStyle(currentStatus) : null;
+              const isActive = updating === booking.id;
+              const pickup = [booking.pickup_address, booking.pickup_suburb, booking.pickup_state].filter(Boolean).join(", ");
+              const delivery = [booking.delivery_address, booking.delivery_suburb, booking.delivery_state].filter(Boolean).join(", ");
+
+              return (
+                <div key={booking.id} className="bg-gray-800 rounded-2xl overflow-hidden border border-gray-700 shadow-lg">
+                  {/* Job header */}
+                  <div className="px-4 pt-4 pb-3 border-b border-gray-700">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-bold text-white text-base">
+                          {booking.customer_first_name} {booking.customer_last_name}
+                        </p>
+                        <p className="text-gray-400 text-xs mt-0.5">
+                          {booking.move_time || "Time TBC"} · Job #{idx + 1}
+                          {booking.booking_number && ` · ${booking.booking_number}`}
+                        </p>
+                      </div>
+                      {statusStyle && (
+                        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusStyle.color} text-white`}>
+                          {statusStyle.emoji} {currentStatus}
+                        </span>
+                      )}
+                      {!currentStatus && (
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-600 text-gray-300">
+                          ⏳ Not started
+                        </span>
+                      )}
+                    </div>
+
+                    {booking.customer_mobile && (
+                      <a href={`tel:${booking.customer_mobile}`}
+                        className="inline-flex items-center gap-1.5 mt-2 text-blue-400 text-sm font-medium">
+                        <Phone size={13} /> {booking.customer_mobile}
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Route */}
+                  <div className="px-4 py-3 space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 w-6 flex flex-col items-center gap-1 flex-shrink-0">
+                        <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        <div className="w-0.5 h-6 bg-gray-600" />
+                        <div className="w-3 h-3 rounded-full bg-green-500" />
+                      </div>
+                      <div className="space-y-3 flex-1">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Pickup</p>
+                          <p className="text-sm text-white leading-snug">{pickup || "Address not set"}</p>
+                          {booking.pickup_floor && <p className="text-xs text-gray-400">Floor: {booking.pickup_floor} {booking.pickup_elevator ? "· Elevator ✓" : "· No elevator"}</p>}
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Delivery</p>
+                          <p className="text-sm text-white leading-snug">{delivery || "Address not set"}</p>
+                          {booking.delivery_floor && <p className="text-xs text-gray-400">Floor: {booking.delivery_floor} {booking.delivery_elevator ? "· Elevator ✓" : "· No elevator"}</p>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Job info chips */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {booking.truck_size && (
+                        <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
+                          <Truck size={11} /> {booking.truck_size}
+                        </span>
+                      )}
+                      {booking.num_movers && (
+                        <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
+                          👷 {booking.num_movers} movers
+                        </span>
+                      )}
+                      {booking.estimated_hours && (
+                        <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
+                          <Clock size={11} /> ~{booking.estimated_hours} hrs
+                        </span>
+                      )}
+                      {booking.items_to_move?.length > 0 && (
+                        <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
+                          <Package size={11} /> {booking.items_to_move.length} items
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status progress */}
+                  <div className="px-4 pb-2">
+                    <div className="flex gap-1">
+                      {STATUS_FLOW.filter(s => s.key !== "Idle").map((s) => {
+                        const idx2 = STATUS_FLOW.findIndex(x => x.key === s.key);
+                        const curIdx = STATUS_FLOW.findIndex(x => x.key === currentStatus);
+                        const done = curIdx >= idx2;
+                        return (
+                          <div key={s.key} className={`flex-1 h-1 rounded-full ${done ? s.color : "bg-gray-700"}`} />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Inventory checklist button */}
+                  <div className="px-4 pb-2">
+                    <button
+                      onClick={() => setChecklistBooking(booking)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 transition-all"
+                    >
+                      <ClipboardList size={15} /> Pre-Move Inventory Check
+                      {booking.items_to_move?.length > 0 && (
+                        <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{booking.items_to_move.length}</span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Status action button */}
+                  <div className="px-4 pb-4 pt-2">
+                    {nextStatus || !currentStatus ? (
+                      <button
+                        onClick={() => {
+                          const target = nextStatus?.key || "En Route to Pickup";
+                          if (target === "Completed") {
+                            setSignatureBooking(booking);
+                          } else {
+                            handleStatusUpdate(booking, target);
+                          }
+                        }}
+                        disabled={isActive}
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
+                          nextStatus
+                            ? `${nextStatus.color} hover:opacity-90 text-white shadow-lg`
+                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                        } disabled:opacity-50`}
+                      >
+                        {isActive
+                          ? <><Loader2 size={18} className="animate-spin" /> Updating...</>
+                          : <>{(nextStatus || STATUS_FLOW[0]).emoji} {nextStatus ? `Mark: ${nextStatus.label}` : "Start Job"} <ChevronRight size={16} /></>
+                        }
+                      </button>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 bg-gray-700 py-3 rounded-xl text-gray-400 text-sm font-semibold">
+                        <CheckCircle size={16} className="text-green-500" /> Job Completed
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notes */}
+                  {booking.notes && (
+                    <div className="px-4 pb-4">
+                      <div className="bg-yellow-900/30 border border-yellow-700/40 rounded-xl px-3 py-2">
+                        <p className="text-xs text-yellow-300 font-semibold mb-0.5">Notes</p>
+                        <p className="text-xs text-yellow-200">{booking.notes}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pb-8 text-center">
+            <p className="text-gray-700 text-xs">Move On Australia · Driver Portal</p>
+          </div>
         </div>
       )}
 
-      {/* Jobs */}
-      <div className="px-4 py-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-base text-white">Today's Jobs</h2>
-          <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-            {loadingBookings ? "..." : myBookings.length}
-          </span>
-        </div>
-
-        {loadingBookings && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={28} className="animate-spin text-blue-500" />
-          </div>
-        )}
-
-        {!loadingBookings && myBookings.length === 0 && (
-          <div className="text-center py-12">
-            <CheckCircle size={48} className="text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400 font-medium">No jobs assigned for today</p>
-            <p className="text-gray-600 text-sm mt-1">Pull down to refresh</p>
-          </div>
-        )}
-
-        {myBookings.map((booking, idx) => {
-          const currentStatus = myTruckLoc?.booking_id === booking.id ? myTruckLoc?.status : null;
-          const nextStatus = getNextStatus(currentStatus);
-          const statusStyle = currentStatus ? getStatusStyle(currentStatus) : null;
-          const isActive = updating === booking.id;
-          const pickup = [booking.pickup_address, booking.pickup_suburb, booking.pickup_state].filter(Boolean).join(", ");
-          const delivery = [booking.delivery_address, booking.delivery_suburb, booking.delivery_state].filter(Boolean).join(", ");
-
-          return (
-            <div key={booking.id} className="bg-gray-800 rounded-2xl overflow-hidden border border-gray-700 shadow-lg">
-              {/* Job header */}
-              <div className="px-4 pt-4 pb-3 border-b border-gray-700">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-bold text-white text-base">
-                      {booking.customer_first_name} {booking.customer_last_name}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5">
-                      {booking.move_time || "Time TBC"} · Job #{idx + 1}
-                      {booking.booking_number && ` · ${booking.booking_number}`}
-                    </p>
-                  </div>
-                  {statusStyle && (
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusStyle.color} text-white`}>
-                      {statusStyle.emoji} {currentStatus}
-                    </span>
-                  )}
-                  {!currentStatus && (
-                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-600 text-gray-300">
-                      ⏳ Not started
-                    </span>
-                  )}
-                </div>
-
-                {booking.customer_mobile && (
-                  <a href={`tel:${booking.customer_mobile}`}
-                    className="inline-flex items-center gap-1.5 mt-2 text-blue-400 text-sm font-medium">
-                    <Phone size={13} /> {booking.customer_mobile}
-                  </a>
-                )}
-              </div>
-
-              {/* Route */}
-              <div className="px-4 py-3 space-y-2">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 w-6 flex flex-col items-center gap-1 flex-shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-blue-500" />
-                    <div className="w-0.5 h-6 bg-gray-600" />
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                  </div>
-                  <div className="space-y-3 flex-1">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Pickup</p>
-                      <p className="text-sm text-white leading-snug">{pickup || "Address not set"}</p>
-                      {booking.pickup_floor && <p className="text-xs text-gray-400">Floor: {booking.pickup_floor} {booking.pickup_elevator ? "· Elevator ✓" : "· No elevator"}</p>}
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Delivery</p>
-                      <p className="text-sm text-white leading-snug">{delivery || "Address not set"}</p>
-                      {booking.delivery_floor && <p className="text-xs text-gray-400">Floor: {booking.delivery_floor} {booking.delivery_elevator ? "· Elevator ✓" : "· No elevator"}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Job info chips */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {booking.truck_size && (
-                    <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
-                      <Truck size={11} /> {booking.truck_size}
-                    </span>
-                  )}
-                  {booking.num_movers && (
-                    <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
-                      👷 {booking.num_movers} movers
-                    </span>
-                  )}
-                  {booking.estimated_hours && (
-                    <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
-                      <Clock size={11} /> ~{booking.estimated_hours} hrs
-                    </span>
-                  )}
-                  {booking.items_to_move?.length > 0 && (
-                    <span className="flex items-center gap-1 bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
-                      <Package size={11} /> {booking.items_to_move.length} items
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Status progress */}
-              <div className="px-4 pb-2">
-                <div className="flex gap-1">
-                  {STATUS_FLOW.filter(s => s.key !== "Idle").map((s) => {
-                    const idx2 = STATUS_FLOW.findIndex(x => x.key === s.key);
-                    const curIdx = STATUS_FLOW.findIndex(x => x.key === currentStatus);
-                    const done = curIdx >= idx2;
-                    return (
-                      <div key={s.key} className={`flex-1 h-1 rounded-full ${done ? s.color : "bg-gray-700"}`} />
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Inventory checklist button */}
-              <div className="px-4 pb-2">
-                <button
-                  onClick={() => setChecklistBooking(booking)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 transition-all"
-                >
-                  <ClipboardList size={15} /> Pre-Move Inventory Check
-                  {booking.items_to_move?.length > 0 && (
-                    <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{booking.items_to_move.length}</span>
-                  )}
-                </button>
-              </div>
-
-              {/* Status action button */}
-              <div className="px-4 pb-4 pt-2">
-                {nextStatus || !currentStatus ? (
-                  <button
-                    onClick={() => {
-                      const target = nextStatus?.key || "En Route to Pickup";
-                      if (target === "Completed") {
-                        setSignatureBooking(booking);
-                      } else {
-                        handleStatusUpdate(booking, target);
-                      }
-                    }}
-                    disabled={isActive}
-                    className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
-                      nextStatus
-                        ? `${nextStatus.color} hover:opacity-90 text-white shadow-lg`
-                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-                    } disabled:opacity-50`}
-                  >
-                    {isActive
-                      ? <><Loader2 size={18} className="animate-spin" /> Updating...</>
-                      : <>{(nextStatus || STATUS_FLOW[0]).emoji} {nextStatus ? `Mark: ${nextStatus.label}` : "Start Job"} <ChevronRight size={16} /></>
-                    }
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 bg-gray-700 py-3 rounded-xl text-gray-400 text-sm font-semibold">
-                    <CheckCircle size={16} className="text-green-500" /> Job Completed
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              {booking.notes && (
-                <div className="px-4 pb-4">
-                  <div className="bg-yellow-900/30 border border-yellow-700/40 rounded-xl px-3 py-2">
-                    <p className="text-xs text-yellow-300 font-semibold mb-0.5">Notes</p>
-                    <p className="text-xs text-yellow-200">{booking.notes}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="pb-8 text-center">
-        <p className="text-gray-700 text-xs">Move On Australia · Driver Portal</p>
-      </div>
-
+      {/* Modals — always rendered regardless of active tab */}
       {checklistBooking && (
         <DriverInventoryChecklist
           booking={checklistBooking}
