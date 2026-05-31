@@ -78,6 +78,7 @@ const navGroups = [
       { label: "AI Quote Engine", icon: DollarSign, path: "/bookings" },
       { label: "Driver Portal", icon: Truck, path: "/driver-portal" },
       { label: "Live Truck Map", icon: MapPin, path: "/live-truck-map" },
+      { label: "Jockey Payment Policy", icon: DollarSign, path: "/jockey-payment-policy" },
     ]
   },
 ];
