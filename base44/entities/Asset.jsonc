@@ -1,0 +1,77 @@
+{
+  "name": "Asset",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Asset Name"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "enum": [
+        "Dolly",
+        "Blanket",
+        "Toolkit",
+        "Straps & Ropes",
+        "Trolley",
+        "Ramp",
+        "Packing Tape Gun",
+        "Other"
+      ],
+      "default": "Other"
+    },
+    "asset_code": {
+      "type": "string",
+      "title": "Asset Code / Serial"
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantity",
+      "default": 1
+    },
+    "assigned_truck": {
+      "type": "string",
+      "title": "Assigned Truck"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Available",
+        "On Truck",
+        "Missing",
+        "Under Repair",
+        "Retired"
+      ],
+      "default": "Available"
+    },
+    "last_checked_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Last Checked Date"
+    },
+    "last_checked_by": {
+      "type": "string",
+      "title": "Last Checked By"
+    },
+    "condition": {
+      "type": "string",
+      "title": "Condition",
+      "enum": [
+        "Good",
+        "Fair",
+        "Poor"
+      ],
+      "default": "Good"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "name",
+    "category"
+  ]
+}

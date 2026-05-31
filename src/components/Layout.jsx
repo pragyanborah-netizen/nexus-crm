@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
   ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar,
-  Trophy, DollarSign, Award as AwardIcon, Timer, Bell, MapPin
+  Trophy, DollarSign, Award as AwardIcon, Timer, Bell, MapPin, Boxes
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -38,6 +38,7 @@ const navGroups = [
       { label: "Employees", icon: Users, path: "/employees" },
       { label: "Expense Management", icon: DollarSign, path: "/expenses" },
       { label: "AI Roster Engine", icon: Trophy, path: "/roster-engine" },
+      { label: "Asset Tracking", icon: Boxes, path: "/assets" },
     ]
   },
   {
