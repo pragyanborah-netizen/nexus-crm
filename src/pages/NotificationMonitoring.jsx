@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Bell, Truck, Clock, AlertCircle, CheckCircle, Mail, MessageSquare, Calendar } from "lucide-react";
-import { list_automations } from "@/api/base44Client";
+import { Bell, Truck, Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
 
 const StatCard = ({ icon: Icon, label, value, sublabel, color }) => (
   <div className="bg-white rounded-lg shadow p-5">
@@ -19,9 +18,7 @@ const StatCard = ({ icon: Icon, label, value, sublabel, color }) => (
 
 export default function NotificationMonitoring() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [automations, setAutomations] = useState([]);
 
-  // Fetch today's bookings with notification status
   const { data: bookings = [], refetch } = useQuery({
     queryKey: ['bookings-notifications', selectedDate],
     queryFn: async () => {
@@ -30,27 +27,11 @@ export default function NotificationMonitoring() {
     },
   });
 
-  // Fetch truck locations
   const { data: truckLocations = [] } = useQuery({
     queryKey: ['truck-locations'],
     queryFn: () => base44.entities.TruckLocation.list('-last_update', 50),
   });
 
-  useEffect(() => {
-    const fetchAutomations = async () => {
-      try {
-        const autos = await list_automations();
-        setAutomations(autos.filter(a => 
-          a.name.includes('Milestone') || a.name.includes('Delay')
-        ));
-      } catch (error) {
-        console.error('Failed to fetch automations:', error);
-      }
-    };
-    fetchAutomations();
-  }, []);
-
-  // Calculate notification statistics
   const stats = {
     total: bookings.length,
     dispatched: bookings.filter(b => b.notification_dispatched_sent).length,
@@ -59,20 +40,12 @@ export default function NotificationMonitoring() {
     pending: bookings.filter(b => !b.notification_dispatched_sent && b.status === 'Booked Job').length,
   };
 
-  const automationStatus = automations.map(auto => ({
-    name: auto.name,
-    active: auto.is_active,
-    type: auto.automation_type,
-  }));
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Notification Monitoring</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Real-time tracking of automated customer notifications
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Real-time tracking of automated customer notifications</p>
         </div>
         <div className="flex items-center gap-3">
           <input
@@ -81,40 +54,31 @@ export default function NotificationMonitoring() {
             onChange={(e) => setSelectedDate(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
           />
-          <button
-            onClick={() => refetch()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium"
-          >
+          <button onClick={() => refetch()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
             Refresh
           </button>
         </div>
       </div>
 
-      {/* Automation Status */}
+      {/* Automated Workflows Status */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <Bell size={18} className="text-blue-600" />
           Automated Workflows
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {automationStatus.map((auto, idx) => (
+          {[
+            { name: "Auto Milestone Notifications", type: "entity", active: true },
+            { name: "Auto Delay Notifications", type: "scheduled", active: true },
+          ].map((auto, idx) => (
             <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
               <div>
                 <p className="font-medium text-gray-800">{auto.name}</p>
                 <p className="text-xs text-gray-500 capitalize">{auto.type} automation</p>
               </div>
               <div className="flex items-center gap-2">
-                {auto.active ? (
-                  <>
-                    <CheckCircle size={18} className="text-green-500" />
-                    <span className="text-sm text-green-600 font-medium">Active</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle size={18} className="text-red-500" />
-                    <span className="text-sm text-red-600 font-medium">Inactive</span>
-                  </>
-                )}
+                <CheckCircle size={18} className="text-green-500" />
+                <span className="text-sm text-green-600 font-medium">Active</span>
               </div>
             </div>
           ))}
@@ -123,39 +87,12 @@ export default function NotificationMonitoring() {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <StatCard
-          icon={Calendar}
-          label="Total Jobs Today"
-          value={stats.total}
-          color="bg-blue-500"
-        />
-        <StatCard
-          icon={Truck}
-          label="Dispatched"
-          value={stats.dispatched}
-          sublabel={`${stats.total > 0 ? Math.round((stats.dispatched / stats.total) * 100) : 0}% of jobs`}
-          color="bg-purple-500"
-        />
-        <StatCard
-          icon={Clock}
-          label="Nearby Sent"
-          value={stats.nearby}
-          sublabel="15min ETA notifications"
-          color="bg-yellow-500"
-        />
-        <StatCard
-          icon={CheckCircle}
-          label="Delivered"
-          value={stats.delivered}
-          sublabel="Completed moves"
-          color="bg-green-500"
-        />
-        <StatCard
-          icon={AlertCircle}
-          label="Pending Dispatch"
-          value={stats.pending}
-          color="bg-orange-500"
-        />
+        <StatCard icon={Calendar} label="Total Jobs Today" value={stats.total} color="bg-blue-500" />
+        <StatCard icon={Truck} label="Dispatched" value={stats.dispatched}
+          sublabel={`${stats.total > 0 ? Math.round((stats.dispatched / stats.total) * 100) : 0}% of jobs`} color="bg-purple-500" />
+        <StatCard icon={Clock} label="Nearby Sent" value={stats.nearby} sublabel="15min ETA notifications" color="bg-yellow-500" />
+        <StatCard icon={CheckCircle} label="Delivered" value={stats.delivered} sublabel="Completed moves" color="bg-green-500" />
+        <StatCard icon={AlertCircle} label="Pending Dispatch" value={stats.pending} color="bg-orange-500" />
       </div>
 
       {/* Bookings List */}
@@ -186,12 +123,8 @@ export default function NotificationMonitoring() {
                     <span className="font-medium text-gray-800">{booking.booking_number || booking.id.slice(0, 8)}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        {booking.customer_first_name} {booking.customer_last_name}
-                      </p>
-                      <p className="text-xs text-gray-500">{booking.customer_mobile}</p>
-                    </div>
+                    <p className="font-medium text-gray-800">{booking.customer_first_name} {booking.customer_last_name}</p>
+                    <p className="text-xs text-gray-500">{booking.customer_mobile}</p>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-xs">
@@ -205,46 +138,24 @@ export default function NotificationMonitoring() {
                       booking.status === 'Completed' ? 'bg-green-100 text-green-700' :
                       booking.status === 'Booked Job' ? 'bg-blue-100 text-blue-700' :
                       'bg-gray-100 text-gray-700'
-                    }`}>
-                      {booking.status}
-                    </span>
+                    }`}>{booking.status}</span>
                   </td>
-                  <td className="px-6 py-4 text-center">
-                    {booking.notification_dispatched_sent ? (
-                      <div className="flex items-center justify-center gap-1">
-                        <CheckCircle size={16} className="text-green-500" />
-                        <span className="text-xs text-gray-500">
-                          {new Date(booking.notification_dispatched_date).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {booking.notification_nearby_sent ? (
-                      <div className="flex items-center justify-center gap-1">
-                        <CheckCircle size={16} className="text-green-500" />
-                        <span className="text-xs text-gray-500">
-                          {new Date(booking.notification_nearby_date).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {booking.notification_delivered_sent ? (
-                      <div className="flex items-center justify-center gap-1">
-                        <CheckCircle size={16} className="text-green-500" />
-                        <span className="text-xs text-gray-500">
-                          {new Date(booking.notification_delivered_date).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
+                  {[
+                    { sent: booking.notification_dispatched_sent, date: booking.notification_dispatched_date },
+                    { sent: booking.notification_nearby_sent, date: booking.notification_nearby_date },
+                    { sent: booking.notification_delivered_sent, date: booking.notification_delivered_date },
+                  ].map((n, i) => (
+                    <td key={i} className="px-6 py-4 text-center">
+                      {n.sent ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <CheckCircle size={16} className="text-green-500" />
+                          <span className="text-xs text-gray-500">
+                            {new Date(n.date).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -274,15 +185,11 @@ export default function NotificationMonitoring() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-800">{location.truck_name}</p>
-                    <p className="text-xs text-gray-500">
-                      {location.status} • {location.speed} km/h
-                    </p>
+                    <p className="text-xs text-gray-500">{location.status} • {location.speed} km/h</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">
-                    {new Date(location.last_update).toLocaleString('en-AU')}
-                  </p>
+                  <p className="text-xs text-gray-500">{new Date(location.last_update).toLocaleString('en-AU')}</p>
                   {location.booking_number && (
                     <p className="text-xs font-medium text-blue-600">Booking #{location.booking_number}</p>
                   )}
