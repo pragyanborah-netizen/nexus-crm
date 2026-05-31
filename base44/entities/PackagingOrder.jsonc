@@ -1,0 +1,78 @@
+{
+  "name": "PackagingOrder",
+  "type": "object",
+  "properties": {
+    "customer_name": {
+      "type": "string",
+      "title": "Customer Name"
+    },
+    "customer_email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "customer_phone": {
+      "type": "string",
+      "title": "Phone"
+    },
+    "delivery_address": {
+      "type": "string",
+      "title": "Delivery Address"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "items": {
+      "type": "array",
+      "title": "Items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "qty": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "line_total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "title": "Subtotal (excl. GST)"
+    },
+    "gst": {
+      "type": "number",
+      "title": "GST"
+    },
+    "total": {
+      "type": "number",
+      "title": "Total (incl. GST)"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Pending",
+        "Paid",
+        "Delivered",
+        "Cancelled"
+      ],
+      "default": "Pending"
+    },
+    "order_number": {
+      "type": "string",
+      "title": "Order Number"
+    }
+  },
+  "required": [
+    "customer_name",
+    "customer_email"
+  ]
+}

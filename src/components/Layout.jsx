@@ -39,6 +39,7 @@ const navGroups = [
       { label: "Inventory List", icon: Package, path: "/inventory" },
       { label: "Supply List", icon: ShoppingCart, path: "/supplies" },
       { label: "Bulk SMS Tool", icon: MessageSquare, path: "/bulk-sms" },
+      { label: "Packaging Orders", icon: ShoppingCart, path: "/packaging-orders" },
     ]
   },
   {

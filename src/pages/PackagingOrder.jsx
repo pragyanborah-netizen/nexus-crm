@@ -36,82 +36,27 @@ export default function PackagingOrder() {
     if (orderItems.length === 0) { alert("Please select at least one item."); return; }
     setSending(true);
 
-    const itemsHtml = orderItems.map(i => `
-      <tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;">${i.name}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center;">${quantities[i.id]}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;">$${i.price.toFixed(2)}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;">$${(i.price * quantities[i.id]).toFixed(2)}</td>
-      </tr>`).join("");
+    const orderNumber = "PKG-" + Date.now().toString().slice(-6);
 
-    const body = `
-<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#1e293b;">
-  <div style="background:#1d4ed8;padding:24px;">
-    <h1 style="color:white;margin:0;font-size:22px;">MOVE ON REMOVALS</h1>
-    <p style="color:#93c5fd;margin:4px 0 0;font-size:14px;">Packaging Supplies Invoice</p>
-  </div>
-  <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;">
-    <p>Hi <strong>${form.name}</strong>,</p>
-    <p>Thank you for your packaging supplies order. Please find your invoice below.</p>
-    ${form.address ? `<p><strong>Delivery Address:</strong> ${form.address}</p>` : ""}
-
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-      <thead>
-        <tr style="background:#f1f5f9;">
-          <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e2e8f0;">Item</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #e2e8f0;">Qty</th>
-          <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e2e8f0;">Unit</th>
-          <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e2e8f0;">Total</th>
-        </tr>
-      </thead>
-      <tbody>${itemsHtml}</tbody>
-    </table>
-
-    <table style="width:100%;max-width:300px;margin-left:auto;border-collapse:collapse;">
-      <tr>
-        <td style="padding:4px 8px;color:#64748b;">Subtotal (excl. GST)</td>
-        <td style="padding:4px 8px;text-align:right;">$${subtotal.toFixed(2)}</td>
-      </tr>
-      <tr>
-        <td style="padding:4px 8px;color:#64748b;">GST (10%)</td>
-        <td style="padding:4px 8px;text-align:right;">$${gst.toFixed(2)}</td>
-      </tr>
-      <tr style="font-weight:bold;font-size:16px;">
-        <td style="padding:8px;background:#f1f5f9;">TOTAL (incl. GST)</td>
-        <td style="padding:8px;background:#f1f5f9;text-align:right;color:#1d4ed8;">$${total.toFixed(2)}</td>
-      </tr>
-    </table>
-
-    ${form.notes ? `<p style="margin-top:16px;background:#fefce8;border-left:4px solid #eab308;padding:12px;"><strong>Notes:</strong> ${form.notes}</p>` : ""}
-
-    <p style="margin-top:24px;font-size:13px;color:#64748b;">
-      <strong>PAYMENT TERMS:</strong> Payment is required prior to delivery.<br/>
-      <strong>DELIVERY:</strong> Delivery charges may apply — we'll contact you to confirm.<br/>
-      All pricing excludes GST unless otherwise noted.
-    </p>
-    <p>If you have any questions, please reply to this email or call us.</p>
-    <p>Kind regards,<br/><strong>Move On Removals</strong><br/>moveme@moveonremovals.com.au</p>
-  </div>
-  <div style="background:#f1f5f9;padding:12px 20px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:#94a3b8;">Move On Removals — Packaging Supplies</p>
-  </div>
-</div>`;
-
-    await base44.integrations.Core.SendEmail({
-      to: form.email,
-      subject: "Move On Removals — Packaging Supplies Invoice",
-      body,
+    // Save to database
+    await base44.entities.PackagingOrder.create({
+      customer_name: form.name,
+      customer_email: form.email,
+      customer_phone: form.phone,
+      delivery_address: form.address,
+      notes: form.notes,
+      order_number: orderNumber,
+      items: orderItems.map(i => ({
+        name: i.name,
+        qty: quantities[i.id],
+        unit_price: i.price,
+        line_total: i.price * quantities[i.id],
+      })),
+      subtotal,
+      gst,
+      total,
+      status: "Pending",
     });
-
-    // Also send notification to office
-    await base44.integrations.Core.SendEmail({
-      to: "moveme@moveonremovals.com.au",
-      subject: `New Packaging Order — ${form.name} — $${total.toFixed(2)}`,
-      body: `<p>New packaging order from <strong>${form.name}</strong> (${form.email}, ${form.phone}).</p><p>Delivery: ${form.address || "Not provided"}</p><p>Total: $${total.toFixed(2)} incl. GST</p>` + body,
-    });
-
-    setSending(false);
-    setSent(true);
   };
 
   if (sent) {
