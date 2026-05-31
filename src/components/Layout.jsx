@@ -30,8 +30,6 @@ const navGroups = [
     group: "Time & Availability",
     items: [
       { label: "Mover Availability", icon: Calendar, path: "/mover-availability" },
-      { label: "Manual Time Log", icon: Clock, path: "/time-log" },
-      { label: "Hours Worked", icon: Clock, path: "/hours-worked" },
     ]
   },
   {
