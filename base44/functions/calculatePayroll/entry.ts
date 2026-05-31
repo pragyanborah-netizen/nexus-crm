@@ -5,163 +5,174 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.role !== 'admin') return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
 
-    // Only admins can access payroll
-    if (user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
+    const { start_date, end_date, adjustments = [] } = await req.json();
+    if (!start_date || !end_date) return Response.json({ error: 'Start date and end date are required' }, { status: 400 });
 
-    const { start_date, end_date, mover_email } = await req.json();
+    const startDt = new Date(start_date);
+    const endDt = new Date(end_date);
+    // include full end day
+    endDt.setHours(23, 59, 59, 999);
 
-    if (!start_date || !end_date) {
-      return Response.json({ error: 'Start date and end date are required' }, { status: 400 });
-    }
+    // Fetch all data in parallel
+    const [employees, allBookings, allTimeLogs, allSurveys] = await Promise.all([
+      base44.entities.Employee.list(),
+      base44.entities.Booking.list(),
+      base44.entities.TimeLog.list(),
+      base44.entities.Survey.list(),
+    ]);
 
-    // Fetch completed bookings in date range
-    const bookings = await base44.entities.Booking.list();
-    const completedBookings = bookings.filter(b => {
+    // Build employee lookup by full name (case-insensitive)
+    const employeeByName = {};
+    employees.forEach(emp => {
+      const fullName = `${emp.first_name} ${emp.last_name}`.trim().toLowerCase();
+      employeeByName[fullName] = emp;
+    });
+
+    // Filter to period
+    const completedBookings = allBookings.filter(b => {
       if (b.status !== 'Completed') return false;
-      const moveDate = new Date(b.move_date);
-      const startDate = new Date(start_date);
-      const endDate = new Date(end_date);
-      return moveDate >= startDate && moveDate <= endDate;
+      const d = new Date(b.move_date);
+      return d >= startDt && d <= endDt;
     });
 
-    // Fetch time logs in date range
-    const timeLogs = await base44.entities.TimeLog.list();
-    const relevantTimeLogs = timeLogs.filter(t => {
-      const logDate = new Date(t.date);
-      const startDate = new Date(start_date);
-      const endDate = new Date(end_date);
-      return logDate >= startDate && logDate <= endDate;
+    const timeLogs = allTimeLogs.filter(t => {
+      const d = new Date(t.date);
+      return d >= startDt && d <= endDt;
     });
 
-    // Fetch surveys for performance bonuses
-    const surveys = await base44.entities.Survey.list();
+    const surveys = allSurveys.filter(s => {
+      if (!s.survey_submitted_date) return false;
+      const d = new Date(s.survey_submitted_date);
+      return d >= startDt && d <= endDt;
+    });
 
-    // Calculate payroll per mover
+    // Init payroll per employee from Employee records
     const payrollData = {};
 
-    // Process bookings to get mover assignments and earnings
+    const initEmployee = (name) => {
+      if (payrollData[name]) return;
+      const emp = employeeByName[name.toLowerCase()] || null;
+      payrollData[name] = {
+        mover_name: name,
+        employee_id: emp?.id || null,
+        pay_rate: emp?.pay_rate || null, // null = use fallback
+        employment_type: emp?.employment_type || 'Casual',
+        role: emp?.role || '',
+        jobs_completed: 0,
+        total_hours: 0,
+        base_wage: 0,          // from job value share
+        hourly_wage: 0,        // hours × pay_rate
+        performance_bonus: 0,
+        adjustments_total: 0,
+        adjustment_items: [],
+        total_wage: 0,
+        bookings: [],
+        time_log_entries: [],
+      };
+    };
+
+    // Process completed bookings — split share among assigned movers/agents
     completedBookings.forEach(booking => {
-      const movers = [
+      const names = [...new Set([
         booking.agent_booked,
         booking.agent_inquired,
-        booking.agent_quoted
-      ].filter(Boolean);
+        booking.agent_quoted,
+      ].filter(Boolean))];
 
-      movers.forEach(mover => {
-        if (!payrollData[mover]) {
-          payrollData[mover] = {
-            mover_name: mover,
-            jobs_completed: 0,
-            total_hours: 0,
-            base_wage: 0,
-            performance_bonus: 0,
-            total_wage: 0,
-            bookings: []
-          };
-        }
-
-        const moverShare = booking.price / movers.length;
-        payrollData[mover].jobs_completed++;
-        payrollData[mover].base_wage += moverShare * 0.3; // 30% of job value as base wage
-        payrollData[mover].bookings.push({
-          booking_number: booking.booking_number,
+      names.forEach(name => {
+        initEmployee(name);
+        const p = payrollData[name];
+        const jobValue = Number(booking.price) || 0;
+        const share = jobValue / names.length;
+        const moverShare = share * 0.3; // 30% of job value as base wage
+        p.jobs_completed++;
+        p.base_wage += moverShare;
+        p.bookings.push({
+          booking_number: booking.booking_number || booking.id.slice(0, 8),
           date: booking.move_date,
           customer: `${booking.customer_first_name} ${booking.customer_last_name}`,
-          job_value: booking.price,
-          mover_share: moverShare * 0.3
+          job_value: jobValue,
+          mover_share: moverShare,
         });
       });
     });
 
-    // Process time logs
-    relevantTimeLogs.forEach(log => {
-      const mover = log.employee_name;
-      if (!mover) return;
-
-      if (!payrollData[mover]) {
-        payrollData[mover] = {
-          mover_name: mover,
-          jobs_completed: 0,
-          total_hours: 0,
-          base_wage: 0,
-          performance_bonus: 0,
-          total_wage: 0,
-          bookings: []
-        };
-      }
-
-      payrollData[mover].total_hours += log.hours_worked || 0;
+    // Process time logs — use employee pay_rate if available, else $25/hr fallback
+    timeLogs.forEach(log => {
+      const name = log.employee_name;
+      if (!name) return;
+      initEmployee(name);
+      const p = payrollData[name];
+      const hrs = Number(log.hours_worked) || 0;
+      p.total_hours += hrs;
+      // Use employee pay rate from Employee records, fallback to $25/hr
+      const rate = p.pay_rate || 25;
+      p.hourly_wage += hrs * rate;
+      p.time_log_entries.push({
+        date: log.date,
+        hours: hrs,
+        rate,
+        amount: hrs * rate,
+        booking_ref: log.booking_number || '',
+        notes: log.notes || '',
+      });
     });
 
-    // Calculate performance bonuses based on survey ratings
+    // Performance bonuses from surveys
     surveys.forEach(survey => {
-      if (!survey.overall_rating || !survey.survey_submitted_date) return;
-
-      const surveyDate = new Date(survey.survey_submitted_date);
-      const startDate = new Date(start_date);
-      const endDate = new Date(end_date);
-      if (surveyDate < startDate || surveyDate > endDate) return;
-
-      // Find the booking and associated movers
+      if (!survey.overall_rating) return;
       const booking = completedBookings.find(b => b.id === survey.booking_id);
       if (!booking) return;
-
-      const movers = [
-        booking.agent_booked,
-        booking.agent_inquired,
-        booking.agent_quoted
-      ].filter(Boolean);
-
-      movers.forEach(mover => {
-        if (!payrollData[mover]) return;
-
-        // Performance bonus: $10 per rating point above 4.0
+      const names = [...new Set([booking.agent_booked, booking.agent_inquired, booking.agent_quoted].filter(Boolean))];
+      names.forEach(name => {
+        if (!payrollData[name]) return;
         if (survey.overall_rating >= 4.0) {
-          const bonus = (survey.overall_rating - 4.0) * 10;
-          payrollData[mover].performance_bonus += bonus;
+          payrollData[name].performance_bonus += (survey.overall_rating - 4.0) * 10;
         }
-
-        // Perfect 5-star bonus: additional $25
         if (survey.overall_rating === 5) {
-          payrollData[mover].performance_bonus += 25;
+          payrollData[name].performance_bonus += 25; // 5-star bonus
         }
       });
     });
 
-    // Calculate total wages and add hourly component
-    Object.keys(payrollData).forEach(mover => {
-      const p = payrollData[mover];
-      // Add hourly wage: $25/hour for logged hours
-      const hourlyWage = p.total_hours * 25;
-      p.hourly_wage = hourlyWage;
-      p.total_wage = p.base_wage + p.hourly_wage + p.performance_bonus;
+    // Apply flat-rate adjustments (bonuses/deductions passed in from UI)
+    adjustments.forEach(adj => {
+      const name = adj.employee_name;
+      if (!name || !payrollData[name]) return;
+      const amount = Number(adj.amount) || 0;
+      payrollData[name].adjustments_total += amount;
+      payrollData[name].adjustment_items.push({
+        description: adj.description || 'Adjustment',
+        amount,
+      });
     });
 
-    // Convert to array and sort by total wage
+    // Final totals
+    Object.values(payrollData).forEach(p => {
+      p.total_wage = p.base_wage + p.hourly_wage + p.performance_bonus + p.adjustments_total;
+    });
+
     const payrollArray = Object.values(payrollData).sort((a, b) => b.total_wage - a.total_wage);
 
-    // Calculate summary statistics
     const summary = {
-      total_payroll: payrollArray.reduce((sum, p) => sum + p.total_wage, 0),
-      total_jobs: payrollArray.reduce((sum, p) => sum + p.jobs_completed, 0),
-      total_hours: payrollArray.reduce((sum, p) => sum + p.total_hours, 0),
-      total_base_wages: payrollArray.reduce((sum, p) => sum + p.base_wage, 0),
-      total_hourly_wages: payrollArray.reduce((sum, p) => sum + (p.hourly_wage || 0), 0),
-      total_bonuses: payrollArray.reduce((sum, p) => sum + p.performance_bonus, 0),
-      mover_count: payrollArray.length
+      total_payroll: payrollArray.reduce((s, p) => s + p.total_wage, 0),
+      total_jobs: payrollArray.reduce((s, p) => s + p.jobs_completed, 0),
+      total_hours: payrollArray.reduce((s, p) => s + p.total_hours, 0),
+      total_base_wages: payrollArray.reduce((s, p) => s + p.base_wage, 0),
+      total_hourly_wages: payrollArray.reduce((s, p) => s + p.hourly_wage, 0),
+      total_bonuses: payrollArray.reduce((s, p) => s + p.performance_bonus, 0),
+      total_adjustments: payrollArray.reduce((s, p) => s + p.adjustments_total, 0),
+      mover_count: payrollArray.length,
     };
 
     return Response.json({
       payroll_data: payrollArray,
       summary,
       period: { start_date, end_date },
-      generated_at: new Date().toISOString()
+      generated_at: new Date().toISOString(),
     });
 
   } catch (error) {

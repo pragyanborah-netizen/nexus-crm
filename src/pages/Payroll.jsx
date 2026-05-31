@@ -1,538 +1,532 @@
-import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, Star, FileText, FileSpreadsheet } from "lucide-react";
+import { DollarSign, Users, Clock, TrendingUp, Download, Calendar, FileText, FileSpreadsheet, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { jsPDF } from "jspdf";
+import { format, startOfWeek, endOfWeek, startOfMonth, subWeeks, subDays } from "date-fns";
 
 const StatCard = ({ icon: Icon, label, value, sublabel, color }) => (
   <div className="bg-white rounded-lg shadow p-5">
-    <div className="flex items-center justify-between mb-3">
-      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
-        <Icon size={24} className="text-white" />
-      </div>
+    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color} mb-3`}>
+      <Icon size={20} className="text-white" />
     </div>
     <p className="text-2xl font-bold text-gray-800">{value}</p>
-    <p className="text-sm text-gray-500 mt-1">{label}</p>
+    <p className="text-sm text-gray-500 mt-0.5">{label}</p>
     {sublabel && <p className="text-xs text-gray-400 mt-0.5">{sublabel}</p>}
   </div>
 );
 
-export default function Payroll() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const paramStart = urlParams.get('period_start');
-  const paramEnd = urlParams.get('period_end');
-  
-  const [startDate, setStartDate] = useState(paramStart || new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(paramEnd || new Date().toISOString().split('T')[0]);
-  const [payrollData, setPayrollData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [currentUserEmail, setCurrentUserEmail] = useState(null);
+const today = new Date();
+const PERIOD_PRESETS = [
+  {
+    label: "This Week",
+    start: () => format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    end: () => format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+  },
+  {
+    label: "Last Week",
+    start: () => format(startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    end: () => format(endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 }), "yyyy-MM-dd"),
+  },
+  {
+    label: "This Fortnight",
+    start: () => format(subDays(endOfWeek(today, { weekStartsOn: 1 }), 13), "yyyy-MM-dd"),
+    end: () => format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+  },
+  {
+    label: "Last Fortnight",
+    start: () => format(subDays(startOfWeek(subWeeks(today, 2), { weekStartsOn: 1 }), 0), "yyyy-MM-dd"),
+    end: () => format(endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 }), "yyyy-MM-dd"),
+  },
+  {
+    label: "This Month",
+    start: () => format(startOfMonth(today), "yyyy-MM-dd"),
+    end: () => format(today, "yyyy-MM-dd"),
+  },
+];
 
-  const calculatePayrollMutation = useMutation({
-    mutationFn: async (payload) => {
-      const response = await base44.functions.invoke('calculatePayroll', payload);
-      return response.data;
-    },
-    onSuccess: (data) => {
-      setPayrollData(data);
-      setLoading(false);
-    },
-    onError: (error) => {
-      console.error('Error calculating payroll:', error);
-      alert('Error calculating payroll: ' + error.message);
-      setLoading(false);
-    }
+export default function Payroll() {
+  const [startDate, setStartDate] = useState(format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"));
+  const [payrollData, setPayrollData] = useState(null);
+  const [adjustments, setAdjustments] = useState([]); // [{employee_name, description, amount}]
+  const [expandedEmployee, setExpandedEmployee] = useState(null);
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees"],
+    queryFn: () => base44.entities.Employee.list(),
   });
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        if (user) {
-          setCurrentUserEmail(user.email);
-          if (paramStart && paramEnd) {
-            setLoading(true);
-            calculatePayrollMutation.mutate({ start_date: paramStart, end_date: paramEnd });
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching user:', err);
-      }
-    };
-    fetchUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const activeEmployees = employees.filter(e => e.active !== false);
 
-  const handleCalculate = () => {
-    setLoading(true);
-    calculatePayrollMutation.mutate({ start_date: startDate, end_date: endDate });
+  const calculateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await base44.functions.invoke("calculatePayroll", {
+        start_date: startDate,
+        end_date: endDate,
+        adjustments,
+      });
+      return res.data;
+    },
+    onSuccess: (data) => setPayrollData(data),
+    onError: (e) => alert("Error: " + e.message),
+  });
+
+  const addAdjustment = () => {
+    setAdjustments(prev => [...prev, { employee_name: "", description: "", amount: "" }]);
   };
 
-  const handleExportPDF = () => {
-    if (!payrollData) return;
+  const updateAdjustment = (idx, key, val) => {
+    setAdjustments(prev => prev.map((a, i) => i === idx ? { ...a, [key]: val } : a));
+  };
 
+  const removeAdjustment = (idx) => {
+    setAdjustments(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // PDF payslip for one employee
+  const exportPayslip = (mover) => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFillColor(37, 99, 235);
-    doc.rect(0, 0, pageWidth, 30, 'F');
+    const pw = doc.internal.pageSize.getWidth();
+    doc.setFillColor(29, 78, 216);
+    doc.rect(0, 0, pw, 32, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PAYROLL SUMMARY', pageWidth / 2, 18, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Period: ${new Date(payrollData.period.start_date).toLocaleDateString()} - ${new Date(payrollData.period.end_date).toLocaleDateString()}`, pageWidth / 2, 25, { align: 'center' });
+    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+    doc.text("PAYSLIP — Move On Australia", pw / 2, 15, { align: "center" });
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.text(`Period: ${new Date(payrollData.period.start_date).toLocaleDateString("en-AU")} – ${new Date(payrollData.period.end_date).toLocaleDateString("en-AU")}`, pw / 2, 25, { align: "center" });
 
-    let y = 40;
+    let y = 44;
+    const row = (label, value, bold = false) => {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setTextColor(30, 41, 59);
+      doc.text(label, 16, y);
+      doc.text(String(value), pw - 16, y, { align: "right" });
+      y += 7;
+    };
+    const line = () => { doc.setDrawColor(226, 232, 240); doc.line(16, y, pw - 16, y); y += 5; };
+    const section = (title) => {
+      doc.setFillColor(241, 245, 249);
+      doc.rect(14, y - 4, pw - 28, 9, "F");
+      doc.setFontSize(9); doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 116, 139);
+      doc.text(title.toUpperCase(), 16, y + 2);
+      y += 10;
+    };
 
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Summary', 14, y);
+    section("Employee");
+    row("Name", mover.mover_name, true);
+    if (mover.role) row("Role", mover.role);
+    if (mover.employment_type) row("Employment Type", mover.employment_type);
+    if (mover.pay_rate) row("Pay Rate", `$${mover.pay_rate}/hr`);
+    y += 3;
+
+    section("Earnings");
+    if (mover.hourly_wage > 0) {
+      row(`Hours Worked (${mover.total_hours.toFixed(1)} hrs × $${mover.pay_rate || 25}/hr)`, `$${mover.hourly_wage.toFixed(2)}`);
+    }
+    if (mover.base_wage > 0) {
+      row(`Job Share — ${mover.jobs_completed} job${mover.jobs_completed !== 1 ? "s" : ""} (30%)`, `$${mover.base_wage.toFixed(2)}`);
+    }
+    if (mover.performance_bonus > 0) {
+      row("Performance Bonus (survey ratings)", `$${mover.performance_bonus.toFixed(2)}`);
+    }
+    mover.adjustment_items?.forEach(adj => {
+      const sign = adj.amount >= 0 ? "+" : "";
+      row(adj.description, `${sign}$${Math.abs(adj.amount).toFixed(2)}`);
+    });
+    line();
+    row("TOTAL GROSS PAY", `$${mover.total_wage.toFixed(2)}`, true);
+    y += 6;
+
+    if (mover.time_log_entries?.length > 0) {
+      section("Time Log Detail");
+      doc.setFontSize(8); doc.setFont("helvetica", "normal");
+      mover.time_log_entries.forEach(t => {
+        if (y > 265) { doc.addPage(); y = 20; }
+        doc.setTextColor(51, 65, 85);
+        doc.text(`${new Date(t.date).toLocaleDateString("en-AU")}`, 16, y);
+        doc.text(`${t.hours.toFixed(1)} hrs × $${t.rate}/hr = $${t.amount.toFixed(2)}`, 55, y);
+        if (t.booking_ref) doc.text(`Ref: ${t.booking_ref}`, 140, y);
+        y += 6;
+      });
+      y += 2;
+    }
+
+    if (mover.bookings?.length > 0) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      section("Completed Jobs");
+      doc.setFontSize(8); doc.setFont("helvetica", "normal");
+      mover.bookings.forEach((b, i) => {
+        if (y > 265) { doc.addPage(); y = 20; }
+        doc.setTextColor(51, 65, 85);
+        doc.text(`${i + 1}. ${b.booking_number} – ${new Date(b.date).toLocaleDateString("en-AU")} – ${b.customer}`, 16, y);
+        doc.text(`$${b.mover_share.toFixed(2)}`, pw - 16, y, { align: "right" });
+        y += 5.5;
+      });
+    }
+
+    const footY = doc.internal.pageSize.getHeight() - 12;
+    doc.setFontSize(7); doc.setTextColor(148, 163, 184);
+    doc.text(`Generated ${new Date().toLocaleDateString("en-AU")} — Move On Australia`, pw / 2, footY, { align: "center" });
+
+    doc.save(`Payslip_${mover.mover_name.replace(/\s+/g, "_")}_${startDate}_to_${endDate}.pdf`);
+  };
+
+  const exportSummaryPDF = () => {
+    if (!payrollData) return;
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    doc.setFillColor(29, 78, 216);
+    doc.rect(0, 0, pw, 32, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+    doc.text("PAYROLL SUMMARY", pw / 2, 16, { align: "center" });
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.text(`Period: ${new Date(payrollData.period.start_date).toLocaleDateString("en-AU")} – ${new Date(payrollData.period.end_date).toLocaleDateString("en-AU")}`, pw / 2, 26, { align: "center" });
+
+    let y = 44;
+    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(100, 116, 139);
+    doc.setFillColor(241, 245, 249); doc.rect(14, y - 5, pw - 28, 8, "F");
+    doc.text("EMPLOYEE", 16, y); doc.text("HOURS", 70, y, { align: "right" });
+    doc.text("JOBS", 90, y, { align: "right" }); doc.text("HOURLY", 115, y, { align: "right" });
+    doc.text("JOB SHARE", 140, y, { align: "right" }); doc.text("ADJUSTMENTS", 163, y, { align: "right" });
+    doc.text("TOTAL", pw - 16, y, { align: "right" });
     y += 8;
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const summaryData = [
-      ['Total Payroll:', `$${payrollData.summary.total_payroll.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-      ['Total Jobs:', payrollData.summary.total_jobs.toString()],
-      ['Total Hours:', payrollData.summary.total_hours.toFixed(1)],
-      ['Base Wages:', `$${payrollData.summary.total_base_wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-      ['Hourly Wages:', `$${payrollData.summary.total_hourly_wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-      ['Performance Bonuses:', `$${payrollData.summary.total_bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-      ['Number of Movers:', payrollData.summary.mover_count.toString()]
-    ];
-
-    summaryData.forEach(([label, value]) => {
-      doc.text(label, 14, y);
-      doc.text(value, 100, y, { align: 'right' });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(30, 41, 59);
+    payrollData.payroll_data.forEach(m => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.text(m.mover_name, 16, y);
+      doc.text(m.total_hours.toFixed(1), 70, y, { align: "right" });
+      doc.text(String(m.jobs_completed), 90, y, { align: "right" });
+      doc.text(`$${m.hourly_wage.toFixed(2)}`, 115, y, { align: "right" });
+      doc.text(`$${m.base_wage.toFixed(2)}`, 140, y, { align: "right" });
+      const adj = m.adjustments_total !== 0 ? `${m.adjustments_total >= 0 ? "+" : ""}$${m.adjustments_total.toFixed(2)}` : "—";
+      doc.text(adj, 163, y, { align: "right" });
+      doc.setFont("helvetica", "bold");
+      doc.text(`$${m.total_wage.toFixed(2)}`, pw - 16, y, { align: "right" });
+      doc.setFont("helvetica", "normal");
       y += 6;
     });
 
-    y += 10;
-
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Mover Breakdown', 14, y);
-    y += 8;
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(241, 245, 249);
-    doc.rect(14, y - 5, pageWidth - 28, 7, 'F');
-    doc.text('Mover', 16, y);
-    doc.text('Jobs', 70, y, { align: 'right' });
-    doc.text('Hours', 90, y, { align: 'right' });
-    doc.text('Base Wage', 115, y, { align: 'right' });
-    doc.text('Bonus', 145, y, { align: 'right' });
-    doc.text('Total', 170, y, { align: 'right' });
-    y += 2;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    payrollData.payroll_data.forEach((mover, idx) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      
-      const rowY = y;
-      doc.text(mover.mover_name, 16, rowY);
-      doc.text(mover.jobs_completed.toString(), 70, rowY, { align: 'right' });
-      doc.text(mover.total_hours.toFixed(1), 90, rowY, { align: 'right' });
-      doc.text(`$${mover.base_wage.toFixed(2)}`, 115, rowY, { align: 'right' });
-      doc.text(`$${mover.performance_bonus.toFixed(2)}`, 145, rowY, { align: 'right' });
-      doc.text(`$${mover.total_wage.toFixed(2)}`, 170, rowY, { align: 'right' });
-      
-      y += 6;
-    });
-
-    const footerY = doc.internal.pageSize.getHeight() - 15;
-    doc.setFontSize(8);
-    doc.setTextColor(156, 163, 175);
-    doc.text(`Generated on ${new Date(payrollData.generated_at).toLocaleDateString()} at ${new Date(payrollData.generated_at).toLocaleTimeString()}`, pageWidth / 2, footerY, { align: 'center' });
+    doc.setDrawColor(203, 213, 225); doc.line(14, y, pw - 14, y); y += 6;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text("TOTAL PAYROLL", 16, y);
+    doc.text(`$${payrollData.summary.total_payroll.toFixed(2)}`, pw - 16, y, { align: "right" });
 
     doc.save(`Payroll_Summary_${startDate}_to_${endDate}.pdf`);
   };
 
-  const handleExportCSV = () => {
+  const exportCSV = () => {
     if (!payrollData) return;
-
-    const headers = ['Mover', 'Jobs Completed', 'Total Hours', 'Base Wage', 'Hourly Wage', 'Performance Bonus', 'Total Wage'];
-    const rows = displayData.payroll_data.map(mover => [
-      mover.mover_name,
-      mover.jobs_completed,
-      mover.total_hours.toFixed(1),
-      mover.base_wage.toFixed(2),
-      (mover.hourly_wage || 0).toFixed(2),
-      mover.performance_bonus.toFixed(2),
-      mover.total_wage.toFixed(2)
+    const header = ["Employee", "Role", "Pay Rate", "Hours", "Jobs", "Hourly Wages", "Job Share", "Performance Bonus", "Adjustments", "Total"];
+    const rows = payrollData.payroll_data.map(m => [
+      m.mover_name, m.role || "", m.pay_rate ? `$${m.pay_rate}` : "n/a",
+      m.total_hours.toFixed(1), m.jobs_completed,
+      m.hourly_wage.toFixed(2), m.base_wage.toFixed(2),
+      m.performance_bonus.toFixed(2), m.adjustments_total.toFixed(2), m.total_wage.toFixed(2),
     ]);
-
-    const csvContent = [
-      ['PAYROLL REPORT'],
-      [`Period: ${new Date(payrollData.period.start_date).toLocaleDateString()} - ${new Date(payrollData.period.end_date).toLocaleDateString()}`],
-      [],
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Payroll_Report_${startDate}_to_${endDate}.csv`;
-    link.click();
+    const csv = [header.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = `Payroll_${startDate}_to_${endDate}.csv`;
+    a.click();
   };
 
-  const handleExportIndividualReports = () => {
-    if (!payrollData) return;
-
-    displayData.payroll_data.forEach(mover => {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-
-      doc.setFillColor(37, 99, 235);
-      doc.rect(0, 0, pageWidth, 30, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PAYROLL REPORT', pageWidth / 2, 18, { align: 'center' });
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Period: ${new Date(payrollData.period.start_date).toLocaleDateString()} - ${new Date(payrollData.period.end_date).toLocaleDateString()}`, pageWidth / 2, 25, { align: 'center' });
-
-      let y = 45;
-
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Mover: ${mover.mover_name}`, 14, y);
-      y += 10;
-
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Total Earnings: $${mover.total_wage.toFixed(2)}`, 14, y);
-      y += 7;
-      doc.text(`Jobs Completed: ${mover.jobs_completed}`, 14, y);
-      y += 7;
-      doc.text(`Hours Worked: ${mover.total_hours.toFixed(1)}`, 14, y);
-      y += 10;
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('Earnings Breakdown:', 14, y);
-      y += 7;
-      doc.setFont('helvetica', 'normal');
-      doc.text(`• Base Wage (30% of jobs): $${mover.base_wage.toFixed(2)}`, 14, y);
-      y += 6;
-      doc.text(`• Hourly Wage ($25/hr): $${(mover.hourly_wage || 0).toFixed(2)}`, 14, y);
-      y += 6;
-      doc.text(`• Performance Bonus: $${mover.performance_bonus.toFixed(2)}`, 14, y);
-      y += 10;
-
-      if (mover.bookings.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Jobs Completed:', 14, y);
-        y += 7;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-
-        mover.bookings.forEach((booking, idx) => {
-          if (y > 270) {
-            doc.addPage();
-            y = 20;
-          }
-          doc.text(`${idx + 1}. ${booking.booking_number} - ${new Date(booking.date).toLocaleDateString()} - ${booking.customer}`, 14, y);
-          y += 5;
-        });
-      }
-
-      const footerY = doc.internal.pageSize.getHeight() - 15;
-      doc.setFontSize(8);
-      doc.setTextColor(156, 163, 175);
-      doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, footerY, { align: 'center' });
-
-      const safeName = mover.mover_name.replace(/[^a-z0-9]/gi, '_');
-      doc.save(`Payroll_${safeName}_${startDate}_to_${endDate}.pdf`);
-    });
-  };
-
-  const isIndividualView = !!paramStart && !!paramEnd;
-  const displayData = payrollData && isIndividualView && currentUserEmail
-    ? {
-        ...payrollData,
-        payroll_data: payrollData.payroll_data.filter(p => p.mover_name === currentUserEmail),
-        summary: {
-          ...payrollData.summary,
-          mover_count: 1,
-          total_payroll: payrollData.payroll_data.find(p => p.mover_name === currentUserEmail)?.total_wage || 0
-        }
-      }
-    : payrollData;
+  const allNames = [
+    ...activeEmployees.map(e => `${e.first_name} ${e.last_name}`),
+    ...(payrollData?.payroll_data?.map(p => p.mover_name) || []),
+  ].filter((v, i, a) => a.indexOf(v) === i).sort();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">{isIndividualView ? 'My Payroll Summary' : 'Payroll Management'}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {isIndividualView 
-              ? `Pay period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
-              : 'Calculate mover wages, bonuses, and export payroll summaries'}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">Payroll</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Generate payslips from time logs and completed jobs</p>
         </div>
       </div>
 
-      {!isIndividualView && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-blue-600" />
-            Select Payroll Period
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">End Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleCalculate}
-                disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <DollarSign size={16} />
-                {loading ? 'Calculating...' : 'Calculate Payroll'}
-              </button>
-              {payrollData && (
-                <>
-                  <button
-                    onClick={handleExportPDF}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
-                  >
-                    <Download size={16} />
-                    PDF Summary
-                  </button>
-                  <button
-                    onClick={handleExportCSV}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
-                  >
-                    <FileSpreadsheet size={16} />
-                    CSV
-                  </button>
-                  <button
-                    onClick={handleExportIndividualReports}
-                    className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
-                  >
-                    <FileText size={16} />
-                    Individual Reports
-                  </button>
-                </>
-              )}
-            </div>
+      {/* Period Selection */}
+      <div className="bg-white rounded-xl shadow p-6 space-y-4">
+        <h2 className="font-semibold text-gray-800 flex items-center gap-2"><Calendar size={17} className="text-blue-600" /> Pay Period</h2>
+
+        {/* Quick presets */}
+        <div className="flex flex-wrap gap-2">
+          {PERIOD_PRESETS.map(p => (
+            <button key={p.label} type="button"
+              onClick={() => { setStartDate(p.start()); setEndDate(p.end()); }}
+              className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${
+                startDate === p.start() && endDate === p.end()
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
+              }`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* Adjustments (bonuses/deductions) */}
+      <div className="bg-white rounded-xl shadow p-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-gray-800 flex items-center gap-2"><DollarSign size={17} className="text-green-600" /> Flat-Rate Adjustments</h2>
+          <button onClick={addAdjustment} className="flex items-center gap-1.5 text-sm text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50">
+            <Plus size={14} /> Add Bonus / Deduction
+          </button>
+        </div>
+        {adjustments.length === 0 && (
+          <p className="text-sm text-gray-400 italic">No adjustments. Add bonuses (positive) or deductions (negative) per employee.</p>
+        )}
+        {adjustments.map((adj, idx) => (
+          <div key={idx} className="grid grid-cols-[1fr_1fr_120px_36px] gap-2 items-center">
+            <select value={adj.employee_name} onChange={e => updateAdjustment(idx, "employee_name", e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white">
+              <option value="">Select employee...</option>
+              {allNames.map(n => <option key={n}>{n}</option>)}
+            </select>
+            <input value={adj.description} onChange={e => updateAdjustment(idx, "description", e.target.value)}
+              placeholder="e.g. Bonus, Travel allowance, Deduction..."
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+              <input type="number" step="0.01" value={adj.amount} onChange={e => updateAdjustment(idx, "amount", e.target.value)}
+                placeholder="0.00"
+                className="w-full border border-gray-300 rounded-lg pl-7 pr-2 py-2 text-sm focus:outline-none focus:border-blue-500" />
+            </div>
+            <button onClick={() => removeAdjustment(idx)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14} /></button>
+          </div>
+        ))}
+        <div className="pt-2">
+          <button onClick={() => calculateMutation.mutate()} disabled={calculateMutation.isPending}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-6 py-2.5 rounded-lg text-sm font-semibold">
+            <DollarSign size={16} />
+            {calculateMutation.isPending ? "Calculating..." : "Calculate Payroll"}
+          </button>
+        </div>
+      </div>
+
+      {/* Loading */}
+      {calculateMutation.isPending && (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">Calculating payroll...</p>
         </div>
       )}
 
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            <p className="text-gray-500">Calculating payroll...</p>
-          </div>
-        </div>
-      )}
-
-      {displayData && !loading && (
+      {/* Results */}
+      {payrollData && !calculateMutation.isPending && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard
-              icon={DollarSign}
-              label="Total Payroll"
-              value={`$${displayData.summary.total_payroll.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sublabel="Total wages + bonuses"
-              color="bg-blue-500"
-            />
-            <StatCard
-              icon={Users}
-              label="Movers Paid"
-              value={displayData.summary.mover_count}
-              sublabel={`For ${displayData.summary.total_jobs} jobs`}
-              color="bg-green-500"
-            />
-            <StatCard
-              icon={Clock}
-              label="Total Hours"
-              value={displayData.summary.total_hours.toFixed(1)}
-              sublabel="Logged hours"
-              color="bg-purple-500"
-            />
-            <StatCard
-              icon={TrendingUp}
-              label="Total Bonuses"
-              value={`$${displayData.summary.total_bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sublabel="Performance bonuses"
-              color="bg-yellow-500"
-            />
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard icon={DollarSign} label="Total Payroll" value={`$${payrollData.summary.total_payroll.toFixed(2)}`} sublabel={`${payrollData.summary.mover_count} employees`} color="bg-blue-600" />
+            <StatCard icon={Clock} label="Total Hours" value={payrollData.summary.total_hours.toFixed(1)} sublabel="From time logs" color="bg-purple-600" />
+            <StatCard icon={Users} label="Jobs Completed" value={payrollData.summary.total_jobs} sublabel="In period" color="bg-green-600" />
+            <StatCard icon={TrendingUp} label="Bonuses & Adj." value={`$${(payrollData.summary.total_bonuses + payrollData.summary.total_adjustments).toFixed(2)}`} sublabel="Performance + manual" color="bg-yellow-500" />
           </div>
 
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                <FileText size={18} className="text-blue-600" />
-                Wage Breakdown
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {new Date(displayData.period.start_date).toLocaleDateString()} - {new Date(displayData.period.end_date).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-6 py-3 font-medium text-gray-600">Mover</th>
-                    <th className="text-right px-6 py-3 font-medium text-gray-600">Jobs</th>
-                    <th className="text-right px-6 py-3 font-medium text-gray-600">Hours</th>
-                    <th className="text-right px-6 py-3 font-medium text-gray-600">Base Wage (30%)</th>
-                    <th className="text-right px-6 py-3 font-medium text-gray-600">Hourly ($25/hr)</th>
-                    <th className="text-right px-6 py-3 font-medium text-gray-600">Performance Bonus</th>
-                    <th className="text-right px-6 py-3 font-medium text-gray-600">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayData.payroll_data.map((mover) => (
-                    <tr key={mover.mover_name} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-semibold text-gray-800">{mover.mover_name}</p>
-                          <p className="text-xs text-gray-500">{mover.jobs_completed} job{mover.jobs_completed !== 1 ? 's' : ''}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="font-medium text-gray-700">{mover.jobs_completed}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-gray-600">{mover.total_hours.toFixed(1)}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="font-medium text-blue-600">${mover.base_wage.toFixed(2)}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="font-medium text-purple-600">${(mover.hourly_wage || 0).toFixed(2)}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {mover.performance_bonus > 0 && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
-                          <span className={`font-medium ${mover.performance_bonus > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>
-                            ${mover.performance_bonus.toFixed(2)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="font-bold text-green-600 text-base">${mover.total_wage.toFixed(2)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {displayData.payroll_data.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                <DollarSign size={40} className="mx-auto mb-3 opacity-50" />
-                <p>No payroll data for this period</p>
-              </div>
-            )}
+          {/* Export bar */}
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={exportSummaryPDF} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              <Download size={15} /> PDF Summary
+            </button>
+            <button onClick={exportCSV} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              <FileSpreadsheet size={15} /> Export CSV
+            </button>
+            <button onClick={() => payrollData.payroll_data.forEach(m => exportPayslip(m))} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              <FileText size={15} /> All Payslips
+            </button>
           </div>
 
-          <div className="space-y-4">
-            {displayData.payroll_data.map((mover) => (
-              <div key={mover.mover_name} className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Users size={24} className="text-blue-600" />
+          {/* Per-employee payslips */}
+          <div className="space-y-3">
+            {payrollData.payroll_data.map(mover => {
+              const expanded = expandedEmployee === mover.mover_name;
+              const initials = mover.mover_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+              return (
+                <div key={mover.mover_name} className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+                  {/* Header row */}
+                  <div className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50"
+                    onClick={() => setExpandedEmployee(expanded ? null : mover.mover_name)}>
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
+                      {initials}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{mover.mover_name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {mover.jobs_completed} jobs · {mover.total_hours.toFixed(1)} hours
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800">{mover.mover_name}</p>
+                      <p className="text-xs text-gray-500">
+                        {mover.role || "Employee"} · {mover.employment_type || "Casual"}
+                        {mover.pay_rate ? ` · $${mover.pay_rate}/hr` : " · rate not set"}
                       </p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">Total Wage</p>
-                    <p className="text-2xl font-bold text-green-600">${mover.total_wage.toFixed(2)}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="bg-blue-50 rounded-lg p-3">
-                    <p className="text-xs text-blue-600 font-medium">Base Wage (30% of jobs)</p>
-                    <p className="text-lg font-bold text-blue-700">${mover.base_wage.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <p className="text-xs text-purple-600 font-medium">Hourly Wage</p>
-                    <p className="text-lg font-bold text-purple-700">${(mover.hourly_wage || 0).toFixed(2)}</p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-3">
-                    <p className="text-xs text-yellow-600 font-medium">Performance Bonus</p>
-                    <p className="text-lg font-bold text-yellow-700">${mover.performance_bonus.toFixed(2)}</p>
-                  </div>
-                </div>
-
-                {mover.bookings.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Jobs Completed</h4>
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <table className="w-full text-xs">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="text-left px-3 py-2 font-medium text-gray-600">Booking #</th>
-                            <th className="text-left px-3 py-2 font-medium text-gray-600">Date</th>
-                            <th className="text-left px-3 py-2 font-medium text-gray-600">Customer</th>
-                            <th className="text-right px-3 py-2 font-medium text-gray-600">Job Value</th>
-                            <th className="text-right px-3 py-2 font-medium text-gray-600">Mover Share</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mover.bookings.map((booking, idx) => (
-                            <tr key={idx} className="border-t border-gray-100">
-                              <td className="px-3 py-2 text-gray-700">{booking.booking_number}</td>
-                              <td className="px-3 py-2 text-gray-600">{new Date(booking.date).toLocaleDateString()}</td>
-                              <td className="px-3 py-2 text-gray-600">{booking.customer}</td>
-                              <td className="px-3 py-2 text-right text-gray-700">${booking.job_value.toLocaleString()}</td>
-                              <td className="px-3 py-2 text-right font-medium text-blue-600">${booking.mover_share.toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="flex items-center gap-6 flex-shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs text-gray-400">Hours</p>
+                        <p className="font-semibold text-gray-700">{mover.total_hours.toFixed(1)}</p>
+                      </div>
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs text-gray-400">Jobs</p>
+                        <p className="font-semibold text-gray-700">{mover.jobs_completed}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-400">Total Pay</p>
+                        <p className="text-lg font-bold text-green-600">${mover.total_wage.toFixed(2)}</p>
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); exportPayslip(mover); }}
+                        className="flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium">
+                        <Download size={12} /> Payslip
+                      </button>
+                      {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Expanded detail */}
+                  {expanded && (
+                    <div className="border-t border-gray-100 px-5 py-4 bg-gray-50 space-y-4">
+                      {/* Earnings breakdown */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-white rounded-lg border border-gray-200 p-3">
+                          <p className="text-xs text-gray-500 mb-1">Hourly Wages</p>
+                          <p className="text-lg font-bold text-purple-700">${mover.hourly_wage.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">{mover.total_hours.toFixed(1)} hrs × ${mover.pay_rate || 25}/hr</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 p-3">
+                          <p className="text-xs text-gray-500 mb-1">Job Share (30%)</p>
+                          <p className="text-lg font-bold text-blue-700">${mover.base_wage.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">{mover.jobs_completed} job{mover.jobs_completed !== 1 ? "s" : ""}</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 p-3">
+                          <p className="text-xs text-gray-500 mb-1">Performance Bonus</p>
+                          <p className="text-lg font-bold text-yellow-600">${mover.performance_bonus.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">Survey ratings</p>
+                        </div>
+                        <div className={`rounded-lg border p-3 ${mover.adjustments_total >= 0 ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+                          <p className="text-xs text-gray-500 mb-1">Adjustments</p>
+                          <p className={`text-lg font-bold ${mover.adjustments_total >= 0 ? "text-green-700" : "text-red-700"}`}>
+                            {mover.adjustments_total >= 0 ? "+" : ""}${mover.adjustments_total.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-400">{mover.adjustment_items?.length || 0} item{(mover.adjustment_items?.length || 0) !== 1 ? "s" : ""}</p>
+                        </div>
+                      </div>
+
+                      {/* Adjustment items */}
+                      {mover.adjustment_items?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Adjustments Detail</p>
+                          <div className="space-y-1">
+                            {mover.adjustment_items.map((adj, i) => (
+                              <div key={i} className="flex justify-between text-sm text-gray-700 bg-white rounded px-3 py-1.5 border border-gray-200">
+                                <span>{adj.description}</span>
+                                <span className={`font-semibold ${adj.amount >= 0 ? "text-green-700" : "text-red-700"}`}>
+                                  {adj.amount >= 0 ? "+" : ""}${adj.amount.toFixed(2)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Time log entries */}
+                      {mover.time_log_entries?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Time Log ({mover.time_log_entries.length} entries)</p>
+                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Date</th>
+                                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Hours</th>
+                                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Rate</th>
+                                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Amount</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {mover.time_log_entries.map((t, i) => (
+                                  <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-3 py-2 text-gray-700">{new Date(t.date).toLocaleDateString("en-AU")}</td>
+                                    <td className="px-3 py-2 text-right">{t.hours.toFixed(1)}</td>
+                                    <td className="px-3 py-2 text-right">${t.rate}/hr</td>
+                                    <td className="px-3 py-2 text-right font-semibold text-blue-700">${t.amount.toFixed(2)}</td>
+                                    <td className="px-3 py-2 text-gray-500 truncate max-w-32">{t.notes || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Jobs */}
+                      {mover.bookings?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Completed Jobs</p>
+                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Booking #</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Date</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Customer</th>
+                                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Job Value</th>
+                                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Share (30%)</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {mover.bookings.map((b, i) => (
+                                  <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-3 py-2 text-gray-700 font-medium">{b.booking_number}</td>
+                                    <td className="px-3 py-2 text-gray-600">{new Date(b.date).toLocaleDateString("en-AU")}</td>
+                                    <td className="px-3 py-2 text-gray-600">{b.customer}</td>
+                                    <td className="px-3 py-2 text-right text-gray-700">${b.job_value.toLocaleString()}</td>
+                                    <td className="px-3 py-2 text-right font-semibold text-blue-600">${b.mover_share.toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {mover.total_hours === 0 && mover.jobs_completed === 0 && (
+                        <p className="text-sm text-gray-400 italic">No time logs or completed jobs found in this period.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {payrollData.payroll_data.length === 0 && (
+            <div className="text-center py-12 text-gray-400">
+              <DollarSign size={48} className="mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-gray-600">No payroll data for this period</p>
+              <p className="text-sm mt-1">Make sure employees have time logs or completed jobs in this date range</p>
+            </div>
+          )}
         </>
       )}
 
-      {!displayData && !loading && (
-        <div className="text-center py-12 text-gray-400">
-          <DollarSign size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-gray-600 font-medium">Select a date range and calculate payroll</p>
-          <p className="text-gray-400 text-sm mt-1">Wages are calculated based on completed jobs, logged hours, and performance bonuses</p>
+      {!payrollData && !calculateMutation.isPending && (
+        <div className="text-center py-16 text-gray-400">
+          <DollarSign size={52} className="mx-auto mb-4 opacity-20" />
+          <p className="font-medium text-gray-600">Select a period and calculate payroll</p>
+          <p className="text-sm mt-1">Uses employee pay rates from the Employees page · Time logs · Completed jobs</p>
         </div>
       )}
     </div>
