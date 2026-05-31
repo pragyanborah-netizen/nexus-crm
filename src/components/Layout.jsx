@@ -79,6 +79,7 @@ const navGroups = [
       { label: "Driver Portal", icon: Truck, path: "/driver-portal" },
       { label: "Live Truck Map", icon: MapPin, path: "/live-truck-map" },
       { label: "Jockey Payment Policy", icon: DollarSign, path: "/jockey-payment-policy" },
+      { label: "Jockey Hours Calculator", icon: Clock, path: "/jockey-hours" },
     ]
   },
 ];
