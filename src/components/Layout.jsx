@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BookOpen, CalendarDays, Clock, Users, Truck,
   UserCheck, BarChart2, Mail, Package, ShoppingCart, ChevronDown,
   ChevronRight, Menu, X, PlusCircle, Star, MessageSquare, Calendar,
-  Trophy, DollarSign, Award as AwardIcon, Timer, Bell, MapPin, Boxes
+  Trophy, DollarSign, Award as AwardIcon, Timer, Bell, MapPin, Boxes, Shield
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -80,6 +80,7 @@ const navGroups = [
       { label: "Live Truck Map", icon: MapPin, path: "/live-truck-map" },
       { label: "Jockey Payment Policy", icon: DollarSign, path: "/jockey-payment-policy" },
       { label: "Jockey Hours Calculator", icon: Clock, path: "/jockey-hours" },
+      { label: "Safety Inspections", icon: Shield, path: "/safety-inspections" },
     ]
   },
 ];

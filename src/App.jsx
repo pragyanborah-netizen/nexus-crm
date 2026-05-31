@@ -49,6 +49,8 @@ import RosterEngine from './pages/RosterEngine';
 import RosterResponse from './pages/RosterResponse';
 import AssetTracking from './pages/AssetTracking';
 import JockeyPaymentPolicy from './pages/JockeyPaymentPolicy';
+import SafetyInspection from './pages/SafetyInspection';
+import SafetyInspections from './pages/SafetyInspections';
 import JockeyHoursCalculator from './pages/JockeyHoursCalculator';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -131,7 +133,9 @@ const AuthenticatedApp = () => {
         <Route path="/assets" element={<AssetTracking />} />
         <Route path="/jockey-payment-policy" element={<JockeyPaymentPolicy />} />
         <Route path="/jockey-hours" element={<JockeyHoursCalculator />} />
+        <Route path="/safety-inspections" element={<SafetyInspections />} />
       </Route>
+      <Route path="/safety-inspection" element={<SafetyInspection />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

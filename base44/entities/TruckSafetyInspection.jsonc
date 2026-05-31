@@ -1,0 +1,178 @@
+{
+  "name": "TruckSafetyInspection",
+  "type": "object",
+  "properties": {
+    "truck_name": {
+      "type": "string",
+      "title": "Truck Name"
+    },
+    "inspector_name": {
+      "type": "string",
+      "title": "Inspector Name"
+    },
+    "inspector_email": {
+      "type": "string",
+      "title": "Inspector Email"
+    },
+    "inspection_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Inspection Date"
+    },
+    "inspection_time": {
+      "type": "string",
+      "title": "Inspection Time"
+    },
+    "shift_start_time": {
+      "type": "string",
+      "title": "Planned Shift Start"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Booking Number (if known)"
+    },
+    "truck_condition": {
+      "type": "string",
+      "title": "Overall Truck Condition",
+      "enum": [
+        "Good",
+        "Minor Issues",
+        "Major Issues - Do Not Use"
+      ],
+      "default": "Good"
+    },
+    "exterior_photos": {
+      "type": "array",
+      "title": "Exterior Photos",
+      "items": {
+        "type": "string"
+      }
+    },
+    "interior_photos": {
+      "type": "array",
+      "title": "Interior / Cargo Area Photos",
+      "items": {
+        "type": "string"
+      }
+    },
+    "safety_gear": {
+      "type": "object",
+      "title": "Safety Gear Checklist",
+      "properties": {
+        "hi_vis_vest": {
+          "type": "boolean",
+          "title": "Hi-Vis Vest"
+        },
+        "safety_boots": {
+          "type": "boolean",
+          "title": "Safety Boots"
+        },
+        "gloves": {
+          "type": "boolean",
+          "title": "Gloves"
+        },
+        "back_brace": {
+          "type": "boolean",
+          "title": "Back Brace / Lifting Belt"
+        },
+        "first_aid_kit": {
+          "type": "boolean",
+          "title": "First Aid Kit in Truck"
+        },
+        "fire_extinguisher": {
+          "type": "boolean",
+          "title": "Fire Extinguisher in Truck"
+        },
+        "seatbelts_ok": {
+          "type": "boolean",
+          "title": "All Seatbelts Functional"
+        }
+      }
+    },
+    "vehicle_checks": {
+      "type": "object",
+      "title": "Vehicle Checks",
+      "properties": {
+        "fuel_level_ok": {
+          "type": "boolean",
+          "title": "Fuel Level Adequate"
+        },
+        "oil_level_ok": {
+          "type": "boolean",
+          "title": "Oil Level OK"
+        },
+        "tyre_condition_ok": {
+          "type": "boolean",
+          "title": "Tyre Condition OK"
+        },
+        "lights_ok": {
+          "type": "boolean",
+          "title": "All Lights Working"
+        },
+        "brakes_ok": {
+          "type": "boolean",
+          "title": "Brakes OK"
+        },
+        "mirrors_ok": {
+          "type": "boolean",
+          "title": "Mirrors Adjusted"
+        },
+        "ramp_ok": {
+          "type": "boolean",
+          "title": "Loading Ramp Functional"
+        },
+        "straps_ropes_ok": {
+          "type": "boolean",
+          "title": "Straps / Ropes Present & OK"
+        },
+        "dollies_trolleys_ok": {
+          "type": "boolean",
+          "title": "Dollies / Trolleys Present"
+        },
+        "blankets_ok": {
+          "type": "boolean",
+          "title": "Protective Blankets Present"
+        }
+      }
+    },
+    "damage_noted": {
+      "type": "boolean",
+      "title": "Pre-existing Damage Noted",
+      "default": false
+    },
+    "damage_description": {
+      "type": "string",
+      "title": "Damage Description"
+    },
+    "damage_photos": {
+      "type": "array",
+      "title": "Damage Photos",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "title": "Additional Notes"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Submitted",
+        "Reviewed",
+        "Action Required"
+      ],
+      "default": "Submitted"
+    },
+    "admin_notes": {
+      "type": "string",
+      "title": "Admin Notes"
+    }
+  },
+  "required": [
+    "truck_name",
+    "inspector_name",
+    "inspection_date"
+  ]
+}
