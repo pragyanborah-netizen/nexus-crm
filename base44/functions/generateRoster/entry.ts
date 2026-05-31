@@ -112,9 +112,13 @@ ${notes || 'None provided.'}
    - Leave: NEVER assign someone on approved leave
    - Workload fairness: spread hours evenly; employees with high hours recently should get fewer shifts
    - Employment type: prefer Full-time and Part-time over Casual for large jobs
-2. After assigning bookings, fill the remaining weekdays with suggested STANDBY/AVAILABLE shifts for employees not assigned to a booking.
-3. Flag any days where you cannot fill the required staffing and explain WHY.
-4. Provide a brief reasoning paragraph at the end.
+2. CRITICAL — ASSIGNMENT TIMING RULE: Movers must be assigned ONE DAY PRIOR to their shift, before 12:00 PM (noon). For example:
+   - For a shift on 2026-06-05, the assignment must be made by 2026-06-04 at 12:00 PM.
+   - Do NOT assign movers to shifts with less than 24 hours notice unless explicitly approved by management.
+   - If a booking falls on a Monday, the assignment must be made by Sunday at 12:00 PM.
+3. After assigning bookings, fill the remaining weekdays with suggested STANDBY/AVAILABLE shifts for employees not assigned to a booking.
+4. Flag any days where you cannot fill the required staffing and explain WHY.
+5. Provide a brief reasoning paragraph at the end.
 
 Respond with ONLY valid JSON (no markdown fences) matching this exact schema:
 {
