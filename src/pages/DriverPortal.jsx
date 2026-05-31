@@ -6,6 +6,7 @@ import DriverRouteMap from "../components/DriverRouteMap";
 import DriverInventoryChecklist from "../components/DriverInventoryChecklist";
 import SignaturePad from "../components/SignaturePad";
 import DriverEarningsTab from "../components/DriverEarningsTab";
+import PaymentPolicy from "../components/DriverPaymentPolicy";
 
 const STATUS_FLOW = [
   { key: "En Route to Pickup", label: "En Route to Pickup", emoji: "🚛", color: "bg-blue-500", light: "bg-blue-50 border-blue-200 text-blue-800" },
@@ -238,6 +239,9 @@ export default function DriverPortal() {
       {/* Jobs Tab */}
       {activeTab === "jobs" && (
         <div>
+          {/* Payment Policy */}
+          <PaymentPolicy />
+
           {/* GPS Ping Button */}
           <div className="px-4 py-4 bg-gray-800 border-b border-gray-700">
             <button onClick={() => sendLocationUpdate(activeStatus, activeJobId)}
