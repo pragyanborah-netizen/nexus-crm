@@ -44,6 +44,7 @@ import CustomerInventoryChecklistForm from './pages/CustomerInventoryChecklistFo
 import CustomerInventoryChecklists from './pages/CustomerInventoryChecklists';
 import AdminTruckMap from './pages/AdminTruckMap';
 import Employees from './pages/Employees';
+import Expenses from './pages/Expenses';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -119,6 +120,7 @@ const AuthenticatedApp = () => {
         <Route path="/inventory-checklists" element={<CustomerInventoryChecklists />} />
         <Route path="/live-truck-map" element={<AdminTruckMap />} />
         <Route path="/employees" element={<Employees />} />
+        <Route path="/expenses" element={<Expenses />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

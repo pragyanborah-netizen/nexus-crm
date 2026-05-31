@@ -1,0 +1,75 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "employee_name": {
+      "type": "string",
+      "title": "Employee Name"
+    },
+    "employee_email": {
+      "type": "string",
+      "title": "Employee Email"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "enum": [
+        "Fuel",
+        "Tolls",
+        "Parking",
+        "Meals",
+        "Equipment",
+        "Uniform",
+        "Training",
+        "Other"
+      ],
+      "default": "Other"
+    },
+    "amount": {
+      "type": "number",
+      "title": "Amount ($)"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "receipt_url": {
+      "type": "string",
+      "title": "Receipt URL"
+    },
+    "booking_number": {
+      "type": "string",
+      "title": "Linked Booking #"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected",
+        "Paid"
+      ],
+      "default": "Pending"
+    },
+    "admin_notes": {
+      "type": "string",
+      "title": "Admin Notes"
+    },
+    "payroll_period": {
+      "type": "string",
+      "title": "Payroll Period"
+    }
+  },
+  "required": [
+    "employee_name",
+    "date",
+    "amount",
+    "category"
+  ]
+}
