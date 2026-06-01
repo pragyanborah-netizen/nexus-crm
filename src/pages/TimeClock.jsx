@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SpinWheelTimePicker from "../components/SpinWheelTimePicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { 
@@ -20,6 +21,8 @@ export default function TimeClockApp() {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [selectedShiftType, setSelectedShiftType] = useState("Clock In");
+  const [showSpinPicker, setShowSpinPicker] = useState(false);
+  const [overrideTime, setOverrideTime] = useState(null);
   const [bookingNumber, setBookingNumber] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -88,6 +91,7 @@ export default function TimeClockApp() {
       shift_type: selectedShiftType,
       booking_number: bookingNumber || null,
       notes: notes || null,
+      ...(overrideTime ? { override_time: overrideTime } : {}),
     });
   };
 
@@ -158,6 +162,18 @@ export default function TimeClockApp() {
 
   return (
     <div className="space-y-6">
+      {showSpinPicker && (
+        <SpinWheelTimePicker
+          label={selectedShiftType === "Clock Out" ? "Spin" : "Spin"}
+          sublabel={selectedShiftType === "Clock Out" ? "to set end time" : "to set start time"}
+          actionLabel={selectedShiftType === "Clock Out" ? "Ends" : "Starts"}
+          onConfirm={({ timeStr }) => {
+            setOverrideTime(timeStr);
+            setShowSpinPicker(false);
+          }}
+          onCancel={() => setShowSpinPicker(false)}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -314,6 +330,20 @@ export default function TimeClockApp() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
+
+              {/* Set Time via Spin Wheel */}
+              {overrideTime && (
+                <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+                  <span className="text-sm text-purple-700 font-medium">Time set: {overrideTime}</span>
+                  <button onClick={() => setOverrideTime(null)} className="text-xs text-purple-400 hover:text-purple-600">Clear</button>
+                </div>
+              )}
+              <button
+                onClick={() => setShowSpinPicker(true)}
+                className="w-full border-2 border-dashed border-gray-300 hover:border-purple-400 text-gray-500 hover:text-purple-600 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                🕐 Spin to set time manually
+              </button>
 
               {/* Submit Button */}
               <button
