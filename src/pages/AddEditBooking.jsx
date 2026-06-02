@@ -169,6 +169,7 @@ export default function AddEditBooking() {
 
   const [form, setForm] = useState({
     status: "Enquiry", booking_number: "",
+    is_returning_customer: false, returning_contact_method: "",
     customer_first_name: "", customer_last_name: "", customer_email: "",
     customer_mobile: "", customer_phone_info: "", customer_type: "Residential",
     agent_quoted: user?.full_name || "", agent_booked: user?.full_name || "", agent_inquired: user?.full_name || "", agent_pending: user?.full_name || "",
@@ -906,6 +907,34 @@ Write the email body only (no subject line in the body). Address the customer by
 
             <Field label="Booking Number">
               <input className={inputClass} value={form.booking_number} onChange={(e) => set("booking_number", e.target.value)} placeholder="Auto-generated if blank" />
+            </Field>
+
+            <Field label="Returning Customer" full>
+              <div className="flex items-center gap-4 mt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!form.is_returning_customer}
+                    onChange={(e) => { set("is_returning_customer", e.target.checked); if (!e.target.checked) set("returning_contact_method", ""); }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-600">This customer has used our service before</span>
+                </label>
+                {form.is_returning_customer && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Found via:</span>
+                    <select
+                      className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                      value={form.returning_contact_method || ""}
+                      onChange={(e) => set("returning_contact_method", e.target.value)}
+                    >
+                      <option value="">Select...</option>
+                      <option value="Phone Number">Phone Number</option>
+                      <option value="Email">Email</option>
+                    </select>
+                  </div>
+                )}
+              </div>
             </Field>
           </div>
 

@@ -21,6 +21,19 @@
       ],
       "default": "Enquiry"
     },
+    "is_returning_customer": {
+      "type": "boolean",
+      "title": "Returning Customer",
+      "default": false
+    },
+    "returning_contact_method": {
+      "type": "string",
+      "title": "Contact Found Via",
+      "enum": [
+        "Phone Number",
+        "Email"
+      ]
+    },
     "agent_inquired": {
       "type": "string",
       "title": "Agent - Enquiry"
