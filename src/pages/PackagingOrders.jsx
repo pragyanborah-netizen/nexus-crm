@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Package, ChevronDown, ChevronUp, CheckCircle, Truck, Clock, XCircle, Search } from "lucide-react";
+import { Package, ChevronDown, ChevronUp, CheckCircle, Truck, Clock, XCircle, Search, Mail } from "lucide-react";
 
 const STATUS_CONFIG = {
   Pending:   { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Clock },
@@ -15,6 +15,18 @@ const STATUSES = ["All", "Pending", "Paid", "Delivered", "Cancelled"];
 export default function PackagingOrders() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
+  const [sendingPriceList, setSendingPriceList] = useState(null); // order.id being sent
+
+  const handleSendPriceList = async (order) => {
+    if (!order.customer_email) { alert('No email on file for this customer.'); return; }
+    setSendingPriceList(order.id);
+    await base44.functions.invoke('sendPackagingPriceList', {
+      customer_email: order.customer_email,
+      customer_first_name: order.customer_name?.split(' ')[0] || '',
+    });
+    setSendingPriceList(null);
+    alert(`Packaging price list sent to ${order.customer_email}`);
+  };
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
 
@@ -182,6 +194,20 @@ export default function PackagingOrders() {
                   {order.notes && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2 text-sm text-yellow-800">
                       <strong>Notes:</strong> {order.notes}
+                    </div>
+                  )}
+
+                  {/* Send Price List */}
+                  {order.customer_email && (
+                    <div>
+                      <button
+                        onClick={() => handleSendPriceList(order)}
+                        disabled={sendingPriceList === order.id}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold transition-all disabled:opacity-50"
+                      >
+                        <Mail size={13} />
+                        {sendingPriceList === order.id ? 'Sending...' : 'Send Packaging Price List'}
+                      </button>
                     </div>
                   )}
 
