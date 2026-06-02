@@ -52,6 +52,7 @@ import JockeyPaymentPolicy from './pages/JockeyPaymentPolicy';
 import SafetyInspection from './pages/SafetyInspection';
 import SafetyInspections from './pages/SafetyInspections';
 import JockeyHoursCalculator from './pages/JockeyHoursCalculator';
+import SupplyList from './pages/SupplyList';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -133,6 +134,7 @@ const AuthenticatedApp = () => {
         <Route path="/assets" element={<AssetTracking />} />
         <Route path="/jockey-payment-policy" element={<JockeyPaymentPolicy />} />
         <Route path="/jockey-hours" element={<JockeyHoursCalculator />} />
+        <Route path="/supplies" element={<SupplyList />} />
         <Route path="/safety-inspections" element={<SafetyInspections />} />
       </Route>
       <Route path="/safety-inspection" element={<SafetyInspection />} />
