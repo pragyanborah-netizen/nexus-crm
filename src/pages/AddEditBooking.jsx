@@ -6,13 +6,11 @@ import { base44 } from "@/api/base44Client";
 import { Save, ArrowLeft, Plus, Trash2, User, Wrench, MapPin, Package, Truck, Check, Mail, CalendarDays, X, Bell, Sparkles, CreditCard } from "lucide-react";
 import { jsPDF } from "jspdf";
 import DiaryModal from "../components/DiaryModal";
-import BookingOverviewTab from "../components/BookingOverviewTab";
 import InvoiceGenerator from "../components/InvoiceGenerator";
 import ItemsSelector from "../components/ItemsSelector";
 import EmailPreview from "../components/EmailPreview";
 
 const TABS = [
-  { id: "overview", label: "Overview", icon: Truck },
   { id: "customer", label: "Customer", icon: User },
   { id: "addresses", label: "Addresses", icon: MapPin },
   { id: "services", label: "Services & Pricing", icon: Wrench },
@@ -163,7 +161,7 @@ export default function AddEditBooking() {
   const { user } = useAuth();
   const isEdit = !!id && id !== "new";
 
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("customer");
 
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => base44.entities.Agent.list() });
   const { data: trucks = [] } = useQuery({ queryKey: ["trucks"], queryFn: () => base44.entities.Truck.list() });
@@ -880,11 +878,6 @@ Write the email body only (no subject line in the body). Address the customer by
         })}
         <div className="flex-1 border-b-2 border-transparent -mb-px" />
       </div>
-
-      {/* TAB: Overview */}
-      {tab === "overview" && (
-        <BookingOverviewTab form={form} set={set} trucks={trucks} />
-      )}
 
       {/* TAB: Customer */}
       {tab === "customer" && (
