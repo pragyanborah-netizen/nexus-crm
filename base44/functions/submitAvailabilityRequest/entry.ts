@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data } = req.body;
+    const { data } = await req.json();
     
     if (!data || !data.start_date || !data.end_date) {
       return Response.json({ error: 'Start date and end date are required' }, { status: 400 });

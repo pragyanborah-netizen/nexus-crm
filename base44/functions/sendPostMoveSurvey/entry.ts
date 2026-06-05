@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    const { data, event } = req.body;
+    const { data, event } = await req.json();
     
     if (!data || !data.id) {
       return Response.json({ error: 'No booking data provided' }, { status: 400 });
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     });
 
     // Generate survey link
-    const surveyLink = `${self.location.origin}/survey/${survey.id}`;
+    const surveyLink = `https://burrowing-nexus-lead-link.base44.app/survey/${survey.id}`;
 
     // Send survey email
     const subject = `How did we do, ${booking.customer_first_name}? – Move On Australia`;

@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const { data } = req.body;
+    const { data } = await req.json();
     
     if (!data || !data.id || !data.status) {
       return Response.json({ error: 'Request ID and status are required' }, { status: 400 });

@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
     // Get the booking data from the automation payload
-    const { data, event } = req.body;
+    const { data, event } = await req.json();
     
     if (!data || !data.id) {
       return Response.json({ error: 'No booking data provided' }, { status: 400 });

@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'SMS service not configured' }, { status: 500 });
     }
 
-    const { data } = req.body;
+    const { data } = await req.json();
     
     if (!data || !data.message) {
       return Response.json({ error: 'No message provided' }, { status: 400 });
