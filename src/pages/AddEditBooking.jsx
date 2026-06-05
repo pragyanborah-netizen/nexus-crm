@@ -257,27 +257,43 @@ export default function AddEditBooking() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["bookings"] }); },
   });
 
+  const NUMERIC_FIELDS = [
+    'price', 'distance_km', 'estimated_hours', 'actual_hours', 'balance_due', 'deposit',
+    'num_movers', 'moving_total', 'moving_rate_per_hour', 'moving_num_people', 'moving_hours',
+    'packing_hours', 'packing_total', 'packing_rate_per_hour', 'packing_num_people',
+    'unpacking_hours', 'unpacking_total', 'unpacking_rate_per_hour', 'unpacking_num_people',
+    'packaging_supplies_price',
+  ];
+
+  const sanitizeNumericFields = (data) => {
+    const out = { ...data };
+    for (const field of NUMERIC_FIELDS) {
+      if (out[field] === '' || out[field] === undefined) out[field] = null;
+    }
+    return out;
+  };
+
   const handleSave = () => {
-    const data = {
+    const data = sanitizeNumericFields({
       ...form,
       moving_rates_config: JSON.stringify({ ...(form.moving_rates_config || {}), flatRates: movingFlatRates }),
       packing_rates_config: JSON.stringify({ ...(form.packing_rates_config || {}), flatRates: packFlatRates }),
       unpacking_rates_config: JSON.stringify({ ...(form.unpacking_rates_config || {}), flatRates: unpackFlatRates }),
       additional_stops: extraStops.filter((s) => s.address || s.suburb).map((s) => [s.address, s.suburb, s.state].filter(Boolean).join(", ")),
       flat_rate_charges: JSON.stringify(flatRates),
-    };
+    });
     saveMutation.mutate(data);
   };
 
   const handleSaveDraft = () => {
-    const data = {
+    const data = sanitizeNumericFields({
       ...form,
       moving_rates_config: JSON.stringify({ ...(form.moving_rates_config || {}), flatRates: movingFlatRates }),
       packing_rates_config: JSON.stringify({ ...(form.packing_rates_config || {}), flatRates: packFlatRates }),
       unpacking_rates_config: JSON.stringify({ ...(form.unpacking_rates_config || {}), flatRates: unpackFlatRates }),
       additional_stops: extraStops.filter((s) => s.address || s.suburb).map((s) => [s.address, s.suburb, s.state].filter(Boolean).join(", ")),
       flat_rate_charges: JSON.stringify(flatRates),
-    };
+    });
     saveDraftMutation.mutate(data);
   };
 
