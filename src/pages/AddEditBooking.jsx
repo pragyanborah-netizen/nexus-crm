@@ -190,7 +190,7 @@ export default function AddEditBooking() {
     num_movers: "", truck_size: "", truck_assigned: "",
     estimated_hours: "", actual_hours: "",
     price: "", deposit: "", balance_due: "", payment_method: "",
-    notes: "", internal_notes: "",
+    notes: "", internal_notes: "", customer_content_notes: "",
   });
 
   const [extraStops, setExtraStops] = useState([]);
@@ -1715,6 +1715,19 @@ Write the email body only (no subject line in the body). Address the customer by
                 {form.items_to_move.length} item{form.items_to_move.length !== 1 ? "s" : ""} added
               </p>
             )}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer's Content List <span className="text-gray-400 font-normal">(free text)</span>
+              </label>
+              <p className="text-xs text-gray-400 mb-2">Paste or type the customer's list of contents exactly as provided.</p>
+              <textarea
+                className={inputClass}
+                rows={6}
+                value={form.customer_content_notes || ""}
+                onChange={(e) => set("customer_content_notes", e.target.value)}
+                placeholder="e.g. 3 seater couch, queen bed, dining table x6 chairs, fridge, washing machine..."
+              />
+            </div>
           </Section>
 
           {/* Booking Stage */}
